@@ -182,7 +182,7 @@ api.route('/invoices', invoicesRouter);
 api.route('/payments', paymentsRouter);
 api.route('/settings', settingsRouter);
 
-app.route('/', api);
+app.route('/api', api);
 
 // ----------------------------------------------------
 // Static Assets & SPA Fallback Route
