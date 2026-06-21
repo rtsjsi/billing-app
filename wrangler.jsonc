@@ -1,0 +1,26 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "freelancer-invoices",
+  "main": "worker/index.ts",
+  "compatibility_date": "2024-04-03",
+  "assets": {
+    "directory": "./frontend/dist",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "freelancer-invoices",
+      "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "ATTACHMENTS",
+      "bucket_name": "freelancer-po-attachments"
+    }
+  ],
+  "vars": {
+    "JWT_SECRET": "local-dev-jwt-secret-key-change-in-production"
+  }
+}
