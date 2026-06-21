@@ -15,6 +15,7 @@ import {
   updateSettings,
   getSettings
 } from './db/queries';
+import { SCHEMA_SQL } from './db/schema-sql';
 
 // Import sub-routers
 import dashboardRouter from './routes/dashboard';
@@ -48,7 +49,17 @@ app.get('/api/auth/setup-status', async (c) => {
     const userCount = await getUserCount(c.env.DB);
     return c.json({ needsSetup: userCount === 0 });
   } catch (error: any) {
-    return c.json({ error: error.message || 'Database connection error' }, 500);
+    const errMsg = error.message || '';
+    if (errMsg.includes('no such table') || errMsg.includes('no such table: users')) {
+      try {
+        // Automatically initialize SQLite database tables
+        await c.env.DB.exec(SCHEMA_SQL);
+        return c.json({ needsSetup: true });
+      } catch (execError: any) {
+        return c.json({ error: `Auto-initialization of D1 failed: ${execError.message}` }, 500);
+      }
+    }
+    return c.json({ error: errMsg || 'Database connection error' }, 500);
   }
 });
 
