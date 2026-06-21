@@ -9,7 +9,6 @@ A secure, full-stack, single-user invoicing and Purchase Order tracker designed 
 - **Backend**: [Hono](https://hono.dev) routing framework running on a Cloudflare Worker.
 - **Frontend**: Single Page React Application built with Vite, TypeScript, and Tailwind CSS v4.
 - **Database**: Cloudflare D1 (serverless SQLite) for secure query storage.
-- **Files**: Cloudflare R2 for storing Purchase Order attachments.
 - **Security**: Self-contained PBKDF2 Web Crypto password hashing & HttpOnly Cookie-based JWT sessions.
 
 ---
@@ -42,7 +41,7 @@ Open `http://127.0.0.1:8787` in your browser. The application will detect it is 
 
 ## ☁️ Deployment to Cloudflare (Free Tier)
 
-Deploy your application to production in 5 simple steps:
+Deploy your application to production:
 
 ### 1. Create a D1 Database
 Create the production D1 database on your Cloudflare account:
@@ -60,11 +59,13 @@ This command outputs a `database_id`. Paste it into your `wrangler.jsonc` file:
 ]
 ```
 
-### 2. Create the R2 Storage Bucket
-Create the R2 bucket for PO document attachments:
-```bash
-npx wrangler r2 bucket create freelancer-po-attachments
+### 2. Configure Local CLI DB Access (API Credentials)
+To allow the IDE or automated agents to query and migrate the production D1 database, create a `.env` file in the root directory (based on `.env.example`):
+```env
+CLOUDFLARE_API_TOKEN=your-user-api-token
+CLOUDFLARE_ACCOUNT_ID=your-account-id
 ```
+*(Wrangler CLI and coding agents will automatically load these variables from `.env` to execute database queries and apply remote migrations).*
 
 ### 3. Apply Production Migrations
 Run migrations on the remote production D1 instance:
