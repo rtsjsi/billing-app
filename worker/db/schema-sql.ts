@@ -1,5 +1,4 @@
 export const SCHEMA_SQL = `
--- Single business profile row (id is always 1)
 CREATE TABLE IF NOT EXISTS business_settings (
   id INTEGER PRIMARY KEY CHECK (id = 1),
   business_name TEXT NOT NULL,
@@ -115,7 +114,6 @@ CREATE TABLE IF NOT EXISTS payments (
 );
 CREATE INDEX IF NOT EXISTS idx_payments_invoice ON payments(invoice_id);
 
--- Seed initial business profile
 INSERT OR IGNORE INTO business_settings (
   id,
   business_name,
