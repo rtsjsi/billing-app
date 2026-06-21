@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "freelancer-invoices",
+  "name": "billing-app",
   "main": "worker/index.ts",
   "compatibility_date": "2024-04-03",
   "assets": {
@@ -11,7 +11,7 @@
     {
       "binding": "DB",
       "database_name": "freelancer-invoices",
-      "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+      "database_id": "a799c70e-072f-4396-b89b-1b2b9fdb3ca6"
     }
   ],
   "r2_buckets": [
