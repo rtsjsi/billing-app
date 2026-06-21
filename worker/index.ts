@@ -26,7 +26,6 @@ import settingsRouter from './routes/settings';
 
 type Bindings = {
   DB: D1Database;
-  ATTACHMENTS: R2Bucket;
   ASSETS: Fetcher;
   JWT_SECRET: string;
 };

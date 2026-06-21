@@ -8,7 +8,7 @@ import {
   deletePO 
 } from '../db/queries';
 
-const app = new Hono<{ Bindings: { DB: D1Database; ATTACHMENTS: R2Bucket } }>();
+const app = new Hono<{ Bindings: { DB: D1Database } }>();
 
 const poSchema = z.object({
   client_id: z.number().int('Invalid client ID'),
@@ -97,82 +97,11 @@ app.delete('/:id', async (c) => {
     const po = await getPOById(c.env.DB, id);
     if (!po) return c.json({ error: 'Purchase Order not found' }, 404);
 
-    // Delete attachment from R2 if exists
-    if (po.attachment_key && c.env.ATTACHMENTS) {
-      try {
-        await c.env.ATTACHMENTS.delete(po.attachment_key);
-      } catch (err) {
-        console.error('Failed to delete attachment from R2', err);
-      }
-    }
 
     await deletePO(c.env.DB, id);
     return c.json({ message: 'Purchase Order deleted successfully' });
   } catch (error: any) {
     return c.json({ error: error.message || 'Failed to delete Purchase Order' }, 500);
-  }
-});
-
-// File Upload to R2 Bucket
-app.post('/upload', async (c) => {
-  try {
-    const bucket = c.env.ATTACHMENTS;
-    if (!bucket) {
-      return c.json({ error: 'R2 attachments storage bucket binding is not configured. Please bind ATTACHMENTS.' }, 500);
-    }
-
-    const body = await c.req.parseBody();
-    const file = body.file as File;
-    if (!file) {
-      return c.json({ error: 'No file provided' }, 400);
-    }
-
-    const randomId = crypto.randomUUID();
-    const cleanFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const key = `po-attachments/${randomId}-${cleanFilename}`;
-
-    await bucket.put(key, file.stream(), {
-      httpMetadata: {
-        contentType: file.type || 'application/octet-stream',
-        contentDisposition: `inline; filename="${cleanFilename}"`
-      }
-    });
-
-    return c.json({ key, filename: file.name }, 200);
-  } catch (error: any) {
-    return c.json({ error: error.message || 'File upload failed' }, 500);
-  }
-});
-
-// Download attachment from R2
-app.get('/attachment/*', async (c) => {
-  try {
-    const bucket = c.env.ATTACHMENTS;
-    if (!bucket) {
-      return c.json({ error: 'R2 attachments storage bucket binding is not configured' }, 500);
-    }
-
-    // Extract path after /attachment/
-    const prefixPath = '/api/purchase-orders/attachment/';
-    const key = c.req.path.substring(prefixPath.length);
-
-    if (!key) {
-      return c.json({ error: 'No file key specified' }, 400);
-    }
-
-    const object = await bucket.get(key);
-    if (!object) {
-      return c.json({ error: 'File attachment not found' }, 404);
-    }
-
-    const headers = new Headers();
-    object.writeHttpMetadata(headers);
-    headers.set('etag', object.httpEtag);
-    headers.set('Cache-Control', 'max-age=31536000');
-
-    return new Response(object.body, { headers });
-  } catch (error: any) {
-    return c.json({ error: error.message || 'Failed to download attachment' }, 500);
   }
 });
 

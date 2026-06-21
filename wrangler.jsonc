@@ -14,12 +14,7 @@
       "database_id": "a799c70e-072f-4396-b89b-1b2b9fdb3ca6"
     }
   ],
-  "r2_buckets": [
-    {
-      "binding": "ATTACHMENTS",
-      "bucket_name": "freelancer-po-attachments"
-    }
-  ],
+
   "vars": {
     "JWT_SECRET": "local-dev-jwt-secret-key-change-in-production"
   }

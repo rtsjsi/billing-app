@@ -38,9 +38,7 @@ export default function PurchaseOrders() {
   const [formAmount, setFormAmount] = useState('');
   const [formCurrency, setFormCurrency] = useState('INR');
   const [formStatus, setFormStatus] = useState<'open' | 'partially_invoiced' | 'fulfilled' | 'cancelled'>('open');
-  const [formAttachmentKey, setFormAttachmentKey] = useState<string | null>(null);
-  const [formAttachmentName, setFormAttachmentName] = useState<string | null>(null);
-  const [uploadingFile, setUploadingFile] = useState(false);
+
   const [formSubmitting, setFormSubmitting] = useState(false);
 
   const fetchPOs = async () => {
@@ -82,8 +80,7 @@ export default function PurchaseOrders() {
     setFormAmount('');
     setFormCurrency('INR');
     setFormStatus('open');
-    setFormAttachmentKey(null);
-    setFormAttachmentName(null);
+
     setError('');
     setModalOpen(true);
   };
@@ -97,31 +94,12 @@ export default function PurchaseOrders() {
     setFormAmount(po.amount ? po.amount.toString() : '');
     setFormCurrency(po.currency);
     setFormStatus(po.status);
-    setFormAttachmentKey(po.attachment_key);
-    // Extract filename from attachment key if it is present
-    setFormAttachmentName(po.attachment_key ? po.attachment_key.split('/').pop() || 'Attachment' : null);
+
     setError('');
     setModalOpen(true);
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
 
-    const file = files[0];
-    setUploadingFile(true);
-    setError('');
-
-    try {
-      const res = await api.pos.uploadAttachment(file);
-      setFormAttachmentKey(res.key);
-      setFormAttachmentName(file.name);
-    } catch (err: any) {
-      setError(err.message || 'Attachment upload failed.');
-    } finally {
-      setUploadingFile(false);
-    }
-  };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,7 +124,7 @@ export default function PurchaseOrders() {
       amount: formAmount ? parseFloat(formAmount) : null,
       currency: formCurrency,
       status: formStatus,
-      attachment_key: formAttachmentKey || null,
+      attachment_key: null,
       notes: '' // Placeholder or not needed
     };
 
@@ -246,7 +224,7 @@ export default function PurchaseOrders() {
                   <th className="px-6 py-3.5">Client</th>
                   <th className="px-6 py-3.5">PO Date</th>
                   <th className="px-6 py-3.5 text-right">Amount</th>
-                  <th className="px-6 py-3.5 text-center">File</th>
+
                   <th className="px-6 py-3.5 text-center">Status</th>
                   <th className="px-6 py-3.5 text-right">Actions</th>
                 </tr>
@@ -265,21 +243,7 @@ export default function PurchaseOrders() {
                     <td className="px-6 py-4 text-right font-medium text-white">
                       {po.amount ? formatCurrency(po.amount, po.currency) : '-'}
                     </td>
-                    <td className="px-6 py-4 text-center">
-                      {po.attachment_key ? (
-                        <a 
-                          href={api.pos.getAttachmentUrl(po.attachment_key)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center space-x-1 text-xs text-sky-400 hover:text-sky-300 bg-sky-500/5 px-2 py-1 rounded border border-sky-500/10"
-                        >
-                          <Paperclip className="h-3 w-3" />
-                          <span>View</span>
-                        </a>
-                      ) : (
-                        <span className="text-slate-600 text-xs">-</span>
-                      )}
-                    </td>
+
                     <td className="px-6 py-4 text-center">
                       <span className={`badge badge-${po.status}`}>
                         {po.status === 'partially_invoiced' ? 'Part. Invoiced' : po.status}
@@ -423,48 +387,7 @@ export default function PurchaseOrders() {
                   </div>
                 )}
 
-                {/* Cloudflare R2 Upload Widget */}
-                <div>
-                  <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">PO File Attachment (PDF/Image) *</label>
-                  <div className="mt-1 flex items-center justify-between p-3.5 bg-slate-950/30 rounded-lg border border-slate-800">
-                    <div className="flex items-center space-x-2 shrink-0">
-                      <Paperclip className="h-4 w-4 text-slate-500" />
-                      <span className="text-xs text-slate-300 truncate max-w-[200px]">
-                        {formAttachmentName ? formAttachmentName : 'No file selected (Optional)'}
-                      </span>
-                    </div>
-                    
-                    <div className="relative">
-                      <input 
-                        type="file" 
-                        accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
-                        className="hidden" 
-                        id="po-file-file" 
-                        onChange={handleFileUpload}
-                        disabled={uploadingFile}
-                      />
-                      <label 
-                        htmlFor="po-file-file"
-                        className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded cursor-pointer border border-slate-700 inline-block disabled:opacity-50"
-                      >
-                        {uploadingFile ? 'Uploading...' : 'Choose File'}
-                      </label>
-                    </div>
-                  </div>
-                  {formAttachmentKey && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFormAttachmentKey(null);
-                        setFormAttachmentName(null);
-                      }}
-                      className="text-[10px] text-red-400 hover:text-red-300 font-semibold mt-1 flex items-center space-x-1"
-                    >
-                      <X className="h-3 w-3" />
-                      <span>Remove Attachment</span>
-                    </button>
-                  )}
-                </div>
+
               </div>
 
               <div className="px-6 py-4 border-t border-slate-800 bg-slate-950/20 flex items-center justify-end space-x-3">
@@ -477,7 +400,7 @@ export default function PurchaseOrders() {
                 </button>
                 <button
                   type="submit"
-                  disabled={formSubmitting || uploadingFile}
+                  disabled={formSubmitting}
                   className="px-4 py-2 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 rounded-lg text-sm font-semibold text-white shadow-lg shadow-sky-500/10 cursor-pointer disabled:opacity-50 transition-colors"
                 >
                   {formSubmitting ? 'Saving...' : 'Save PO'}
