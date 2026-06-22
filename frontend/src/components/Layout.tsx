@@ -50,7 +50,7 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#030712] text-slate-100 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col md:flex-row">
       {/* Mobile Top Header */}
       <header className="md:hidden flex items-center justify-between px-4 py-3 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-50">
         <div className="flex items-center space-x-2">
@@ -138,11 +138,7 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col h-screen overflow-y-auto bg-[#030712] relative">
-        {/* Glow Effects background */}
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-sky-500/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-10 right-1/4 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
-        
+      <main className="flex-1 flex flex-col h-screen overflow-y-auto bg-slate-950 relative">
         <div className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto relative z-10">
           {children}
         </div>
