@@ -183,3 +183,18 @@
     margin: 0 !important;
   }
 }
+
+/* Light Theme Text Visibility Overrides */
+h1.text-white,
+h2.text-white,
+h3.text-white,
+.glass-card .text-white:not(button):not(a):not(span[class*="bg-"]):not(div[class*="bg-"]) {
+  color: #0f172a !important;
+}
+
+/* Additional specific overrides for table headers and values */
+th.text-white,
+td.text-white {
+  color: #0f172a !important;
+}
+
