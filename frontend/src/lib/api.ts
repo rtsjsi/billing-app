@@ -108,7 +108,9 @@ export interface BusinessSettings {
 
 export interface DashboardData {
   stats: {
+    totalPOAmount: number;
     totalInvoiceAmount: number;
+    invoicePendingAmount: number;
     totalPaidAmount: number;
     totalOutstanding: number;
     overdueCount: number;

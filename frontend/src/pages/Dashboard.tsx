@@ -81,7 +81,23 @@ export default function Dashboard() {
       </div>
 
       {/* Grid Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Total PO Amount */}
+        <div className="glass-card p-5 rounded-2xl flex flex-col justify-between border-slate-800/80">
+          <div className="flex justify-between items-start">
+            <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Total PO Amount</span>
+            <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-400">
+              <FileCheck className="h-4 w-4" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <h3 className="font-display font-bold text-2xl text-white mt-1">
+              {formatCurrency(stats?.totalPOAmount)}
+            </h3>
+            <p className="text-[10px] text-slate-500 mt-1">Sum of all purchase orders</p>
+          </div>
+        </div>
+
         {/* Total Invoiced */}
         <div className="glass-card p-5 rounded-2xl flex flex-col justify-between border-slate-800/80">
           <div className="flex justify-between items-start">
@@ -95,6 +111,22 @@ export default function Dashboard() {
               {formatCurrency(stats?.totalInvoiceAmount)}
             </h3>
             <p className="text-[10px] text-slate-500 mt-1">Sum of all invoices (excl. cancelled)</p>
+          </div>
+        </div>
+
+        {/* Invoice Pending */}
+        <div className="glass-card p-5 rounded-2xl flex flex-col justify-between border-slate-800/80">
+          <div className="flex justify-between items-start">
+            <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Invoice Pending</span>
+            <div className="p-2 bg-violet-500/10 rounded-lg text-violet-400">
+              <FileText className="h-4 w-4" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <h3 className="font-display font-bold text-2xl text-white mt-1">
+              {formatCurrency(stats?.invoicePendingAmount)}
+            </h3>
+            <p className="text-[10px] text-slate-500 mt-1">Unbilled purchase order balance</p>
           </div>
         </div>
 

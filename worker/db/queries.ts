@@ -747,7 +747,9 @@ export async function updatePOStatusFromInvoices(db: D1Database, poId: number): 
 // ----------------------------------------------------
 
 export interface DashboardStats {
+  totalPOAmount: number;
   totalInvoiceAmount: number;
+  invoicePendingAmount: number;
   totalPaidAmount: number;
   totalOutstanding: number;
   overdueCount: number;
@@ -783,8 +785,19 @@ export async function getDashboardStats(
     `)
     .first<{ count: number | null }>();
 
+  // 5. Total PO Amount
+  const totalPORes = await db
+    .prepare("SELECT SUM(amount) as total_po FROM purchase_orders WHERE status != 'cancelled'")
+    .first<{ total_po: number | null }>();
+
+  const totalPO = totalPORes?.total_po ?? 0;
+  const totalInvoice = totalInvoiceRes?.total_amount ?? 0;
+  const invoicePending = Math.max(0, totalPO - totalInvoice);
+
   return {
-    totalInvoiceAmount: totalInvoiceRes?.total_amount ?? 0,
+    totalPOAmount: totalPO,
+    totalInvoiceAmount: totalInvoice,
+    invoicePendingAmount: invoicePending,
     totalPaidAmount: totalPaidRes?.total_paid ?? 0,
     totalOutstanding: outstandingRes?.outstanding ?? 0,
     overdueCount: overdueCountRes?.count ?? 0
