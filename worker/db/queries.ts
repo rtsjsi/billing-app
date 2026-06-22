@@ -747,17 +747,14 @@ export async function updatePOStatusFromInvoices(db: D1Database, poId: number): 
 // ----------------------------------------------------
 
 export interface DashboardStats {
+  totalInvoiceAmount: number;
+  totalPaidAmount: number;
   totalOutstanding: number;
-  paidThisMonth: number;
-  paidThisFinancialYear: number;
-  draftCount: number;
   overdueCount: number;
 }
 
 export async function getDashboardStats(
-  db: D1Database,
-  fyStartStr: string,
-  fyEndStr: string
+  db: D1Database
 ): Promise<DashboardStats> {
   // 1. Total Outstanding (invoices status != 'cancelled' AND status != 'draft' - outstanding means sent and not paid)
   // Sum of total - amount_paid
@@ -765,23 +762,17 @@ export async function getDashboardStats(
     .prepare("SELECT SUM(total - amount_paid) as outstanding FROM invoices WHERE status NOT IN ('draft', 'cancelled')")
     .first<{ outstanding: number | null }>();
   
-  // 2. Paid this month
-  const paidThisMonthRes = await db
-    .prepare("SELECT SUM(amount) as paid FROM payments WHERE strftime('%Y-%m', payment_date) = strftime('%Y-%m', 'now')")
-    .first<{ paid: number | null }>();
+  // 2. Total Invoice Amount (sum of all invoices except cancelled)
+  const totalInvoiceRes = await db
+    .prepare("SELECT SUM(total) as total_amount FROM invoices WHERE status != 'cancelled'")
+    .first<{ total_amount: number | null }>();
 
-  // 3. Paid this financial year
-  const paidThisFYRes = await db
-    .prepare("SELECT SUM(amount) as paid FROM payments WHERE payment_date >= ? AND payment_date <= ?")
-    .bind(fyStartStr, fyEndStr)
-    .first<{ paid: number | null }>();
+  // 3. Total Paid Amount (sum of amount_paid of all invoices except cancelled)
+  const totalPaidRes = await db
+    .prepare("SELECT SUM(amount_paid) as total_paid FROM invoices WHERE status != 'cancelled'")
+    .first<{ total_paid: number | null }>();
 
-  // 4. Draft count
-  const draftCountRes = await db
-    .prepare("SELECT COUNT(*) as count FROM invoices WHERE status = 'draft'")
-    .first<{ count: number | null }>();
-
-  // 5. Overdue count (status not paid or cancelled, due date passed, amount paid < total)
+  // 4. Overdue count (status not paid or cancelled, due date passed, amount paid < total)
   const overdueCountRes = await db
     .prepare(`
       SELECT COUNT(*) as count 
@@ -793,10 +784,9 @@ export async function getDashboardStats(
     .first<{ count: number | null }>();
 
   return {
+    totalInvoiceAmount: totalInvoiceRes?.total_amount ?? 0,
+    totalPaidAmount: totalPaidRes?.total_paid ?? 0,
     totalOutstanding: outstandingRes?.outstanding ?? 0,
-    paidThisMonth: paidThisMonthRes?.paid ?? 0,
-    paidThisFinancialYear: paidThisFYRes?.paid ?? 0,
-    draftCount: draftCountRes?.count ?? 0,
     overdueCount: overdueCountRes?.count ?? 0
   };
 }

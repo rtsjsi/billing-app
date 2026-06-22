@@ -81,11 +81,43 @@ export default function Dashboard() {
       </div>
 
       {/* Grid Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Invoiced */}
+        <div className="glass-card p-5 rounded-2xl flex flex-col justify-between border-slate-800/80">
+          <div className="flex justify-between items-start">
+            <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Total Invoiced</span>
+            <div className="p-2 bg-sky-500/10 rounded-lg text-sky-400">
+              <DollarSign className="h-4 w-4" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <h3 className="font-display font-bold text-2xl text-white mt-1">
+              {formatCurrency(stats?.totalInvoiceAmount)}
+            </h3>
+            <p className="text-[10px] text-slate-500 mt-1">Sum of all invoices (excl. cancelled)</p>
+          </div>
+        </div>
+
+        {/* Total Paid */}
+        <div className="glass-card p-5 rounded-2xl flex flex-col justify-between border-slate-800/80">
+          <div className="flex justify-between items-start">
+            <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Total Paid</span>
+            <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-400">
+              <CheckCircle2 className="h-4 w-4" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <h3 className="font-display font-bold text-2xl text-white mt-1">
+              {formatCurrency(stats?.totalPaidAmount)}
+            </h3>
+            <p className="text-[10px] text-slate-500 mt-1">Total payments collected</p>
+          </div>
+        </div>
+
         {/* Total Outstanding */}
         <div className="glass-card p-5 rounded-2xl flex flex-col justify-between border-slate-800/80">
           <div className="flex justify-between items-start">
-            <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Outstanding</span>
+            <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Total Outstanding</span>
             <div className="p-2 bg-amber-500/10 rounded-lg text-amber-400">
               <Clock className="h-4 w-4" />
             </div>
@@ -94,55 +126,7 @@ export default function Dashboard() {
             <h3 className="font-display font-bold text-2xl text-white mt-1">
               {formatCurrency(stats?.totalOutstanding)}
             </h3>
-            <p className="text-[10px] text-slate-500 mt-1">Sent & Unpaid Invoices</p>
-          </div>
-        </div>
-
-        {/* Paid This Month */}
-        <div className="glass-card p-5 rounded-2xl flex flex-col justify-between border-slate-800/80">
-          <div className="flex justify-between items-start">
-            <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Paid This Month</span>
-            <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-400">
-              <TrendingUp className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <h3 className="font-display font-bold text-2xl text-white mt-1">
-              {formatCurrency(stats?.paidThisMonth)}
-            </h3>
-            <p className="text-[10px] text-slate-500 mt-1">Collected in {new Date().toLocaleString('default', { month: 'short' })}</p>
-          </div>
-        </div>
-
-        {/* Paid This FY */}
-        <div className="glass-card p-5 rounded-2xl flex flex-col justify-between border-slate-800/80">
-          <div className="flex justify-between items-start">
-            <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Paid This FY</span>
-            <div className="p-2 bg-sky-500/10 rounded-lg text-sky-400">
-              <CheckCircle2 className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <h3 className="font-display font-bold text-2xl text-white mt-1">
-              {formatCurrency(stats?.paidThisFinancialYear)}
-            </h3>
-            <p className="text-[10px] text-slate-500 mt-1">Current Financial Year</p>
-          </div>
-        </div>
-
-        {/* Draft Invoices */}
-        <div className="glass-card p-5 rounded-2xl flex flex-col justify-between border-slate-800/80">
-          <div className="flex justify-between items-start">
-            <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Draft Invoices</span>
-            <div className="p-2 bg-slate-500/15 rounded-lg text-slate-400">
-              <FileText className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <h3 className="font-display font-bold text-2xl text-white mt-1">
-              {stats?.draftCount}
-            </h3>
-            <p className="text-[10px] text-slate-500 mt-1">Awaiting send/mark</p>
+            <p className="text-[10px] text-slate-500 mt-1">Unpaid balance of sent invoices</p>
           </div>
         </div>
 
