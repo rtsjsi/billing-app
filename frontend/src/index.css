@@ -198,3 +198,53 @@ td.text-white {
   color: #0f172a !important;
 }
 
+/* Print/PDF document overrides to ensure high contrast black-on-white text */
+.print-container {
+  background-color: #ffffff !important;
+  color: #1e293b !important;
+  border-color: #e2e8f0 !important;
+}
+
+.print-container h1,
+.print-container h2,
+.print-container h3,
+.print-container h4,
+.print-container th,
+.print-container td,
+.print-container span,
+.print-container div,
+.print-container p {
+  color: #1e293b !important;
+}
+
+.print-container h1,
+.print-container h2,
+.print-container .font-bold,
+.print-container .font-semibold,
+.print-container .font-extrabold,
+.print-container .font-black {
+  color: #0f172a !important;
+}
+
+.print-container .text-slate-400,
+.print-container .text-slate-500,
+.print-container .text-slate-600 {
+  color: #64748b !important;
+}
+
+.print-container .text-sky-700 {
+  color: #0369a1 !important;
+}
+
+.print-container,
+.print-container .border-slate-100,
+.print-container .border-slate-200,
+.print-container .border-slate-800,
+.print-container .divide-slate-100,
+.print-container .divide-slate-800,
+.print-container tr,
+.print-container td,
+.print-container th {
+  border-color: #cbd5e1 !important;
+}
+

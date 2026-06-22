@@ -85,7 +85,8 @@ export default function InvoicePreview() {
     try {
       // Dynamic import to prevent bundler errors and type conflicts
       // @ts-ignore
-      const html2pdf = (await import('html2pdf.js')).default;
+      const html2pdfModule = await import('html2pdf.js');
+      const html2pdf = html2pdfModule.default || html2pdfModule;
       
       // Clone element for PDF generation styling overrides (ensure black text, no background shadows)
       const opt = {
