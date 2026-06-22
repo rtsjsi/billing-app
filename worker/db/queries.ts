@@ -755,39 +755,95 @@ export interface DashboardStats {
   overdueCount: number;
 }
 
+function getFYDateRange(fy: string): { start: string; end: string } {
+  const match = fy.match(/^(\d{4})-\d{2}$/);
+  if (!match) {
+    throw new Error('Invalid financial year format. Expected YYYY-YY (e.g. 2024-25)');
+  }
+  const startYear = parseInt(match[1], 10);
+  const endYear = startYear + 1;
+  return {
+    start: `${startYear}-04-01`,
+    end: `${endYear}-03-31`
+  };
+}
+
 export async function getDashboardStats(
-  db: D1Database
+  db: D1Database,
+  financialYear?: string,
+  clientId?: number
 ): Promise<DashboardStats> {
+  let fyStart: string | null = null;
+  let fyEnd: string | null = null;
+  if (financialYear) {
+    const range = getFYDateRange(financialYear);
+    fyStart = range.start;
+    fyEnd = range.end;
+  }
+
+  // Build Invoice WHERE filters
+  let invoiceWhere = "";
+  const invoiceParams: any[] = [];
+  if (clientId) {
+    invoiceWhere += " AND client_id = ?";
+    invoiceParams.push(clientId);
+  }
+  if (fyStart && fyEnd) {
+    invoiceWhere += " AND issue_date >= ? AND issue_date <= ?";
+    invoiceParams.push(fyStart, fyEnd);
+  }
+
   // 1. Total Outstanding (invoices status != 'cancelled' AND status != 'draft' - outstanding means sent and not paid)
-  // Sum of total - amount_paid
+  const outstandingSql = "SELECT SUM(total - amount_paid) as outstanding FROM invoices WHERE status NOT IN ('draft', 'cancelled')" + invoiceWhere;
   const outstandingRes = await db
-    .prepare("SELECT SUM(total - amount_paid) as outstanding FROM invoices WHERE status NOT IN ('draft', 'cancelled')")
+    .prepare(outstandingSql)
+    .bind(...invoiceParams)
     .first<{ outstanding: number | null }>();
   
   // 2. Total Invoice Amount (sum of all invoices except cancelled)
+  const totalInvoiceSql = "SELECT SUM(total) as total_amount FROM invoices WHERE status != 'cancelled'" + invoiceWhere;
   const totalInvoiceRes = await db
-    .prepare("SELECT SUM(total) as total_amount FROM invoices WHERE status != 'cancelled'")
+    .prepare(totalInvoiceSql)
+    .bind(...invoiceParams)
     .first<{ total_amount: number | null }>();
 
   // 3. Total Paid Amount (sum of amount_paid of all invoices except cancelled)
+  const totalPaidSql = "SELECT SUM(amount_paid) as total_paid FROM invoices WHERE status != 'cancelled'" + invoiceWhere;
   const totalPaidRes = await db
-    .prepare("SELECT SUM(amount_paid) as total_paid FROM invoices WHERE status != 'cancelled'")
+    .prepare(totalPaidSql)
+    .bind(...invoiceParams)
     .first<{ total_paid: number | null }>();
 
   // 4. Overdue count (status not paid or cancelled, due date passed, amount paid < total)
+  const overdueSql = `
+    SELECT COUNT(*) as count 
+    FROM invoices 
+    WHERE status NOT IN ('paid', 'cancelled') 
+      AND due_date < DATE('now') 
+      AND amount_paid < total
+  ` + invoiceWhere;
   const overdueCountRes = await db
-    .prepare(`
-      SELECT COUNT(*) as count 
-      FROM invoices 
-      WHERE status NOT IN ('paid', 'cancelled') 
-        AND due_date < DATE('now') 
-        AND amount_paid < total
-    `)
+    .prepare(overdueSql)
+    .bind(...invoiceParams)
     .first<{ count: number | null }>();
 
+  // Build PO WHERE filters
+  let poWhere = "status != 'cancelled'";
+  const poParams: any[] = [];
+  if (clientId) {
+    poWhere += " AND client_id = ?";
+    poParams.push(clientId);
+  }
+  if (fyStart && fyEnd) {
+    poWhere += " AND po_date >= ? AND po_date <= ?";
+    poParams.push(fyStart, fyEnd);
+  }
+
   // 5. Total PO Amount
+  const poSql = "SELECT SUM(amount) as total_po FROM purchase_orders WHERE " + poWhere;
   const totalPORes = await db
-    .prepare("SELECT SUM(amount) as total_po FROM purchase_orders WHERE status != 'cancelled'")
+    .prepare(poSql)
+    .bind(...poParams)
     .first<{ total_po: number | null }>();
 
   const totalPO = totalPORes?.total_po ?? 0;
@@ -804,35 +860,114 @@ export async function getDashboardStats(
   };
 }
 
-export async function getRecentActivity(db: D1Database): Promise<{ recentInvoices: Invoice[]; openPOs: PurchaseOrder[] }> {
+export async function getRecentActivity(
+  db: D1Database,
+  financialYear?: string,
+  clientId?: number
+): Promise<{ recentInvoices: Invoice[]; openPOs: PurchaseOrder[] }> {
+  let fyStart: string | null = null;
+  let fyEnd: string | null = null;
+  if (financialYear) {
+    const range = getFYDateRange(financialYear);
+    fyStart = range.start;
+    fyEnd = range.end;
+  }
+
   // Recent 5 invoices
+  let invoiceWhere = "WHERE 1=1";
+  const invoiceParams: any[] = [];
+  if (clientId) {
+    invoiceWhere += " AND i.client_id = ?";
+    invoiceParams.push(clientId);
+  }
+  if (fyStart && fyEnd) {
+    invoiceWhere += " AND i.issue_date >= ? AND i.issue_date <= ?";
+    invoiceParams.push(fyStart, fyEnd);
+  }
+
   const { results: recentInvoices } = await db
     .prepare(`
       SELECT ${INVOICE_SELECT_FIELDS}
       FROM invoices i
       JOIN clients c ON i.client_id = c.id
       LEFT JOIN purchase_orders po ON i.po_id = po.id
+      ${invoiceWhere}
       ORDER BY i.issue_date DESC, i.id DESC
       LIMIT 5
     `)
+    .bind(...invoiceParams)
     .all<Invoice>();
 
   // Open Purchase Orders not yet fully invoiced (status is 'open' or 'partially_invoiced')
+  let poWhere = "WHERE po.status IN ('open', 'partially_invoiced')";
+  const poParams: any[] = [];
+  if (clientId) {
+    poWhere += " AND po.client_id = ?";
+    poParams.push(clientId);
+  }
+  if (fyStart && fyEnd) {
+    poWhere += " AND po.po_date >= ? AND po.po_date <= ?";
+    poParams.push(fyStart, fyEnd);
+  }
+
   const { results: openPOs } = await db
     .prepare(`
       SELECT po.*, c.name as client_name
       FROM purchase_orders po
       JOIN clients c ON po.client_id = c.id
-      WHERE po.status IN ('open', 'partially_invoiced')
+      ${poWhere}
       ORDER BY po.po_date DESC, po.id DESC
       LIMIT 5
     `)
+    .bind(...poParams)
     .all<PurchaseOrder>();
 
   return {
     recentInvoices: recentInvoices || [],
     openPOs: openPOs || []
   };
+}
+
+export async function getAvailableFinancialYears(db: D1Database): Promise<string[]> {
+  const query = `
+    SELECT DISTINCT
+      CASE 
+        WHEN CAST(strftime('%m', po_date) AS INTEGER) >= 4 
+        THEN strftime('%Y', po_date) || '-' || SUBSTR(CAST(CAST(strftime('%Y', po_date) AS INTEGER) + 1 AS TEXT), 3, 2)
+        ELSE CAST(CAST(strftime('%Y', po_date) AS INTEGER) - 1 AS TEXT) || '-' || SUBSTR(strftime('%Y', po_date), 3, 2)
+      END as fy
+    FROM purchase_orders 
+    WHERE po_date IS NOT NULL AND status != 'cancelled'
+    UNION
+    SELECT DISTINCT
+      CASE 
+        WHEN CAST(strftime('%m', issue_date) AS INTEGER) >= 4 
+        THEN strftime('%Y', issue_date) || '-' || SUBSTR(CAST(CAST(strftime('%Y', issue_date) AS INTEGER) + 1 AS TEXT), 3, 2)
+        ELSE CAST(CAST(strftime('%Y', issue_date) AS INTEGER) - 1 AS TEXT) || '-' || SUBSTR(strftime('%Y', issue_date), 3, 2)
+      END as fy
+    FROM invoices 
+    WHERE issue_date IS NOT NULL AND status != 'cancelled'
+  `;
+  
+  const { results } = await db.prepare(query).all<{ fy: string }>();
+  
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  const startYear = currentMonth >= 3 ? currentYear : currentYear - 1;
+  const currentFY = `${startYear}-${String(startYear + 1).slice(-2)}`;
+
+  const yearsSet = new Set<string>();
+  yearsSet.add(currentFY);
+  if (results) {
+    for (const row of results) {
+      if (row.fy && /^\d{4}-\d{2}$/.test(row.fy)) {
+        yearsSet.add(row.fy);
+      }
+    }
+  }
+
+  return Array.from(yearsSet).sort((a, b) => b.localeCompare(a));
 }
 
 // ----------------------------------------------------

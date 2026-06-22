@@ -117,6 +117,7 @@ export interface DashboardData {
   };
   recentInvoices: Invoice[];
   openPOs: PurchaseOrder[];
+  availableYears: string[];
 }
 
 export interface InvoiceListResponse {
@@ -186,7 +187,13 @@ export const api = {
 
   // Dashboard
   dashboard: {
-    getStats: () => request<DashboardData>('/api/dashboard/stats')
+    getStats: (financialYear?: string, clientId?: string | number) => {
+      const params = new URLSearchParams();
+      if (financialYear) params.append('financialYear', financialYear);
+      if (clientId) params.append('clientId', String(clientId));
+      const queryString = params.toString();
+      return request<DashboardData>(`/api/dashboard/stats${queryString ? `?${queryString}` : ''}`);
+    }
   },
 
   // Clients
