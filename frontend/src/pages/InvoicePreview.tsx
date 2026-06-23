@@ -209,7 +209,10 @@ export default function InvoicePreview() {
       {/* Control panel (Hidden on Print) */}
       <div className="no-print space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <Link to="/invoices" className="flex items-center space-x-1 text-xs text-slate-400 hover:text-white transition-colors">
+          <Link 
+            to="/invoices" 
+            className="flex items-center space-x-1.5 px-4 py-2 border border-slate-800 hover:border-slate-700 bg-slate-900/50 hover:bg-slate-900 rounded-lg text-xs font-semibold text-slate-300 transition-colors cursor-pointer"
+          >
             <ArrowLeft className="h-3.5 w-3.5" />
             <span>Back to Invoices Ledger</span>
           </Link>
@@ -239,13 +242,6 @@ export default function InvoicePreview() {
               <FileEdit className="h-3.5 w-3.5" />
               <span>Edit</span>
             </Link>
-            <button 
-              onClick={handleDuplicate}
-              className="bg-slate-800 hover:bg-slate-700 border border-slate-750 text-slate-200 text-xs font-semibold py-1.5 px-3 rounded flex items-center space-x-1 cursor-pointer"
-            >
-              <Copy className="h-3.5 w-3.5" />
-              <span>Duplicate</span>
-            </button>
             {invoice.status !== 'cancelled' && (
               <button 
                 onClick={() => handleUpdateStatus('cancelled')}
@@ -270,20 +266,6 @@ export default function InvoicePreview() {
           </div>
           
           <div className="flex items-center space-x-3">
-            <button 
-              onClick={handleEmailInvoice}
-              className="flex items-center space-x-1.5 px-3.5 py-2 border border-slate-800 hover:border-slate-750 bg-slate-900/40 text-xs font-semibold rounded-lg text-slate-300 hover:text-white cursor-pointer"
-            >
-              <Mail className="h-4 w-4" />
-              <span>Email Invoice</span>
-            </button>
-            <button 
-              onClick={handlePrint}
-              className="flex items-center space-x-1.5 px-3.5 py-2 border border-slate-800 hover:border-slate-750 bg-slate-900/40 text-xs font-semibold rounded-lg text-slate-300 hover:text-white cursor-pointer"
-            >
-              <Printer className="h-4 w-4" />
-              <span>Print to PDF</span>
-            </button>
             <button 
               onClick={handleDownloadPDF}
               className="flex items-center space-x-1.5 px-3.5 py-2 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/20 text-xs font-semibold rounded-lg text-sky-400 cursor-pointer"

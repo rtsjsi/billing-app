@@ -389,17 +389,6 @@ export default function Invoices() {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setActiveDropdownId(null);
-                                  handleDuplicate(e, inv.id);
-                                }}
-                                className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors flex items-center space-x-2 cursor-pointer"
-                              >
-                                <Copy className="h-3.5 w-3.5" />
-                                <span>Clone Invoice</span>
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setActiveDropdownId(null);
                                   handleDownloadPDF(e, inv);
                                 }}
                                 disabled={downloadingInvoiceId === inv.id}
