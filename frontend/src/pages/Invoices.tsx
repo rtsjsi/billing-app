@@ -63,8 +63,14 @@ export default function Invoices() {
           margin:       12,
           filename:     `invoice_${pdfData.invoice.invoice_number}.pdf`,
           image:        { type: 'jpeg', quality: 0.98 },
-          html2canvas:  { scale: 2, useCORS: true, logging: false },
-          jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          html2canvas:  { 
+            scale: 2, 
+            useCORS: true, 
+            logging: false,
+            windowWidth: 800
+          },
+          jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
         };
         await html2pdf().from(element).set(opt).save();
       } catch (err) {
@@ -143,19 +149,6 @@ export default function Invoices() {
     setFilterStartDate('');
     setFilterEndDate('');
     setPage(1);
-  };
-
-  const handleDuplicate = async (e: React.MouseEvent, id: number) => {
-    e.stopPropagation(); // prevent row click navigation
-    if (!window.confirm('Clone this invoice into a new draft?')) return;
-    
-    try {
-      const res = await api.invoices.duplicate(id);
-      // Redirect straight to editing the new duplicate draft!
-      navigate(`/invoices/edit/${res.invoice.id}`);
-    } catch (err: any) {
-      alert(err.message || 'Failed to clone invoice.');
-    }
   };
 
   const handleDelete = async (e: React.MouseEvent, id: number) => {
@@ -446,11 +439,11 @@ export default function Invoices() {
       </div>
       
       {pdfData && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '794px', zIndex: -9999, opacity: 0, pointerEvents: 'none' }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, width: '800px', zIndex: -9999, opacity: 0, pointerEvents: 'none' }}>
           <div 
             id="invoice-pdf-template"
-            className="bg-white text-slate-900 p-12 font-sans overflow-hidden text-sm"
-            style={{ width: '794px', boxSizing: 'border-box' }}
+            className="bg-white text-slate-900 p-12 font-sans text-sm"
+            style={{ width: '800px', boxSizing: 'border-box' }}
           >
             {/* Header Branding */}
             <div className="flex justify-between items-start border-b border-slate-200 pb-8" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #e2e8f0', paddingBottom: '2rem' }}>

@@ -74,10 +74,6 @@ export default function InvoicePreview() {
     fetchData();
   }, [invoiceId]);
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   const handleDownloadPDF = async () => {
     const element = invoiceRef.current;
     if (!element) return;
@@ -88,37 +84,33 @@ export default function InvoicePreview() {
       const html2pdfModule = await import('html2pdf.js');
       const html2pdf = html2pdfModule.default || html2pdfModule;
       
-      // Clone element for PDF generation styling overrides (ensure black text, no background shadows)
       const opt = {
         margin:       12,
         filename:     `invoice_${invoice?.invoice_number}.pdf`,
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, logging: false },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        html2canvas:  { 
+          scale: 2, 
+          useCORS: true, 
+          logging: false,
+          windowWidth: 800,
+          onclone: (doc: any) => {
+            const el = doc.getElementById('invoice-preview-container');
+            if (el) {
+              el.style.width = '800px';
+              el.style.maxWidth = '800px';
+              el.style.overflow = 'visible';
+            }
+          }
+        },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
       };
 
       html2pdf().from(element).set(opt).save();
     } catch (err) {
       console.error('PDF generation failed', err);
-      alert('Could not download PDF using library. Please try the "Print to PDF" button instead.');
+      alert('Could not download PDF.');
     }
-  };
-
-  const handleEmailInvoice = () => {
-    if (!invoice || !settings) return;
-    
-    // Construct pre-filled email mailto link
-    const clientEmail = invoice.client_id ? 'client@company.com' : ''; // fallback or real email
-    const subject = encodeURIComponent(`Invoice ${invoice.invoice_number} from ${settings.business_name}`);
-    const body = encodeURIComponent(
-      `Hi,\n\nPlease find attached invoice ${invoice.invoice_number} for services rendered.\n\n` +
-      `Amount Due: ${invoice.currency} ${invoice.total.toLocaleString()}\n` +
-      `Due Date: ${formatDate(invoice.due_date)}\n\n` +
-      `Thank you for your business!\n\n` +
-      `Regards,\n${settings.owner_name || settings.business_name}`
-    );
-
-    window.location.href = `mailto:${clientEmail}?subject=${subject}&body=${body}`;
   };
 
   const handleUpdateStatus = async (status: string) => {
@@ -127,16 +119,6 @@ export default function InvoicePreview() {
       fetchData();
     } catch (err: any) {
       alert(err.message || 'Failed to update status.');
-    }
-  };
-
-  const handleDuplicate = async () => {
-    if (!window.confirm('Clone this invoice into a new draft?')) return;
-    try {
-      const res = await api.invoices.duplicate(invoiceId);
-      navigate(`/invoices/edit/${res.invoice.id}`);
-    } catch (err: any) {
-      alert(err.message || 'Failed to duplicate invoice.');
     }
   };
 
@@ -211,9 +193,9 @@ export default function InvoicePreview() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <Link 
             to="/invoices" 
-            className="flex items-center space-x-1.5 px-4 py-2 border border-slate-800 hover:border-slate-700 bg-slate-900/50 hover:bg-slate-900 rounded-lg text-xs font-semibold text-slate-300 transition-colors cursor-pointer"
+            className="flex items-center space-x-2 px-4 py-2.5 border border-slate-700 hover:border-slate-600 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-semibold text-slate-200 transition-colors cursor-pointer shadow-sm shadow-slate-900/20"
           >
-            <ArrowLeft className="h-3.5 w-3.5" />
+            <ArrowLeft className="h-4 w-4" />
             <span>Back to Invoices Ledger</span>
           </Link>
           <div className="flex flex-wrap items-center gap-2">
@@ -268,7 +250,7 @@ export default function InvoicePreview() {
           <div className="flex items-center space-x-3">
             <button 
               onClick={handleDownloadPDF}
-              className="flex items-center space-x-1.5 px-3.5 py-2 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/20 text-xs font-semibold rounded-lg text-sky-400 cursor-pointer"
+              className="flex items-center space-x-2 px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-sm font-semibold rounded-lg text-white cursor-pointer transition-colors shadow-lg shadow-sky-500/20"
             >
               <Download className="h-4 w-4" />
               <span>Download PDF</span>
@@ -281,6 +263,7 @@ export default function InvoicePreview() {
       <div className="flex justify-center">
         <div 
           ref={invoiceRef}
+          id="invoice-preview-container"
           className="print-container bg-white text-slate-900 border border-slate-200 shadow-xl rounded-2xl w-full max-w-[800px] p-8 md:p-12 font-sans overflow-hidden text-sm"
         >
           {/* Header Branding */}
