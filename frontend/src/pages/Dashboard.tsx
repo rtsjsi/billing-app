@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useFilters } from '../lib/FilterContext';
 import { 
   DollarSign, 
   FileText, 
@@ -16,26 +17,11 @@ import { formatCurrency, formatDate } from '../lib/utils';
 
 export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
-  const [clients, setClients] = useState<any[]>([]);
-  const [selectedFY, setSelectedFY] = useState<string>('');
-  const [selectedClient, setSelectedClient] = useState<string>('');
+  const { selectedFY, selectedClient, clients } = useFilters();
   const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
-
-  // Load clients once on mount
-  useEffect(() => {
-    const fetchClients = async () => {
-      try {
-        const clientList = await api.clients.list();
-        setClients(clientList);
-      } catch (err) {
-        console.error('Failed to fetch clients for filters:', err);
-      }
-    };
-    fetchClients();
-  }, []);
 
   // Fetch stats whenever selected filters change
   useEffect(() => {
@@ -101,53 +87,6 @@ export default function Dashboard() {
             <span>Create Invoice</span>
           </Link>
         </div>
-      </div>
-
-      {/* Filters Bar */}
-      <div className="glass-card p-4 rounded-2xl flex flex-wrap gap-4 items-center border-slate-800 shadow-sm">
-        <div className="flex items-center space-x-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
-          <span>Filter By:</span>
-        </div>
-        
-        {/* Financial Year Selector */}
-        <div className="flex items-center space-x-2">
-          <span className="text-xs text-slate-400 font-medium">Financial Year:</span>
-          <select
-            id="fy-select"
-            value={selectedFY}
-            onChange={(e) => setSelectedFY(e.target.value)}
-            className="bg-white border border-slate-800 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-sky-500 transition-all font-medium cursor-pointer shadow-sm"
-          >
-            <option value="">All Years</option>
-            {data?.availableYears?.map((fy) => (
-              <option key={fy} value={fy}>FY {fy}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Client Selector */}
-        <div className="flex items-center space-x-2">
-          <span className="text-xs text-slate-400 font-medium">Client:</span>
-          <select
-            id="client-select"
-            value={selectedClient}
-            onChange={(e) => setSelectedClient(e.target.value)}
-            className="bg-white border border-slate-800 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-sky-500 transition-all font-medium cursor-pointer shadow-sm"
-          >
-            <option value="">All Clients</option>
-            {clients.map((client) => (
-              <option key={client.id} value={client.id}>{client.name}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Loading Indicator */}
-        {loading && (
-          <div className="ml-auto text-xs text-slate-500 flex items-center space-x-1.5 animate-fade-in">
-            <div className="h-3 w-3 animate-spin rounded-full border border-sky-500 border-t-transparent" />
-            <span>Updating stats...</span>
-          </div>
-        )}
       </div>
 
       {/* Grid Stats Cards */}

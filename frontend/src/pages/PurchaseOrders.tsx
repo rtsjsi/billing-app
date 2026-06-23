@@ -17,13 +17,26 @@ import {
 } from 'lucide-react';
 import { api, PurchaseOrder, Client } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/utils';
+import { useFilters } from '../lib/FilterContext';
+
+function getFYDateRange(fy: string) {
+  if (!fy) return { start: undefined, end: undefined };
+  const match = fy.match(/^(\d{4})-\d{2}$/);
+  if (!match) return { start: undefined, end: undefined };
+  const startYear = parseInt(match[1], 10);
+  const endYear = startYear + 1;
+  return {
+    start: `${startYear}-04-01`,
+    end: `${endYear}-03-31`
+  };
+}
 
 export default function PurchaseOrders() {
   const [searchParams] = useSearchParams();
   const initialClientId = searchParams.get('client_id');
 
   const [pos, setPOs] = useState<PurchaseOrder[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
+  const { selectedFY, selectedClient, clients } = useFilters();
   const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -53,10 +66,22 @@ export default function PurchaseOrders() {
   const [formSubmitting, setFormSubmitting] = useState(false);
 
   const fetchPOs = async () => {
+    setLoading(true);
     try {
-      const cId = filterClientId ? parseInt(filterClientId, 10) : undefined;
+      const cId = selectedClient ? parseInt(selectedClient, 10) : (filterClientId ? parseInt(filterClientId, 10) : undefined);
       const res = await api.pos.list(cId, filterStatus || undefined);
-      setPOs(res);
+      
+      let filtered = res;
+      if (selectedFY) {
+        const fyRange = getFYDateRange(selectedFY);
+        if (fyRange.start && fyRange.end) {
+          filtered = res.filter(po => {
+            if (!po.po_date) return false;
+            return po.po_date >= fyRange.start! && po.po_date <= fyRange.end!;
+          });
+        }
+      }
+      setPOs(filtered);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch Purchase Orders.');
     } finally {
@@ -64,23 +89,9 @@ export default function PurchaseOrders() {
     }
   };
 
-  const fetchClients = async () => {
-    try {
-      // List active clients for dropdown pickers
-      const res = await api.clients.list('', false);
-      setClients(res);
-    } catch (err) {
-      console.error('Failed to load clients list', err);
-    }
-  };
-
-  useEffect(() => {
-    fetchClients();
-  }, []);
-
   useEffect(() => {
     fetchPOs();
-  }, [filterClientId, filterStatus]);
+  }, [selectedClient, selectedFY, filterStatus, filterClientId]);
 
   const openCreateModal = () => {
     setEditingPO(null);

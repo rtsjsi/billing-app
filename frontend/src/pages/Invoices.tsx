@@ -18,12 +18,25 @@ import {
 } from 'lucide-react';
 import { api, Invoice, Client, InvoiceItem, BusinessSettings } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/utils';
+import { useFilters } from '../lib/FilterContext';
+
+function getFYDateRange(fy: string) {
+  if (!fy) return { start: undefined, end: undefined };
+  const match = fy.match(/^(\d{4})-\d{2}$/);
+  if (!match) return { start: undefined, end: undefined };
+  const startYear = parseInt(match[1], 10);
+  const endYear = startYear + 1;
+  return {
+    start: `${startYear}-04-01`,
+    end: `${endYear}-03-31`
+  };
+}
 
 export default function Invoices() {
   const navigate = useNavigate();
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
+  const { selectedFY, selectedClient, clients } = useFilters();
   const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
   const [pdfData, setPdfData] = useState<{ invoice: Invoice; items: InvoiceItem[]; settings: BusinessSettings } | null>(null);
   const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<number | null>(null);
@@ -101,11 +114,12 @@ export default function Invoices() {
   const fetchInvoices = async () => {
     setLoading(true);
     try {
+      const fyRange = getFYDateRange(selectedFY);
       const res = await api.invoices.list({
         status: filterStatus || undefined,
-        client_id: filterClientId ? parseInt(filterClientId, 10) : undefined,
-        startDate: filterStartDate || undefined,
-        endDate: filterEndDate || undefined,
+        client_id: selectedClient ? parseInt(selectedClient, 10) : (filterClientId ? parseInt(filterClientId, 10) : undefined),
+        startDate: fyRange.start || filterStartDate || undefined,
+        endDate: fyRange.end || filterEndDate || undefined,
         page,
         limit
       });
@@ -119,22 +133,9 @@ export default function Invoices() {
     }
   };
 
-  const fetchClients = async () => {
-    try {
-      const res = await api.clients.list('', false);
-      setClients(res);
-    } catch (err) {
-      console.error('Failed to load clients dropdown', err);
-    }
-  };
-
-  useEffect(() => {
-    fetchClients();
-  }, []);
-
   useEffect(() => {
     fetchInvoices();
-  }, [filterStatus, filterClientId, filterStartDate, filterEndDate, page]);
+  }, [filterStatus, filterClientId, filterStartDate, filterEndDate, page, selectedFY, selectedClient]);
 
   const handleClearFilters = () => {
     setFilterStatus('');

@@ -16,15 +16,21 @@ import {
   MoreVertical
 } from 'lucide-react';
 import { api, Client } from '../lib/api';
+import { useFilters } from '../lib/FilterContext';
 
 export default function Clients() {
   const [clients, setClients] = useState<Client[]>([]);
+  const { selectedClient } = useFilters();
   const [search, setSearch] = useState('');
   const [includeArchived, setIncludeArchived] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deleteConflict, setDeleteConflict] = useState<string | null>(null);
   const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
+
+  const displayedClients = selectedClient
+    ? clients.filter(c => c.id === parseInt(selectedClient, 10))
+    : clients;
 
   useEffect(() => {
     if (activeDropdownId === null) return;
@@ -211,7 +217,7 @@ export default function Clients() {
           <div className="p-12 text-center">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent mx-auto" />
           </div>
-        ) : clients.length === 0 ? (
+        ) : displayedClients.length === 0 ? (
           <div className="p-12 text-center text-slate-500 text-sm">
             No clients found. Click "New Client" to create one.
           </div>
@@ -228,7 +234,7 @@ export default function Clients() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/30 text-sm">
-                {clients.map((client) => (
+                {displayedClients.map((client) => (
                   <tr key={client.id} className="hover:bg-slate-800/10 transition-colors">
                     <td className="px-6 py-4">
                       <div className="font-semibold text-white">{client.name}</div>

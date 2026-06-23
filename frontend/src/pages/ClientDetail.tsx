@@ -15,6 +15,19 @@ import {
 } from 'lucide-react';
 import { api, Client, Invoice, PurchaseOrder } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/utils';
+import { useFilters } from '../lib/FilterContext';
+
+function getFYDateRange(fy: string) {
+  if (!fy) return { start: undefined, end: undefined };
+  const match = fy.match(/^(\d{4})-\d{2}$/);
+  if (!match) return { start: undefined, end: undefined };
+  const startYear = parseInt(match[1], 10);
+  const endYear = startYear + 1;
+  return {
+    start: `${startYear}-04-01`,
+    end: `${endYear}-03-31`
+  };
+}
 
 export default function ClientDetail() {
   const { id } = useParams<{ id: string }>();
@@ -77,7 +90,18 @@ export default function ClientDetail() {
   }
 
   // Calculate client specific aggregates (ignore cancelled invoices)
-  const activeInvoices = invoices.filter(inv => inv.status !== 'cancelled');
+  const { selectedFY } = useFilters();
+  const fyRange = getFYDateRange(selectedFY);
+
+  const filteredInvoices = selectedFY && fyRange.start && fyRange.end
+    ? invoices.filter(inv => inv.issue_date >= fyRange.start! && inv.issue_date <= fyRange.end!)
+    : invoices;
+
+  const filteredPOs = selectedFY && fyRange.start && fyRange.end
+    ? pos.filter(po => po.po_date && po.po_date >= fyRange.start! && po.po_date <= fyRange.end!)
+    : pos;
+
+  const activeInvoices = filteredInvoices.filter(inv => inv.status !== 'cancelled');
   const totalBilled = activeInvoices.reduce((sum, inv) => sum + inv.total, 0);
   const totalPaid = activeInvoices.reduce((sum, inv) => sum + inv.amount_paid, 0);
   const totalOutstanding = activeInvoices.reduce((sum, inv) => {
@@ -224,11 +248,11 @@ export default function ClientDetail() {
           <div className="px-6 py-4 border-b border-slate-800/50 bg-slate-900/10">
             <h2 className="font-display font-bold text-base text-white flex items-center space-x-2">
               <FileText className="h-5 w-5 text-sky-400" />
-              <span>Invoice Ledger ({invoices.length})</span>
+              <span>Invoice Ledger ({filteredInvoices.length})</span>
             </h2>
           </div>
           <div className="overflow-x-auto">
-            {invoices.length === 0 ? (
+            {filteredInvoices.length === 0 ? (
               <div className="p-8 text-center text-slate-500 text-sm">
                 No invoices issued for this client.
               </div>
@@ -243,7 +267,7 @@ export default function ClientDetail() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/30 text-sm">
-                  {invoices.map((inv) => (
+                  {filteredInvoices.map((inv) => (
                     <tr 
                       key={inv.id}
                       onClick={() => navigate(`/invoices/preview/${inv.id}`)}
@@ -272,11 +296,11 @@ export default function ClientDetail() {
           <div className="px-6 py-4 border-b border-slate-800/50 bg-slate-900/10">
             <h2 className="font-display font-bold text-base text-white flex items-center space-x-2">
               <FileCheck className="h-5 w-5 text-sky-400" />
-              <span>Purchase Orders ({pos.length})</span>
+              <span>Purchase Orders ({filteredPOs.length})</span>
             </h2>
           </div>
           <div className="overflow-x-auto">
-            {pos.length === 0 ? (
+            {filteredPOs.length === 0 ? (
               <div className="p-8 text-center text-slate-500 text-sm">
                 No Purchase Orders recorded for this client.
               </div>
@@ -291,7 +315,7 @@ export default function ClientDetail() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/30 text-sm">
-                  {pos.map((po) => (
+                  {filteredPOs.map((po) => (
                     <tr key={po.id} className="hover:bg-slate-800/10 transition-all">
                       <td className="px-6 py-4 font-mono font-medium text-slate-300">{po.po_number}</td>
                       <td className="px-6 py-4 text-slate-400">{formatDate(po.po_date)}</td>

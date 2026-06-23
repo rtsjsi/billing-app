@@ -12,6 +12,7 @@ import {
   Zap
 } from 'lucide-react';
 import { api } from '../lib/api';
+import { useFilters } from '../lib/FilterContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -23,6 +24,7 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { selectedFY, setSelectedFY, selectedClient, setSelectedClient, availableYears, clients } = useFilters();
 
   const handleLogout = async () => {
     try {
@@ -139,6 +141,45 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-screen overflow-y-auto bg-slate-950 relative">
+        {/* Top Sticky Global Filter Header */}
+        <header className="no-print sticky top-0 bg-slate-950/80 backdrop-blur-md border-b border-slate-900/60 z-30 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center space-x-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Global context filters</span>
+          </div>
+          
+          <div className="flex items-center gap-4 flex-wrap sm:flex-nowrap">
+            {/* Financial Year Selector */}
+            <div className="flex items-center space-x-2">
+              <span className="text-xs text-slate-400 font-medium">Financial Year:</span>
+              <select
+                value={selectedFY}
+                onChange={(e) => setSelectedFY(e.target.value)}
+                className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500 transition-all font-medium cursor-pointer shadow-sm"
+              >
+                <option value="">All Years</option>
+                {availableYears.map((fy) => (
+                  <option key={fy} value={fy}>FY {fy}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Client Selector */}
+            <div className="flex items-center space-x-2">
+              <span className="text-xs text-slate-400 font-medium">Client:</span>
+              <select
+                value={selectedClient}
+                onChange={(e) => setSelectedClient(e.target.value)}
+                className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500 transition-all font-medium cursor-pointer shadow-sm max-w-[200px]"
+              >
+                <option value="">All Clients</option>
+                {clients.map((client) => (
+                  <option key={client.id} value={client.id}>{client.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </header>
+
         <div className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto relative z-10">
           {children}
         </div>

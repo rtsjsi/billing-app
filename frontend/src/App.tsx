@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { api } from './lib/api';
+import { FilterProvider } from './lib/FilterContext';
 
 // Layout & Pages
 import Layout from './components/Layout';
@@ -88,7 +89,11 @@ export default function App() {
     if (!user) {
       return <Navigate to={needsSetup ? "/setup" : "/login"} replace />;
     }
-    return <Layout user={user} onLogout={handleLogout}>{children}</Layout>;
+    return (
+      <FilterProvider>
+        <Layout user={user} onLogout={handleLogout}>{children}</Layout>
+      </FilterProvider>
+    );
   };
 
   const PublicRoute = ({ children }: { children: React.ReactNode }) => {
