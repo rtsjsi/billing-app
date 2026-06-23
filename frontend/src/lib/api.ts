@@ -252,7 +252,8 @@ export const api = {
     update: (id: number, data: any) => request<{ message: string; invoice: Invoice }>(`/api/invoices/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: number) => request<{ message: string }>(`/api/invoices/${id}`, { method: 'DELETE' }),
     updateStatus: (id: number, status: string) => request(`/api/invoices/${id}/status`, { method: 'POST', body: JSON.stringify({ status }) }),
-    duplicate: (id: number) => request<{ message: string; invoice: Invoice }>(`/api/invoices/${id}/duplicate`, { method: 'POST' })
+    duplicate: (id: number) => request<{ message: string; invoice: Invoice }>(`/api/invoices/${id}/duplicate`, { method: 'POST' }),
+    getPDFUrl: (id: number) => `/api/invoices/${id}/pdf`
   },
 
   // Payments

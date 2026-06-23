@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { 
   listInvoices, 
   countInvoices, 
@@ -9,7 +10,8 @@ import {
   updateInvoice, 
   deleteInvoice,
   updateInvoiceStatus,
-  listPaymentsByInvoiceId
+  listPaymentsByInvoiceId,
+  getSettings
 } from '../db/queries';
 
 const app = new Hono<{ Bindings: { DB: D1Database } }>();
@@ -89,6 +91,161 @@ app.get('/:id', async (c) => {
     });
   } catch (error: any) {
     return c.json({ error: error.message || 'Failed to fetch invoice details' }, 500);
+  }
+});
+
+// Download Invoice PDF
+app.get('/:id/pdf', async (c) => {
+  try {
+    const id = parseInt(c.req.param('id'), 10);
+    if (isNaN(id)) return c.json({ error: 'Invalid invoice ID' }, 400);
+
+    const invoice = await getInvoiceById(c.env.DB, id);
+    if (!invoice) return c.json({ error: 'Invoice not found' }, 404);
+
+    const items = await getInvoiceItems(c.env.DB, id);
+    const settings = await getSettings(c.env.DB);
+
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage([595.28, 841.89]); // A4
+    const { width, height } = page.getSize();
+    
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    
+    let y = height - 50;
+
+    const drawText = (text: string, x: number, yPos: number, f: any = font, s: number = 10, color = rgb(0,0,0)) => {
+      page.drawText(text || '', { x, y: yPos, font: f, size: s, color });
+    };
+
+    // Header
+    drawText(settings.business_name, 50, y, boldFont, 20);
+    y -= 18;
+    if (settings.address) {
+      const lines = settings.address.split('\n');
+      for (const line of lines) {
+        drawText(line, 50, y, font, 9, rgb(0.3, 0.3, 0.3));
+        y -= 12;
+      }
+    }
+
+    // Invoice Details (Right Aligned)
+    let ry = height - 50;
+    drawText('INVOICE', width - 150, ry, boldFont, 20);
+    ry -= 20;
+    drawText(`No: ${invoice.invoice_number}`, width - 150, ry, boldFont, 10, rgb(0, 0.4, 0.6));
+    ry -= 15;
+    drawText(`Issued: ${invoice.issue_date}`, width - 150, ry, font, 9, rgb(0.3, 0.3, 0.3));
+    if (invoice.due_date) {
+      ry -= 12;
+      drawText(`Due: ${invoice.due_date}`, width - 150, ry, font, 9, rgb(0.3, 0.3, 0.3));
+    }
+    
+    y = Math.min(y, ry) - 30;
+
+    // Bill To
+    drawText('INVOICED TO', 50, y, boldFont, 8, rgb(0.5, 0.5, 0.5));
+    y -= 12;
+    drawText(invoice.client_name || '', 50, y, boldFont, 11);
+    if (invoice.client_company) {
+      y -= 12;
+      drawText(invoice.client_company, 50, y, font, 9);
+    }
+
+    y -= 30;
+
+    // Table Header
+    const tableTop = y;
+    page.drawLine({ start: { x: 50, y: tableTop + 10 }, end: { x: width - 50, y: tableTop + 10 }, thickness: 1, color: rgb(0.9, 0.9, 0.9) });
+    drawText('Description', 50, tableTop, boldFont, 9);
+    drawText('Qty', width - 220, tableTop, boldFont, 9);
+    drawText('Rate', width - 160, tableTop, boldFont, 9);
+    drawText(`Amount (${invoice.currency})`, width - 100, tableTop, boldFont, 9);
+    page.drawLine({ start: { x: 50, y: tableTop - 5 }, end: { x: width - 50, y: tableTop - 5 }, thickness: 1, color: rgb(0.9, 0.9, 0.9) });
+
+    y -= 20;
+
+    // Items
+    for (const item of items) {
+      drawText(item.description.replace(/\n/g, ' '), 50, y, font, 9);
+      drawText(item.quantity.toString(), width - 220, y, font, 9);
+      drawText(item.unit_price.toFixed(2), width - 160, y, font, 9);
+      drawText(item.amount.toFixed(2), width - 100, y, boldFont, 9);
+      y -= 16;
+    }
+
+    page.drawLine({ start: { x: 50, y: y + 6 }, end: { x: width - 50, y: y + 6 }, thickness: 1, color: rgb(0.9, 0.9, 0.9) });
+
+    y -= 10;
+
+    // Totals
+    drawText('Subtotal:', width - 180, y, font, 9, rgb(0.4, 0.4, 0.4));
+    drawText(invoice.subtotal.toFixed(2), width - 100, y, font, 9);
+    y -= 15;
+    if (invoice.tax_rate > 0) {
+      drawText(`${invoice.tax_label || 'Tax'} (${invoice.tax_rate}%):`, width - 180, y, font, 9, rgb(0.4, 0.4, 0.4));
+      drawText(invoice.tax_amount.toFixed(2), width - 100, y, font, 9);
+      y -= 15;
+    }
+    if (invoice.discount_amount > 0) {
+      drawText('Discount:', width - 180, y, font, 9, rgb(0.4, 0.4, 0.4));
+      drawText(`-${invoice.discount_amount.toFixed(2)}`, width - 100, y, font, 9, rgb(0, 0.6, 0.3));
+      y -= 15;
+    }
+
+    y -= 5;
+    page.drawLine({ start: { x: width - 180, y: y + 10 }, end: { x: width - 50, y: y + 10 }, thickness: 1, color: rgb(0.9, 0.9, 0.9) });
+    
+    drawText('Total Due:', width - 180, y, boldFont, 11);
+    drawText(`${invoice.currency} ${invoice.total.toLocaleString(undefined, {minimumFractionDigits: 2})}`, width - 100, y, boldFont, 11);
+
+    if (invoice.amount_paid > 0) {
+      y -= 15;
+      drawText('Amount Paid:', width - 180, y, font, 9, rgb(0, 0.6, 0.3));
+      drawText(`-${invoice.amount_paid.toFixed(2)}`, width - 100, y, font, 9, rgb(0, 0.6, 0.3));
+    }
+
+    y -= 40;
+
+    // Bank Details & Notes
+    if (settings.bank_name || settings.upi_id) {
+      drawText('REMITTANCE INSTRUCTIONS', 50, y, boldFont, 8, rgb(0.5, 0.5, 0.5));
+      y -= 12;
+      if (settings.bank_name) {
+        drawText(`Bank: ${settings.bank_name}`, 50, y, font, 8);
+        y -= 12;
+        drawText(`A/C Name: ${settings.bank_account_name}`, 50, y, font, 8);
+        y -= 12;
+        drawText(`A/C No: ${settings.bank_account_number}`, 50, y, font, 8);
+        y -= 12;
+        drawText(`IFSC: ${settings.bank_ifsc}`, 50, y, font, 8);
+        y -= 12;
+      }
+      if (settings.upi_id) {
+        drawText(`UPI ID: ${settings.upi_id}`, 50, y, font, 8);
+        y -= 12;
+      }
+    }
+
+    if (invoice.notes) {
+      y -= 10;
+      drawText('NOTES', 50, y, boldFont, 8, rgb(0.5, 0.5, 0.5));
+      y -= 12;
+      drawText(invoice.notes, 50, y, font, 8);
+    }
+
+    const pdfBytes = await pdfDoc.save();
+
+    return new Response(pdfBytes as any, {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="invoice_${invoice.invoice_number}.pdf"`
+      }
+    });
+
+  } catch (error: any) {
+    return c.json({ error: error.message || 'Failed to generate PDF' }, 500);
   }
 });
 

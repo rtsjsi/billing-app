@@ -74,43 +74,9 @@ export default function InvoicePreview() {
     fetchData();
   }, [invoiceId]);
 
-  const handleDownloadPDF = async () => {
-    const element = invoiceRef.current;
-    if (!element) return;
-
-    try {
-      // Dynamic import to prevent bundler errors and type conflicts
-      // @ts-ignore
-      const html2pdfModule = await import('html2pdf.js');
-      const html2pdf = html2pdfModule.default || html2pdfModule;
-      
-      const opt = {
-        margin:       12,
-        filename:     `invoice_${invoice?.invoice_number}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { 
-          scale: 2, 
-          useCORS: true, 
-          logging: false,
-          windowWidth: 800,
-          onclone: (doc: any) => {
-            const el = doc.getElementById('invoice-preview-container');
-            if (el) {
-              el.style.width = '800px';
-              el.style.maxWidth = '800px';
-              el.style.overflow = 'visible';
-            }
-          }
-        },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
-      };
-
-      html2pdf().from(element).set(opt).save();
-    } catch (err) {
-      console.error('PDF generation failed', err);
-      alert('Could not download PDF.');
-    }
+  const handleDownloadPDF = () => {
+    if (isNaN(invoiceId)) return;
+    window.location.href = api.invoices.getPDFUrl(invoiceId);
   };
 
   const handleUpdateStatus = async (status: string) => {
