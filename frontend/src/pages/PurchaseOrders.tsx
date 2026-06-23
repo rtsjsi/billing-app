@@ -12,7 +12,8 @@ import {
   Paperclip,
   ArrowUpRight,
   Download,
-  AlertCircle
+  AlertCircle,
+  MoreVertical
 } from 'lucide-react';
 import { api, PurchaseOrder, Client } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/utils';
@@ -23,6 +24,16 @@ export default function PurchaseOrders() {
 
   const [pos, setPOs] = useState<PurchaseOrder[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (activeDropdownId === null) return;
+    const handleOutsideClick = () => {
+      setActiveDropdownId(null);
+    };
+    window.addEventListener('click', handleOutsideClick);
+    return () => window.removeEventListener('click', handleOutsideClick);
+  }, [activeDropdownId]);
   const [filterClientId, setFilterClientId] = useState(initialClientId || '');
   const [filterStatus, setFilterStatus] = useState('');
   const [loading, setLoading] = useState(true);
@@ -216,7 +227,7 @@ export default function PurchaseOrders() {
             No Purchase Orders found. Click "New PO" to record one!
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto min-h-[200px]">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-800/50 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-950/20">
@@ -249,21 +260,49 @@ export default function PurchaseOrders() {
                         {po.status === 'partially_invoiced' ? 'Part. Invoiced' : po.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right space-x-1.5">
-                      <button
-                        onClick={() => openEditModal(po)}
-                        className="inline-flex p-1.5 bg-slate-800/40 hover:bg-slate-800 text-slate-400 hover:text-white rounded border border-slate-800 transition-colors cursor-pointer"
-                        title="Edit PO"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeletePO(po.id)}
-                        className="inline-flex p-1.5 bg-red-500/5 hover:bg-red-500/10 text-red-500/70 hover:text-red-400 rounded border border-red-500/10 transition-colors cursor-pointer"
-                        title="Delete PO"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                    <td className="px-6 py-4 text-right relative" onClick={(e) => e.stopPropagation()}>
+                      <div className="inline-block text-left relative">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveDropdownId(activeDropdownId === po.id ? null : po.id);
+                          }}
+                          className="p-1.5 bg-slate-800/40 hover:bg-slate-800 text-slate-400 hover:text-white rounded border border-slate-800 transition-colors cursor-pointer"
+                          title="Actions"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </button>
+                        {activeDropdownId === po.id && (
+                          <div 
+                            onClick={(e) => e.stopPropagation()} 
+                            className="absolute right-0 mt-1 w-40 bg-slate-900 border border-slate-800 rounded-lg shadow-xl py-1 z-50 backdrop-blur-sm"
+                          >
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveDropdownId(null);
+                                openEditModal(po);
+                              }}
+                              className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors flex items-center space-x-2 cursor-pointer"
+                            >
+                              <Edit2 className="h-3.5 w-3.5" />
+                              <span>Edit PO</span>
+                            </button>
+                            <div className="border-t border-slate-800/60 my-1" />
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveDropdownId(null);
+                                handleDeletePO(po.id);
+                              }}
+                              className="w-full text-left px-4 py-2 text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors flex items-center space-x-2 cursor-pointer"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              <span>Delete PO</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

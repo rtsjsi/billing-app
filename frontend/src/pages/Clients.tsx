@@ -12,7 +12,8 @@ import {
   Phone,
   Building,
   Eye,
-  ArchiveRestore
+  ArchiveRestore,
+  MoreVertical
 } from 'lucide-react';
 import { api, Client } from '../lib/api';
 
@@ -23,6 +24,16 @@ export default function Clients() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deleteConflict, setDeleteConflict] = useState<string | null>(null);
+  const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (activeDropdownId === null) return;
+    const handleOutsideClick = () => {
+      setActiveDropdownId(null);
+    };
+    window.addEventListener('click', handleOutsideClick);
+    return () => window.removeEventListener('click', handleOutsideClick);
+  }, [activeDropdownId]);
 
   // Form states (Modal)
   const [modalOpen, setModalOpen] = useState(false);
@@ -205,7 +216,7 @@ export default function Clients() {
             No clients found. Click "New Client" to create one.
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto min-h-[220px]">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-800/50 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-950/20">
@@ -258,35 +269,77 @@ export default function Clients() {
                         <span className="badge badge-paid">Active</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-right space-x-1.5">
-                      <Link 
-                        to={`/clients/${client.id}`}
-                        className="inline-flex p-1.5 bg-slate-800/40 hover:bg-slate-800 text-slate-400 hover:text-white rounded border border-slate-800 transition-colors"
-                        title="View Billing History"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Link>
-                      <button
-                        onClick={() => openEditModal(client)}
-                        className="inline-flex p-1.5 bg-slate-800/40 hover:bg-slate-800 text-slate-400 hover:text-white rounded border border-slate-800 transition-colors cursor-pointer"
-                        title="Edit Client"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleArchiveToggle(client)}
-                        className="inline-flex p-1.5 bg-slate-800/40 hover:bg-slate-800 text-slate-400 hover:text-sky-400 rounded border border-slate-800 transition-colors cursor-pointer"
-                        title={client.is_archived === 1 ? 'Restore Client' : 'Archive Client'}
-                      >
-                        {client.is_archived === 1 ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClient(client.id)}
-                        className="inline-flex p-1.5 bg-red-500/5 hover:bg-red-500/10 text-red-500/70 hover:text-red-400 rounded border border-red-500/10 transition-colors cursor-pointer"
-                        title="Delete Client"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                    <td className="px-6 py-4 text-right relative" onClick={(e) => e.stopPropagation()}>
+                      <div className="inline-block text-left relative">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveDropdownId(activeDropdownId === client.id ? null : client.id);
+                          }}
+                          className="p-1.5 bg-slate-800/40 hover:bg-slate-800 text-slate-400 hover:text-white rounded border border-slate-800 transition-colors cursor-pointer"
+                          title="Actions"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </button>
+                        {activeDropdownId === client.id && (
+                          <div 
+                            onClick={(e) => e.stopPropagation()} 
+                            className="absolute right-0 mt-1 w-44 bg-slate-900 border border-slate-800 rounded-lg shadow-xl py-1 z-50 backdrop-blur-sm"
+                          >
+                            <Link
+                              to={`/clients/${client.id}`}
+                              onClick={() => setActiveDropdownId(null)}
+                              className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors flex items-center space-x-2 cursor-pointer"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                              <span>View History</span>
+                            </Link>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveDropdownId(null);
+                                openEditModal(client);
+                              }}
+                              className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors flex items-center space-x-2 cursor-pointer"
+                            >
+                              <Edit2 className="h-3.5 w-3.5" />
+                              <span>Edit Profile</span>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveDropdownId(null);
+                                handleArchiveToggle(client);
+                              }}
+                              className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors flex items-center space-x-2 cursor-pointer"
+                            >
+                              {client.is_archived === 1 ? (
+                                <>
+                                  <ArchiveRestore className="h-3.5 w-3.5" />
+                                  <span>Restore Client</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Archive className="h-3.5 w-3.5" />
+                                  <span>Archive Client</span>
+                                </>
+                              )}
+                            </button>
+                            <div className="border-t border-slate-800/60 my-1" />
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveDropdownId(null);
+                                handleDeleteClient(client.id);
+                              }}
+                              className="w-full text-left px-4 py-2 text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors flex items-center space-x-2 cursor-pointer"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              <span>Delete Client</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
