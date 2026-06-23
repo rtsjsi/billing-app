@@ -457,11 +457,11 @@ export default function Invoices() {
       </div>
       
       {pdfData && (
-        <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', width: '800px' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '794px', zIndex: -9999, opacity: 0, pointerEvents: 'none' }}>
           <div 
             id="invoice-pdf-template"
             className="bg-white text-slate-900 p-12 font-sans overflow-hidden text-sm"
-            style={{ width: '800px', boxSizing: 'border-box' }}
+            style={{ width: '794px', boxSizing: 'border-box' }}
           >
             {/* Header Branding */}
             <div className="flex justify-between items-start border-b border-slate-200 pb-8" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #e2e8f0', paddingBottom: '2rem' }}>
