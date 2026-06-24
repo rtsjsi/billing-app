@@ -299,9 +299,19 @@ export async function getPOById(db: D1Database, id: number): Promise<PurchaseOrd
   `).bind(id).first<PurchaseOrder>();
 }
 
-export async function createPO(db: D1Database, po: Omit<PurchaseOrder, 'id' | 'created_at' | 'updated_at'>): Promise<number> {
+export async function getPOItems(db: D1Database, poId: number): Promise<any[]> {
+  const { results } = await db
+    .prepare('SELECT * FROM purchase_order_items WHERE po_id = ? ORDER BY sort_order ASC, id ASC')
+    .bind(poId)
+    .all();
+  return results || [];
+}
+
+export async function createPO(db: D1Database, po: Omit<PurchaseOrder, 'id' | 'created_at' | 'updated_at'>, items?: any[]): Promise<number> {
   const now = new Date().toISOString();
-  const result = await db.prepare(`
+  const stmts = [];
+  
+  const insertPOStmt = db.prepare(`
     INSERT INTO purchase_orders (client_id, po_number, po_date, description, amount, currency, status, attachment_key, notes, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).bind(
@@ -316,21 +326,65 @@ export async function createPO(db: D1Database, po: Omit<PurchaseOrder, 'id' | 'c
     po.notes || null,
     now,
     now
-  ).run();
+  );
+  stmts.push(insertPOStmt);
+  
+  const batchRes = await db.batch(stmts);
+  const poId = batchRes[0].meta.last_row_id;
+  if (!poId) throw new Error('Failed to retrieve inserted PO ID');
 
-  return result.meta.last_row_id ?? 0;
+  if (items && items.length > 0) {
+    const itemStmts = items.map((item, index) => {
+      return db.prepare(`
+        INSERT INTO purchase_order_items (po_id, description, quantity, unit_price, amount, sort_order)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).bind(
+        poId,
+        item.description,
+        item.quantity,
+        item.unit_price,
+        item.amount,
+        item.sort_order ?? index
+      );
+    });
+    await db.batch(itemStmts);
+  }
+
+  return poId;
 }
 
-export async function updatePO(db: D1Database, id: number, po: Partial<Omit<PurchaseOrder, 'id' | 'created_at' | 'updated_at'>>): Promise<void> {
+export async function updatePO(db: D1Database, id: number, po: Partial<Omit<PurchaseOrder, 'id' | 'created_at' | 'updated_at'>>, items?: any[]): Promise<void> {
   const now = new Date().toISOString();
-  const keys = Object.keys(po);
-  if (keys.length === 0) return;
+  const keys = Object.keys(po).filter(k => k !== 'items');
+  const stmts = [];
 
-  const sets = keys.map(k => `${k} = ?`).join(', ');
-  const values = keys.map(k => (po as any)[k]);
+  if (keys.length > 0) {
+    const sets = keys.map(k => `${k} = ?`).join(', ');
+    const values = keys.map(k => (po as any)[k]);
+    const updateStmt = db.prepare(`UPDATE purchase_orders SET ${sets}, updated_at = ? WHERE id = ?`).bind(...values, now, id);
+    stmts.push(updateStmt);
+  }
 
-  const query = `UPDATE purchase_orders SET ${sets}, updated_at = ? WHERE id = ?`;
-  await db.prepare(query).bind(...values, now, id).run();
+  if (items) {
+    stmts.push(db.prepare('DELETE FROM purchase_order_items WHERE po_id = ?').bind(id));
+    items.forEach((item, index) => {
+      stmts.push(db.prepare(`
+        INSERT INTO purchase_order_items (po_id, description, quantity, unit_price, amount, sort_order)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).bind(
+        id,
+        item.description,
+        item.quantity,
+        item.unit_price,
+        item.amount,
+        item.sort_order ?? index
+      ));
+    });
+  }
+
+  if (stmts.length > 0) {
+    await db.batch(stmts);
+  }
 }
 
 export async function deletePO(db: D1Database, id: number): Promise<void> {

@@ -3,12 +3,21 @@ import { z } from 'zod';
 import { 
   listPOs, 
   getPOById, 
+  getPOItems,
   createPO, 
   updatePO, 
   deletePO 
 } from '../db/queries';
 
 const app = new Hono<{ Bindings: { DB: D1Database } }>();
+
+const poItemSchema = z.object({
+  description: z.string().min(1, 'Description is required'),
+  quantity: z.number().min(0.01, 'Quantity must be > 0'),
+  unit_price: z.number().min(0, 'Unit price cannot be negative'),
+  amount: z.number().min(0),
+  sort_order: z.number().default(0)
+});
 
 const poSchema = z.object({
   client_id: z.number().int('Invalid client ID'),
@@ -19,7 +28,8 @@ const poSchema = z.object({
   currency: z.string().default('INR'),
   status: z.enum(['open', 'partially_invoiced', 'fulfilled', 'cancelled']).default('open'),
   attachment_key: z.string().nullable().optional(),
-  notes: z.string().nullable().optional()
+  notes: z.string().nullable().optional(),
+  items: z.array(poItemSchema).min(1, 'At least one line item is required')
 });
 
 // List Purchase Orders
@@ -45,7 +55,9 @@ app.get('/:id', async (c) => {
     const po = await getPOById(c.env.DB, id);
     if (!po) return c.json({ error: 'Purchase Order not found' }, 404);
 
-    return c.json(po);
+    const items = await getPOItems(c.env.DB, id);
+
+    return c.json({ ...po, items });
   } catch (error: any) {
     return c.json({ error: error.message || 'Failed to fetch Purchase Order' }, 500);
   }
@@ -60,9 +72,10 @@ app.post('/', async (c) => {
       return c.json({ error: 'Validation failed', details: parsed.error.format() }, 400);
     }
 
-    const poId = await createPO(c.env.DB, parsed.data as any);
+    const poId = await createPO(c.env.DB, parsed.data as any, parsed.data.items);
     const newPO = await getPOById(c.env.DB, poId);
-    return c.json({ message: 'Purchase Order created successfully', po: newPO }, 201);
+    const newItems = await getPOItems(c.env.DB, poId);
+    return c.json({ message: 'Purchase Order created successfully', po: { ...newPO, items: newItems } }, 201);
   } catch (error: any) {
     return c.json({ error: error.message || 'Failed to create Purchase Order' }, 500);
   }
@@ -80,9 +93,10 @@ app.put('/:id', async (c) => {
       return c.json({ error: 'Validation failed', details: parsed.error.format() }, 400);
     }
 
-    await updatePO(c.env.DB, id, parsed.data);
+    await updatePO(c.env.DB, id, parsed.data, parsed.data.items);
     const updated = await getPOById(c.env.DB, id);
-    return c.json({ message: 'Purchase Order updated successfully', po: updated });
+    const updatedItems = await getPOItems(c.env.DB, id);
+    return c.json({ message: 'Purchase Order updated successfully', po: { ...updated, items: updatedItems } });
   } catch (error: any) {
     return c.json({ error: error.message || 'Failed to update Purchase Order' }, 500);
   }

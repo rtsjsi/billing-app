@@ -143,6 +143,10 @@ app.get('/:id/pdf', async (c) => {
       ry -= 12;
       drawText(`Due: ${invoice.due_date}`, width - 150, ry, font, 9, rgb(0.3, 0.3, 0.3));
     }
+    if (invoice.po_number) {
+      ry -= 12;
+      drawText(`PO Ref: ${invoice.po_number}`, width - 150, ry, font, 9, rgb(0.3, 0.3, 0.3));
+    }
     
     y = Math.min(y, ry) - 30;
 

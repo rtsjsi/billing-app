@@ -15,7 +15,7 @@ import {
   AlertCircle,
   MoreVertical
 } from 'lucide-react';
-import { api, PurchaseOrder, Client } from '../lib/api';
+import { api, PurchaseOrder, Client, PurchaseOrderItem } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { useFilters } from '../lib/FilterContext';
 
@@ -63,6 +63,7 @@ export default function PurchaseOrders() {
   const [formAmount, setFormAmount] = useState('');
   const [formCurrency, setFormCurrency] = useState('INR');
   const [formStatus, setFormStatus] = useState<'open' | 'partially_invoiced' | 'fulfilled' | 'cancelled'>('open');
+  const [formItems, setFormItems] = useState<PurchaseOrderItem[]>([]);
 
   const [formSubmitting, setFormSubmitting] = useState(false);
 
@@ -103,23 +104,36 @@ export default function PurchaseOrders() {
     setFormAmount('');
     setFormCurrency('INR');
     setFormStatus('open');
+    setFormItems([{ description: '', quantity: 1, unit_price: 0, amount: 0, sort_order: 0 }]);
 
     setError('');
     setModalOpen(true);
   };
 
-  const openEditModal = (po: PurchaseOrder) => {
+  const openEditModal = async (po: PurchaseOrder) => {
     setEditingPO(po);
     setFormClientId(po.client_id.toString());
     setFormPoNumber(po.po_number);
     setFormPoDate(po.po_date || '');
     setFormDescription(po.description || '');
-    setFormAmount(po.amount ? po.amount.toString() : '');
     setFormCurrency(po.currency);
     setFormStatus(po.status);
+    setFormItems([{ description: 'Loading...', quantity: 1, unit_price: 0, amount: 0, sort_order: 0 }]);
 
     setError('');
     setModalOpen(true);
+
+    try {
+      const details = await api.pos.get(po.id);
+      if (details.items && details.items.length > 0) {
+        setFormItems(details.items);
+      } else {
+        setFormItems([{ description: '', quantity: 1, unit_price: 0, amount: 0, sort_order: 0 }]);
+      }
+    } catch (err) {
+      console.error(err);
+      setFormItems([{ description: '', quantity: 1, unit_price: 0, amount: 0, sort_order: 0 }]);
+    }
   };
 
 
@@ -135,6 +149,10 @@ export default function PurchaseOrders() {
       setError('PO number is required.');
       return;
     }
+    if (formItems.length === 0) {
+      setError('At least one line item is required.');
+      return;
+    }
 
     setFormSubmitting(true);
     setError('');
@@ -144,11 +162,12 @@ export default function PurchaseOrders() {
       po_number: formPoNumber,
       po_date: formPoDate || null,
       description: formDescription || null,
-      amount: formAmount ? parseFloat(formAmount) : null,
+      amount: formItems.reduce((sum, item) => sum + item.amount, 0),
       currency: formCurrency,
       status: formStatus,
       attachment_key: null,
-      notes: '' // Placeholder or not needed
+      notes: '', // Placeholder or not needed
+      items: formItems.map((item, index) => ({ ...item, sort_order: index }))
     };
 
     try {
@@ -338,7 +357,7 @@ export default function PurchaseOrders() {
       {/* Editor Modal */}
       {modalOpen && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden">
+          <div className="w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden">
             <div className="flex justify-between items-center px-6 py-4 border-b border-slate-800">
               <h2 className="font-display font-semibold text-lg text-white">
                 {editingPO ? 'Edit Purchase Order' : 'Record Purchase Order'}
@@ -398,27 +417,17 @@ export default function PurchaseOrders() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">PO Total Amount (Optional)</label>
-                    <div className="relative">
-                      <input 
-                        type="number" 
-                        step="0.01"
-                        placeholder="0.00"
-                        className="w-full form-input text-sm pl-12"
-                        value={formAmount}
-                        onChange={(e) => setFormAmount(e.target.value)}
-                      />
-                      <select 
-                        className="absolute left-1 top-1.5 bottom-1.5 bg-transparent border-0 text-slate-400 text-xs focus:ring-0 focus:outline-none cursor-pointer"
-                        value={formCurrency}
-                        onChange={(e) => setFormCurrency(e.target.value)}
-                      >
-                        <option value="INR">₹</option>
-                        <option value="USD">$</option>
-                        <option value="EUR">€</option>
-                        <option value="GBP">£</option>
-                      </select>
-                    </div>
+                    <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">Currency</label>
+                    <select 
+                      className="w-full form-input text-sm"
+                      value={formCurrency}
+                      onChange={(e) => setFormCurrency(e.target.value)}
+                    >
+                      <option value="INR">INR (₹)</option>
+                      <option value="USD">USD ($)</option>
+                      <option value="EUR">EUR (€)</option>
+                      <option value="GBP">GBP (£)</option>
+                    </select>
                   </div>
                 </div>
 
@@ -431,6 +440,104 @@ export default function PurchaseOrders() {
                     value={formDescription}
                     onChange={(e) => setFormDescription(e.target.value)}
                   />
+                </div>
+
+                <div className="mt-6 border-t border-slate-800 pt-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-semibold text-slate-300">Line Items *</h3>
+                    <button
+                      type="button"
+                      onClick={() => setFormItems([...formItems, { description: '', quantity: 1, unit_price: 0, amount: 0, sort_order: formItems.length }])}
+                      className="text-xs flex items-center space-x-1 text-sky-400 hover:text-sky-300 transition-colors"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>Add Item</span>
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {formItems.map((item, index) => (
+                      <div key={index} className="flex flex-wrap sm:flex-nowrap items-start gap-3 bg-slate-950/30 p-3 rounded-lg border border-slate-800/50">
+                        <div className="w-full sm:flex-1">
+                          <input
+                            type="text"
+                            required
+                            placeholder="Description"
+                            className="w-full form-input text-xs"
+                            value={item.description}
+                            onChange={(e) => {
+                              const newItems = [...formItems];
+                              newItems[index].description = e.target.value;
+                              setFormItems(newItems);
+                            }}
+                          />
+                        </div>
+                        <div className="w-24 shrink-0">
+                          <input
+                            type="number"
+                            required
+                            min="0.01"
+                            step="0.01"
+                            placeholder="Qty"
+                            className="w-full form-input text-xs"
+                            value={item.quantity === 0 ? '' : item.quantity}
+                            onChange={(e) => {
+                              const newItems = [...formItems];
+                              newItems[index].quantity = parseFloat(e.target.value) || 0;
+                              newItems[index].amount = newItems[index].quantity * newItems[index].unit_price;
+                              setFormItems(newItems);
+                            }}
+                          />
+                        </div>
+                        <div className="w-32 shrink-0">
+                          <input
+                            type="number"
+                            required
+                            min="0"
+                            step="0.01"
+                            placeholder="Price"
+                            className="w-full form-input text-xs"
+                            value={item.unit_price === 0 ? '' : item.unit_price}
+                            onChange={(e) => {
+                              const newItems = [...formItems];
+                              newItems[index].unit_price = parseFloat(e.target.value) || 0;
+                              newItems[index].amount = newItems[index].quantity * newItems[index].unit_price;
+                              setFormItems(newItems);
+                            }}
+                          />
+                        </div>
+                        <div className="w-32 shrink-0">
+                          <div className="w-full form-input text-xs bg-slate-900 text-slate-400 flex items-center">
+                            {formatCurrency(item.amount, formCurrency)}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newItems = formItems.filter((_, i) => i !== index);
+                            setFormItems(newItems);
+                          }}
+                          className="shrink-0 p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors mt-0.5 sm:mt-0"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                    {formItems.length === 0 && (
+                      <div className="text-center py-6 border border-dashed border-slate-800 rounded-lg text-slate-500 text-xs">
+                        No line items added. At least one item is required.
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex justify-end mt-4 pt-4 border-t border-slate-800/50">
+                    <div className="text-right">
+                      <div className="text-xs text-slate-500 mb-1 uppercase tracking-wider font-semibold">Total Amount</div>
+                      <div className="text-xl font-mono font-semibold text-white">
+                        {formatCurrency(formItems.reduce((sum, item) => sum + item.amount, 0), formCurrency)}
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {editingPO && (

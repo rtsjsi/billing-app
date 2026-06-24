@@ -18,6 +18,16 @@ export interface Client {
   updated_at: string;
 }
 
+export interface PurchaseOrderItem {
+  id?: number;
+  po_id?: number;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  amount: number;
+  sort_order: number;
+}
+
 export interface PurchaseOrder {
   id: number;
   client_id: number;
@@ -33,6 +43,7 @@ export interface PurchaseOrder {
   created_at: string;
   updated_at: string;
   invoiced_amount?: number;
+  items?: PurchaseOrderItem[];
 }
 
 export interface InvoiceItem {
