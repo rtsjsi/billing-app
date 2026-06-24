@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { 
   FileText, 
   Plus, 
@@ -34,6 +34,8 @@ function getFYDateRange(fy: string) {
 
 export default function Invoices() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialPoId = searchParams.get('po_id');
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const { selectedFY, selectedClient, clients } = useFilters();
@@ -57,6 +59,7 @@ export default function Invoices() {
   // Filters
   const [filterStatus, setFilterStatus] = useState('');
   const [filterClientId, setFilterClientId] = useState('');
+  const [filterPoId, setFilterPoId] = useState(initialPoId || '');
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -77,6 +80,7 @@ export default function Invoices() {
       const res = await api.invoices.list({
         status: filterStatus || undefined,
         client_id: selectedClient ? parseInt(selectedClient, 10) : (filterClientId ? parseInt(filterClientId, 10) : undefined),
+        po_id: filterPoId ? parseInt(filterPoId, 10) : undefined,
         startDate: fyRange.start || filterStartDate || undefined,
         endDate: fyRange.end || filterEndDate || undefined,
         page,
@@ -94,11 +98,12 @@ export default function Invoices() {
 
   useEffect(() => {
     fetchInvoices();
-  }, [filterStatus, filterClientId, filterStartDate, filterEndDate, page, selectedFY, selectedClient]);
+  }, [filterStatus, filterClientId, filterPoId, filterStartDate, filterEndDate, page, selectedFY, selectedClient]);
 
   const handleClearFilters = () => {
     setFilterStatus('');
     setFilterClientId('');
+    setFilterPoId('');
     setFilterStartDate('');
     setFilterEndDate('');
     setPage(1);
@@ -160,7 +165,7 @@ export default function Invoices() {
             <span>{showFilters ? 'Hide Advanced Filters' : 'Show Advanced Filters'}</span>
           </button>
           
-          {(filterStatus || filterClientId || filterStartDate || filterEndDate) && (
+          {(filterStatus || filterClientId || filterPoId || filterStartDate || filterEndDate) && (
             <button
               onClick={handleClearFilters}
               className="flex items-center space-x-1 text-xs text-red-400 hover:text-red-300 font-semibold cursor-pointer"
@@ -225,6 +230,18 @@ export default function Invoices() {
                 className="w-full form-input py-1.5 text-xs"
                 value={filterEndDate}
                 onChange={(e) => { setFilterEndDate(e.target.value); setPage(1); }}
+              />
+            </div>
+
+            {/* PO ID */}
+            <div>
+              <label className="block text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-1">PO ID</label>
+              <input 
+                type="text"
+                placeholder="Linked PO ID..."
+                className="w-full form-input py-1.5 text-xs"
+                value={filterPoId}
+                onChange={(e) => { setFilterPoId(e.target.value); setPage(1); }}
               />
             </div>
           </div>

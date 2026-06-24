@@ -32,6 +32,7 @@ export interface PurchaseOrder {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  invoiced_amount?: number;
 }
 
 export interface InvoiceItem {
@@ -237,15 +238,17 @@ export const api = {
 
   // Invoices
   invoices: {
-    list: (filters: { status?: string; client_id?: number; startDate?: string; endDate?: string; page?: number; limit?: number }) => {
-      const params = new URLSearchParams();
-      if (filters.status) params.append('status', filters.status);
-      if (filters.client_id) params.append('client_id', String(filters.client_id));
-      if (filters.startDate) params.append('startDate', filters.startDate);
-      if (filters.endDate) params.append('endDate', filters.endDate);
-      if (filters.page) params.append('page', String(filters.page));
-      if (filters.limit) params.append('limit', String(filters.limit));
-      return request<InvoiceListResponse>(`/api/invoices?${params.toString()}`);
+    list: (params: { status?: string, client_id?: number, po_id?: number, startDate?: string, endDate?: string, page?: number, limit?: number } = {}) => {
+      const query = new URLSearchParams();
+      if (params.status) query.append('status', params.status);
+      if (params.client_id) query.append('client_id', params.client_id.toString());
+      if (params.po_id) query.append('po_id', params.po_id.toString());
+      if (params.startDate) query.append('startDate', params.startDate);
+      if (params.endDate) query.append('endDate', params.endDate);
+      if (params.page) query.append('page', params.page.toString());
+      if (params.limit) query.append('limit', params.limit.toString());
+      
+      return request<InvoiceListResponse>(`/api/invoices?${query.toString()}`);
     },
     get: (id: number) => request<{ invoice: Invoice; items: InvoiceItem[]; payments: Payment[] }>(`/api/invoices/${id}`),
     create: (data: any) => request<{ message: string; invoice: Invoice }>('/api/invoices', { method: 'POST', body: JSON.stringify(data) }),

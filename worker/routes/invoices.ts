@@ -48,6 +48,8 @@ app.get('/', async (c) => {
     const status = c.req.query('status') || undefined;
     const clientIdStr = c.req.query('client_id');
     const clientId = clientIdStr ? parseInt(clientIdStr, 10) : undefined;
+    const poIdStr = c.req.query('po_id');
+    const poId = poIdStr ? parseInt(poIdStr, 10) : undefined;
     const startDate = c.req.query('startDate') || undefined;
     const endDate = c.req.query('endDate') || undefined;
     
@@ -55,8 +57,8 @@ app.get('/', async (c) => {
     const page = parseInt(c.req.query('page') || '1', 10);
     const offset = (page - 1) * limit;
 
-    const invoices = await listInvoices(c.env.DB, status, clientId, startDate, endDate, limit, offset);
-    const total = await countInvoices(c.env.DB, status, clientId, startDate, endDate);
+    const invoices = await listInvoices(c.env.DB, status, clientId, startDate, endDate, limit, offset, poId);
+    const total = await countInvoices(c.env.DB, status, clientId, startDate, endDate, poId);
 
     return c.json({
       invoices,

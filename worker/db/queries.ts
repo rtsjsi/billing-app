@@ -67,6 +67,7 @@ export interface PurchaseOrder {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  invoiced_amount?: number;
 }
 
 export interface Invoice {
@@ -266,7 +267,8 @@ export async function deleteClient(db: D1Database, id: number): Promise<void> {
 
 export async function listPOs(db: D1Database, clientId?: number, status?: string): Promise<PurchaseOrder[]> {
   let query = `
-    SELECT po.*, c.name as client_name
+    SELECT po.*, c.name as client_name,
+           (SELECT COALESCE(SUM(total), 0) FROM invoices WHERE po_id = po.id AND status != 'cancelled') as invoiced_amount
     FROM purchase_orders po
     JOIN clients c ON po.client_id = c.id
     WHERE 1=1
@@ -289,7 +291,8 @@ export async function listPOs(db: D1Database, clientId?: number, status?: string
 
 export async function getPOById(db: D1Database, id: number): Promise<PurchaseOrder | null> {
   return await db.prepare(`
-    SELECT po.*, c.name as client_name
+    SELECT po.*, c.name as client_name,
+           (SELECT COALESCE(SUM(total), 0) FROM invoices WHERE po_id = po.id AND status != 'cancelled') as invoiced_amount
     FROM purchase_orders po
     JOIN clients c ON po.client_id = c.id
     WHERE po.id = ?
@@ -365,7 +368,8 @@ export async function listInvoices(
   startDate?: string,
   endDate?: string,
   limit: number = 20,
-  offset: number = 0
+  offset: number = 0,
+  poId?: number
 ): Promise<Invoice[]> {
   let query = `
     SELECT ${INVOICE_SELECT_FIELDS}
@@ -379,6 +383,10 @@ export async function listInvoices(
   if (clientId) {
     query += ' AND i.client_id = ?';
     binds.push(clientId);
+  }
+  if (poId) {
+    query += ' AND i.po_id = ?';
+    binds.push(poId);
   }
   if (startDate) {
     query += ' AND i.issue_date >= ?';
@@ -411,7 +419,8 @@ export async function countInvoices(
   status?: string,
   clientId?: number,
   startDate?: string,
-  endDate?: string
+  endDate?: string,
+  poId?: number
 ): Promise<number> {
   let query = `
     SELECT COUNT(*) as count
@@ -423,6 +432,10 @@ export async function countInvoices(
   if (clientId) {
     query += ' AND i.client_id = ?';
     binds.push(clientId);
+  }
+  if (poId) {
+    query += ' AND i.po_id = ?';
+    binds.push(poId);
   }
   if (startDate) {
     query += ' AND i.issue_date >= ?';

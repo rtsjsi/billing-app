@@ -140,6 +140,29 @@ export default function InvoiceEditor() {
     fetchPOs();
   }, [clientId, poId]);
 
+  const handlePoChange = (selectedPoId: string) => {
+    setPoId(selectedPoId);
+    if (!selectedPoId) return;
+
+    const po = clientPOs.find(p => p.id.toString() === selectedPoId);
+    if (po && !isEdit) {
+      // Only auto-fill if this is a new invoice and the first item is empty
+      const updatedItems = [...items];
+      if (updatedItems.length === 1 && !updatedItems[0].description) {
+        updatedItems[0].description = po.description || `Invoice against ${po.po_number}`;
+        
+        if (po.amount) {
+          const remaining = po.amount - (po.invoiced_amount || 0);
+          if (remaining > 0) {
+            updatedItems[0].unit_price = remaining;
+            updatedItems[0].amount = remaining * updatedItems[0].quantity;
+          }
+        }
+        setItems(updatedItems);
+      }
+    }
+  };
+
   // Date handlers
   const handleIssueDateChange = (val: string) => {
     setIssueDate(val);
@@ -363,12 +386,12 @@ export default function InvoiceEditor() {
             <select
               className="w-full form-input text-sm"
               value={poId}
-              onChange={(e) => setPoId(e.target.value)}
+              onChange={(e) => handlePoChange(e.target.value)}
               disabled={!clientId}
             >
               <option value="">No PO Linked</option>
               {clientPOs.map(po => (
-                <option key={po.id} value={po.id}>{po.po_number} ({po.status})</option>
+                <option key={po.id} value={po.id}>{po.po_number}{po.description ? ` - ${po.description}` : ''} ({po.status})</option>
               ))}
             </select>
             {!clientId && (

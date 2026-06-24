@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { 
   FileCheck, 
   Plus, 
@@ -33,6 +33,7 @@ function getFYDateRange(fy: string) {
 
 export default function PurchaseOrders() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const initialClientId = searchParams.get('client_id');
 
   const [pos, setPOs] = useState<PurchaseOrder[]>([]);
@@ -298,6 +299,17 @@ export default function PurchaseOrders() {
                             >
                               <Edit2 className="h-3.5 w-3.5" />
                               <span>Edit PO</span>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveDropdownId(null);
+                                navigate(`/invoices?po_id=${po.id}`);
+                              }}
+                              className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors flex items-center space-x-2 cursor-pointer"
+                            >
+                              <FileCheck className="h-3.5 w-3.5" />
+                              <span>Related Invoices</span>
                             </button>
                             <div className="border-t border-slate-800/60 my-1" />
                             <button
