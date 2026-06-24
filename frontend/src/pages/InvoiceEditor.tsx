@@ -140,25 +140,35 @@ export default function InvoiceEditor() {
     fetchPOs();
   }, [clientId, poId]);
 
-  const handlePoChange = (selectedPoId: string) => {
+  const handlePoChange = async (selectedPoId: string) => {
     setPoId(selectedPoId);
     if (!selectedPoId) return;
 
-    const po = clientPOs.find(p => p.id.toString() === selectedPoId);
-    if (po && !isEdit) {
-      // Only auto-fill if this is a new invoice and the first item is empty
-      const updatedItems = [...items];
-      if (updatedItems.length === 1 && !updatedItems[0].description) {
-        updatedItems[0].description = po.description || `Invoice against ${po.po_number}`;
-        
-        if (po.amount) {
-          const remaining = po.amount - (po.invoiced_amount || 0);
-          if (remaining > 0) {
-            updatedItems[0].unit_price = remaining;
-            updatedItems[0].amount = remaining * updatedItems[0].quantity;
+    if (!isEdit) {
+      try {
+        const fullPo = await api.pos.get(parseInt(selectedPoId, 10));
+        if (fullPo.items && fullPo.items.length > 0) {
+          setItems(fullPo.items.map(item => ({
+            description: item.description,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            amount: item.amount
+          })));
+        } else {
+          // fallback if old PO with no items
+          const po = clientPOs.find(p => p.id.toString() === selectedPoId);
+          if (po) {
+            const remaining = po.amount ? Math.max(0, po.amount - (po.invoiced_amount || 0)) : 0;
+            setItems([{
+              description: po.description || `Invoice against ${po.po_number}`,
+              quantity: 1,
+              unit_price: remaining,
+              amount: remaining
+            }]);
           }
         }
-        setItems(updatedItems);
+      } catch (err) {
+        console.error('Failed to load PO details', err);
       }
     }
   };
