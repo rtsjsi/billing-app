@@ -180,7 +180,7 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
           </div>
         </header>
 
-        <div className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto relative z-10">
+        <div className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto">
           {children}
         </div>
       </main>
