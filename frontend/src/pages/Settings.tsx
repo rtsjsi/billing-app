@@ -403,7 +403,7 @@ export default function Settings() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs text-slate-400 font-semibold mb-1.5 uppercase tracking-wider">Invoice Prefix</label>
                   <input 
@@ -411,15 +411,6 @@ export default function Settings() {
                     className="w-full form-input text-sm font-mono" 
                     value={invoicePrefix}
                     onChange={(e) => setInvoicePrefix(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-slate-400 font-semibold mb-1.5 uppercase tracking-wider">Next Invoice Index</label>
-                  <input 
-                    type="number" 
-                    className="w-full form-input text-sm font-mono" 
-                    value={invoiceNextNum}
-                    onChange={(e) => setInvoiceNextNum(parseInt(e.target.value, 10) || 1)}
                   />
                 </div>
                 <div>

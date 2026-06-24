@@ -531,24 +531,27 @@ export async function getInvoiceItems(db: D1Database, invoiceId: number): Promis
   return results || [];
 }
 
-// Generates next invoice number atomically inside a transaction (handled in Hono using batch)
 export async function getNextInvoiceNumber(db: D1Database, settings: BusinessSettings): Promise<{ invoiceNumber: string; nextNumValue: number }> {
   const now = new Date();
   
-  // Calculate if the year/FY has changed and we need to reset the invoice counter
+  // Calculate the prefix pattern for the current period (e.g., 'INV-2026-27-%')
   const pattern = getPeriodPattern(settings.invoice_prefix, settings.invoice_number_reset, now);
+  const prefixWithoutPercent = pattern.replace('%', '');
   
-  const countRes = await db
-    .prepare('SELECT COUNT(*) as count FROM invoices WHERE invoice_number LIKE ?')
-    .bind(pattern)
-    .first<{ count: number }>();
+  // Find the highest numeric suffix for the current pattern
+  const maxQuery = `
+    SELECT CAST(SUBSTR(invoice_number, ?) AS INTEGER) as max_num 
+    FROM invoices 
+    WHERE invoice_number LIKE ? 
+    ORDER BY max_num DESC 
+    LIMIT 1
+  `;
   
-  const periodInvoicesExist = (countRes?.count ?? 0) > 0;
+  const res = await db.prepare(maxQuery).bind(prefixWithoutPercent.length + 1, pattern).first<{ max_num: number | null }>();
   
-  let nextNumber = settings.invoice_next_number;
-  if (settings.invoice_number_reset !== 'never' && !periodInvoicesExist) {
-    // Reset to 1 since there are no invoices in this period
-    nextNumber = 1;
+  let nextNumber = 1;
+  if (res && res.max_num !== null) {
+    nextNumber = res.max_num + 1;
   }
   
   const invoiceNumber = formatInvoiceNumber(settings.invoice_prefix, nextNumber, settings.invoice_number_reset, now);
@@ -594,14 +597,7 @@ export async function createInvoice(
   );
   stmts.push(insertInvoiceStmt);
 
-  // 2. Update next invoice number in settings
-  const nextVal = nextNumValue + 1;
-  const updateSettingsStmt = db
-    .prepare('UPDATE business_settings SET invoice_next_number = ?, updated_at = ? WHERE id = 1')
-    .bind(nextVal, now);
-  stmts.push(updateSettingsStmt);
-
-  // Run the batch for the invoice row and the settings increment
+  // Run the batch for the invoice row
   // D1 executes batch queries in a single SQLite transaction
   const batchRes = await db.batch(stmts);
   
