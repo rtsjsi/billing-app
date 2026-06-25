@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { signatureBase64 } from '../signatureBase64';
 import { 
   listInvoices, 
   countInvoices, 
@@ -115,6 +116,9 @@ app.get('/:id/pdf', async (c) => {
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     
+    const signatureImageBytes = Uint8Array.from(atob(signatureBase64), c => c.charCodeAt(0));
+    const signatureImage = await pdfDoc.embedPng(signatureImageBytes);
+
     let y = height - 50;
 
     const drawText = (text: string, x: number, yPos: number, f: any = font, s: number = 10, color = rgb(0,0,0)) => {
@@ -213,6 +217,19 @@ app.get('/:id/pdf', async (c) => {
     }
 
     y -= 40;
+
+    const sigMaxWidth = 120;
+    const sigScale = sigMaxWidth / signatureImage.width;
+    const sigWidth = signatureImage.width * sigScale;
+    const sigHeight = signatureImage.height * sigScale;
+
+    page.drawImage(signatureImage, {
+      x: width - 150,
+      y: y - sigHeight + 10,
+      width: sigWidth,
+      height: sigHeight,
+    });
+    drawText('Authorized Signatory', width - 150, y - sigHeight - 5, font, 9, rgb(0.5, 0.5, 0.5));
 
     // Bank Details & Notes
     if (settings.bank_name || settings.upi_id) {
