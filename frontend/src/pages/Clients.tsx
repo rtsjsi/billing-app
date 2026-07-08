@@ -222,8 +222,8 @@ export default function Clients() {
             No clients found. Click "New Client" to create one.
           </div>
         ) : (
-          <div className="overflow-x-auto min-h-[220px]">
-            <table className="w-full text-left border-collapse">
+          <div className="min-h-[220px]">
+            <table className="responsive-table w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-800/50 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-950/20">
                   <th className="px-6 py-3.5">Client Details</th>
@@ -236,7 +236,7 @@ export default function Clients() {
               <tbody className="divide-y divide-slate-800/30 text-sm">
                 {displayedClients.map((client) => (
                   <tr key={client.id} className="hover:bg-slate-800/10 transition-colors">
-                    <td className="px-6 py-4">
+                    <td data-label="Client Details" className="px-6 py-4">
                       <div className="font-semibold text-white">{client.name}</div>
                       {client.company_name && (
                         <div className="text-slate-400 text-xs flex items-center mt-1">
@@ -245,7 +245,7 @@ export default function Clients() {
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4 space-y-1">
+                    <td data-label="Contact Info" className="px-6 py-4 space-y-1">
                       {client.email && (
                         <div className="text-slate-300 text-xs flex items-center">
                           <Mail className="h-3.5 w-3.5 mr-1.5 text-slate-500 shrink-0" />
@@ -259,7 +259,7 @@ export default function Clients() {
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td data-label="Tax Details" className="px-6 py-4">
                       {client.gstin ? (
                         <span className="font-mono text-xs bg-slate-800/50 px-2 py-1 rounded text-slate-300 border border-slate-700/50">
                           GSTIN: {client.gstin}
@@ -268,14 +268,14 @@ export default function Clients() {
                         <span className="text-slate-500 text-xs">-</span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td data-label="Status" className="px-6 py-4">
                       {client.is_archived === 1 ? (
                         <span className="badge badge-draft">Archived</span>
                       ) : (
                         <span className="badge badge-paid">Active</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-right relative" onClick={(e) => e.stopPropagation()}>
+                    <td data-label="Actions" className="px-6 py-4 text-right relative" onClick={(e) => e.stopPropagation()}>
                       <div className="inline-block text-left relative">
                         <button
                           onClick={(e) => {
