@@ -3,18 +3,12 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { 
   FileCheck, 
   Plus, 
-  Search, 
   Edit2, 
   Trash2, 
   X,
-  Calendar,
-  DollarSign,
-  Paperclip,
-  ArrowUpRight,
-  Download,
   AlertCircle,
-  MoreVertical
 } from 'lucide-react';
+import ActionMenu from '../components/ActionMenu';
 import { api, PurchaseOrder, Client, PurchaseOrderItem } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { useFilters } from '../lib/FilterContext';
@@ -40,14 +34,6 @@ export default function PurchaseOrders() {
   const { selectedFY, selectedClient, clients } = useFilters();
   const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
 
-  useEffect(() => {
-    if (activeDropdownId === null) return;
-    const handleOutsideClick = () => {
-      setActiveDropdownId(null);
-    };
-    window.addEventListener('click', handleOutsideClick);
-    return () => window.removeEventListener('click', handleOutsideClick);
-  }, [activeDropdownId]);
   const [filterClientId, setFilterClientId] = useState(initialClientId || '');
   const [filterStatus, setFilterStatus] = useState('');
   const [loading, setLoading] = useState(true);
@@ -201,8 +187,8 @@ export default function PurchaseOrders() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display font-bold text-3xl text-white">Purchase Orders</h1>
-          <p className="text-slate-400 text-sm mt-1">Record client PO contracts and map them to invoice line items</p>
+          <h1 className="page-title">Purchase Orders</h1>
+          <p className="page-subtitle">Record client PO contracts and map them to invoice line items</p>
         </div>
         <button
           onClick={openCreateModal}
@@ -214,10 +200,10 @@ export default function PurchaseOrders() {
       </div>
 
       {/* Filter Bar */}
-      <div className="glass-card p-4 rounded-xl flex flex-col md:flex-row items-stretch md:items-center gap-4 border-slate-800/80">
+      <div className="glass-card p-4 rounded-xl flex flex-col md:flex-row items-stretch md:items-center gap-4">
         {/* Client filter */}
         <div className="flex-1">
-          <label className="block text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-1">Filter by Client</label>
+          <label className="block text-xs text-slate-600 font-medium mb-1.5">Filter by Client</label>
           <select
             className="w-full form-input py-1.5 text-xs"
             value={filterClientId}
@@ -232,7 +218,7 @@ export default function PurchaseOrders() {
 
         {/* Status filter */}
         <div className="w-full md:w-48">
-          <label className="block text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-1">Filter by Status</label>
+          <label className="block text-xs text-slate-600 font-medium mb-1.5">Filter by Status</label>
           <select
             className="w-full form-input py-1.5 text-xs"
             value={filterStatus}
@@ -248,7 +234,7 @@ export default function PurchaseOrders() {
       </div>
 
       {/* PO Listing Table */}
-      <div className="glass-card rounded-2xl border-slate-800/80 overflow-hidden">
+      <div className="glass-card rounded-2xl overflow-visible md:overflow-hidden">
         {loading ? (
           <div className="p-12 text-center">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent mx-auto" />
@@ -261,7 +247,7 @@ export default function PurchaseOrders() {
           <div className="min-h-[200px]">
             <table className="responsive-table w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-800/50 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-950/20">
+                <tr className="border-b border-slate-100 text-xs text-slate-500 font-semibold uppercase tracking-wider bg-slate-50">
                   <th className="px-6 py-3.5">PO details</th>
                   <th className="px-6 py-3.5">Client</th>
                   <th className="px-6 py-3.5">PO Date</th>
@@ -271,18 +257,18 @@ export default function PurchaseOrders() {
                   <th className="px-6 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/30 text-sm">
+              <tbody className="divide-y divide-slate-100 text-sm">
                 {pos.map((po) => (
-                  <tr key={po.id} className="hover:bg-slate-800/10 transition-colors">
+                  <tr key={po.id} className="hover:bg-slate-50 transition-colors">
                     <td data-label="PO Details" className="px-6 py-4">
-                      <div className="font-mono font-semibold text-slate-200">{po.po_number}</div>
+                      <div className="font-mono font-semibold text-slate-900">{po.po_number}</div>
                       {po.description && (
                         <div className="text-slate-500 text-xs mt-0.5 truncate max-w-xs">{po.description}</div>
                       )}
                     </td>
-                    <td data-label="Client" className="px-6 py-4 text-white font-medium">{po.client_name}</td>
-                    <td data-label="PO Date" className="px-6 py-4 text-slate-400">{formatDate(po.po_date)}</td>
-                    <td data-label="Amount" className="px-6 py-4 text-right font-medium text-white">
+                    <td data-label="Client" className="px-6 py-4 text-slate-800 font-medium">{po.client_name}</td>
+                    <td data-label="PO Date" className="px-6 py-4 text-slate-600">{formatDate(po.po_date)}</td>
+                    <td data-label="Amount" className="px-6 py-4 text-right font-medium text-slate-900">
                       {po.amount ? formatCurrency(po.amount, po.currency) : '-'}
                     </td>
 
@@ -291,60 +277,34 @@ export default function PurchaseOrders() {
                         {po.status === 'partially_invoiced' ? 'Part. Invoiced' : po.status}
                       </span>
                     </td>
-                    <td data-label="Actions" className="px-6 py-4 text-right relative" onClick={(e) => e.stopPropagation()}>
-                      <div className="inline-block text-left relative">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveDropdownId(activeDropdownId === po.id ? null : po.id);
-                          }}
-                          className="p-1.5 bg-slate-800/40 hover:bg-slate-800 text-slate-400 hover:text-white rounded border border-slate-800 transition-colors cursor-pointer"
-                          title="Actions"
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </button>
-                        {activeDropdownId === po.id && (
-                          <div 
-                            onClick={(e) => e.stopPropagation()} 
-                            className="absolute right-0 mt-1 w-40 bg-slate-900 border border-slate-800 rounded-lg shadow-xl py-1 z-50 backdrop-blur-sm"
-                          >
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveDropdownId(null);
-                                openEditModal(po);
-                              }}
-                              className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors flex items-center space-x-2 cursor-pointer"
-                            >
-                              <Edit2 className="h-3.5 w-3.5" />
-                              <span>Edit PO</span>
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveDropdownId(null);
-                                navigate(`/invoices?po_id=${po.id}`);
-                              }}
-                              className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors flex items-center space-x-2 cursor-pointer"
-                            >
-                              <FileCheck className="h-3.5 w-3.5" />
-                              <span>Related Invoices</span>
-                            </button>
-                            <div className="border-t border-slate-800/60 my-1" />
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveDropdownId(null);
-                                handleDeletePO(po.id);
-                              }}
-                              className="w-full text-left px-4 py-2 text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors flex items-center space-x-2 cursor-pointer"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                              <span>Delete PO</span>
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                    <td data-label="Actions" className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                      <ActionMenu
+                        isOpen={activeDropdownId === po.id}
+                        onToggle={(e) => {
+                          e.stopPropagation();
+                          setActiveDropdownId(activeDropdownId === po.id ? null : po.id);
+                        }}
+                        onClose={() => setActiveDropdownId(null)}
+                        title={po.po_number}
+                        items={[
+                          {
+                            label: 'Edit PO',
+                            icon: <Edit2 className="h-4 w-4" />,
+                            onClick: () => openEditModal(po),
+                          },
+                          {
+                            label: 'Related Invoices',
+                            icon: <FileCheck className="h-4 w-4" />,
+                            onClick: () => navigate(`/invoices?po_id=${po.id}`),
+                          },
+                          {
+                            label: 'Delete PO',
+                            icon: <Trash2 className="h-4 w-4" />,
+                            variant: 'danger',
+                            onClick: () => handleDeletePO(po.id),
+                          },
+                        ]}
+                      />
                     </td>
                   </tr>
                 ))}

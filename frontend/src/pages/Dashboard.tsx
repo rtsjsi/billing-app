@@ -68,8 +68,8 @@ export default function Dashboard() {
       {/* Welcome banner / title */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display font-bold text-3xl text-white">Dashboard</h1>
-          <p className="text-slate-400 text-sm mt-1">Overview of your client billings, payments, and Purchase Orders</p>
+          <h1 className="page-title">Dashboard</h1>
+          <p className="page-subtitle">Overview of your client billings, payments, and Purchase Orders</p>
         </div>
         <div className="flex items-center space-x-3">
           <Link 

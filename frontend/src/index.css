@@ -14,33 +14,18 @@
   --color-accent-600: #4f46e5;
   
   --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-slide-up: slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
 
-  /* Slate colors remapped for light theme (reversing dark to light) */
-  --color-slate-50: #020617;   /* Slate 950 -> Darkest */
-  --color-slate-100: #0f172a;  /* Slate 900 */
-  --color-slate-200: #1e293b;  /* Slate 800 */
-  --color-slate-300: #334155;  /* Slate 700 */
-  --color-slate-400: #475569;  /* Slate 600 */
-  --color-slate-500: #64748b;  /* Slate 500 */
-  --color-slate-600: #94a3b8;  /* Slate 400 */
-  --color-slate-700: #cbd5e1;  /* Slate 300 */
-  --color-slate-800: #e2e8f0;  /* Slate 200 */
-  --color-slate-900: #f1f5f9;  /* Slate 100 */
-  --color-slate-950: #f8fafc;  /* Slate 50 -> Lightest */
-
-  /* Saturated highlights adjusted to darker corporate hues for readability on white/light BG */
-  --color-sky-300: #0369a1;    /* Sky 700 */
-  --color-sky-400: #0284c7;    /* Sky 600 */
-  --color-emerald-300: #15803d;/* Emerald 700 */
-  --color-emerald-400: #16a34a;/* Emerald 600 */
-  --color-amber-300: #b45309;  /* Amber 700 */
-  --color-amber-400: #d97706;  /* Amber 600 */
-  --color-red-300: #b91c1c;    /* Red 700 */
-  --color-red-400: #dc2626;    /* Red 600 */
-  --color-indigo-300: #4338ca;  /* Indigo 700 */
-  --color-indigo-400: #4f46e5;  /* Indigo 600 */
-  --color-violet-300: #6d28d9;  /* Violet 700 */
-  --color-violet-400: #7c3aed;  /* Violet 600 */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 @layer base {
@@ -52,13 +37,12 @@
 
   body {
     background:
-      radial-gradient(circle at top right, rgba(14, 165, 233, 0.08), transparent 40%),
-      radial-gradient(circle at bottom left, rgba(99, 102, 241, 0.08), transparent 45%),
+      radial-gradient(circle at top right, rgba(14, 165, 233, 0.06), transparent 40%),
+      radial-gradient(circle at bottom left, rgba(99, 102, 241, 0.05), transparent 45%),
       #f8fafc;
     color: #1e293b;
   }
   
-  /* Smooth scrollbars */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -75,11 +59,19 @@
   }
 }
 
-/* Glassmorphism Cards */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.animate-slide-up {
+  animation: slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Cards */
 .glass-card {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 252, 0.96) 100%);
-  border: 1px solid #dbe4ef;
-  box-shadow: 0 8px 24px -14px rgba(15, 23, 42, 0.28);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
 }
 
 .glass-card-interactive {
@@ -89,8 +81,23 @@
 .glass-card-interactive:hover {
   background: #ffffff;
   border-color: #cbd5e1;
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+/* Page headings */
+.page-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+  color: #0f172a;
+}
+
+.page-subtitle {
+  color: #64748b;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
 }
 
 .responsive-table {
@@ -112,25 +119,38 @@
 
   .responsive-table tr {
     border-bottom: 1px solid #e2e8f0 !important;
-    padding: 0.75rem;
-    background: rgba(255, 255, 255, 0.8);
+    padding: 1rem;
+    background: #ffffff;
+    margin-bottom: 0.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0 !important;
+  }
+
+  .responsive-table tbody {
+    padding: 0.5rem;
   }
 
   .responsive-table td {
     border: 0 !important;
-    padding: 0.35rem 0 !important;
+    padding: 0.4rem 0 !important;
     text-align: left !important;
   }
 
   .responsive-table td[data-label]::before {
     content: attr(data-label);
     display: block;
-    margin-bottom: 0.15rem;
-    font-size: 0.65rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
+    margin-bottom: 0.2rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: #64748b;
+    color: #475569;
+  }
+
+  .responsive-table td[data-label="Actions"] {
+    padding-top: 0.75rem !important;
+    margin-top: 0.25rem;
+    border-top: 1px solid #f1f5f9 !important;
   }
 
   .responsive-table td[data-label="Actions"]::before {
@@ -154,7 +174,7 @@
   box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
 }
 
-/* Badges for Invoice and PO statuses */
+/* Badges */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -213,7 +233,13 @@
   border: 1px solid #d1fae5;
 }
 
-/* Printing Specific Layout Rules */
+.badge-partially_invoiced {
+  background-color: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+/* Printing */
 @media print {
   body {
     background-color: #ffffff !important;
@@ -238,21 +264,6 @@
   }
 }
 
-/* Light Theme Text Visibility Overrides */
-h1.text-white,
-h2.text-white,
-h3.text-white,
-.glass-card .text-white:not(button):not(a):not(span[class*="bg-"]):not(div[class*="bg-"]) {
-  color: #0f172a !important;
-}
-
-/* Additional specific overrides for table headers and values */
-th.text-white,
-td.text-white {
-  color: #0f172a !important;
-}
-
-/* Print/PDF document overrides to ensure high contrast black-on-white text */
 .print-container {
   background-color: #ffffff !important;
   color: #1e293b !important;
@@ -301,4 +312,3 @@ td.text-white {
 .print-container th {
   border-color: #cbd5e1 !important;
 }
-

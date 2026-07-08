@@ -12,10 +12,10 @@ import {
   ChevronRight, 
   X,
   SlidersHorizontal,
-  MoreVertical,
   Eye,
   Edit2
 } from 'lucide-react';
+import ActionMenu from '../components/ActionMenu';
 import { api, Invoice, Client, InvoiceItem, BusinessSettings } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { useFilters } from '../lib/FilterContext';
@@ -41,15 +41,6 @@ export default function Invoices() {
   const { selectedFY, selectedClient, clients } = useFilters();
   const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
   const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (activeDropdownId === null) return;
-    const handleOutsideClick = () => {
-      setActiveDropdownId(null);
-    };
-    window.addEventListener('click', handleOutsideClick);
-    return () => window.removeEventListener('click', handleOutsideClick);
-  }, [activeDropdownId]);
 
   const handleDownloadPDF = (e: React.MouseEvent, inv: Invoice) => {
     e.stopPropagation();
@@ -109,8 +100,7 @@ export default function Invoices() {
     setPage(1);
   };
 
-  const handleDelete = async (e: React.MouseEvent, id: number) => {
-    e.stopPropagation(); // prevent row click navigation
+  const handleDelete = async (id: number) => {
     if (!window.confirm('Are you sure you want to permanently delete this invoice? This cannot be undone.')) return;
 
     try {
@@ -131,8 +121,8 @@ export default function Invoices() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display font-bold text-3xl text-white">Invoices</h1>
-          <p className="text-slate-400 text-sm mt-1">Generate invoices, record collections, and export offsite CSV backups</p>
+          <h1 className="page-title">Invoices</h1>
+          <p className="page-subtitle">Generate invoices, record collections, and export offsite CSV backups</p>
         </div>
         <div className="flex items-center space-x-3">
           {/* Data Export Trigger Button */}
@@ -249,7 +239,7 @@ export default function Invoices() {
       </div>
 
       {/* Invoice Ledger Table */}
-      <div className="glass-card rounded-2xl border-slate-800/80 overflow-hidden">
+      <div className="glass-card rounded-2xl overflow-visible md:overflow-hidden">
         {loading ? (
           <div className="p-12 text-center">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent mx-auto" />
@@ -263,7 +253,7 @@ export default function Invoices() {
             <div className="min-h-[280px]">
               <table className="responsive-table w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-800/50 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-950/20">
+                  <tr className="border-b border-slate-100 text-xs text-slate-500 font-semibold uppercase tracking-wider bg-slate-50">
                     <th className="px-6 py-3.5">Invoice Number</th>
                     <th className="px-6 py-3.5">Client Details</th>
                     <th className="px-6 py-3.5">PO Linked</th>
@@ -273,35 +263,35 @@ export default function Invoices() {
                     <th className="px-6 py-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/30 text-sm">
+                <tbody className="divide-y divide-slate-100 text-sm">
                   {invoices.map((inv) => (
                     <tr 
                       key={inv.id}
                       onClick={() => navigate(`/invoices/preview/${inv.id}`)}
-                      className="hover:bg-slate-800/10 transition-colors cursor-pointer"
+                      className="hover:bg-slate-50 transition-colors cursor-pointer"
                     >
-                      <td data-label="Invoice Number" className="px-6 py-4 font-mono font-medium text-slate-200">
+                      <td data-label="Invoice Number" className="px-6 py-4 font-mono font-medium text-slate-800">
                         {inv.invoice_number}
                       </td>
                       <td data-label="Client Details" className="px-6 py-4">
-                        <div className="font-semibold text-white">{inv.client_name}</div>
+                        <div className="font-semibold text-slate-900">{inv.client_name}</div>
                         {inv.client_company && (
-                          <div className="text-[10px] text-slate-500">{inv.client_company}</div>
+                          <div className="text-xs text-slate-500">{inv.client_company}</div>
                         )}
                       </td>
-                      <td data-label="PO Linked" className="px-6 py-4 font-mono text-xs text-slate-400">
-                        {inv.po_number ? inv.po_number : <span className="text-slate-600">-</span>}
+                      <td data-label="PO Linked" className="px-6 py-4 font-mono text-xs text-slate-600">
+                        {inv.po_number ? inv.po_number : <span className="text-slate-400">-</span>}
                       </td>
                       <td data-label="Dates" className="px-6 py-4 space-y-0.5">
-                        <div className="text-xs text-slate-300">Issued: {formatDate(inv.issue_date)}</div>
+                        <div className="text-xs text-slate-700">Issued: {formatDate(inv.issue_date)}</div>
                         {inv.due_date && (
-                          <div className="text-[10px] text-slate-500">Due: {formatDate(inv.due_date)}</div>
+                          <div className="text-xs text-slate-500">Due: {formatDate(inv.due_date)}</div>
                         )}
                       </td>
                       <td data-label="Amount Due" className="px-6 py-4 text-right">
-                        <div className="font-medium text-white">{formatCurrency(inv.total, inv.currency)}</div>
+                        <div className="font-medium text-slate-900">{formatCurrency(inv.total, inv.currency)}</div>
                         {inv.amount_paid > 0 && (
-                          <div className="text-[10px] text-emerald-400">Paid: {formatCurrency(inv.amount_paid, inv.currency)}</div>
+                          <div className="text-xs text-emerald-600">Paid: {formatCurrency(inv.amount_paid, inv.currency)}</div>
                         )}
                       </td>
                       <td data-label="Status" className="px-6 py-4 text-center">
@@ -309,72 +299,40 @@ export default function Invoices() {
                           {inv.status}
                         </span>
                       </td>
-                      <td data-label="Actions" className="px-6 py-4 text-right relative" onClick={(e) => e.stopPropagation()}>
-                        <div className="inline-block text-left relative">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveDropdownId(activeDropdownId === inv.id ? null : inv.id);
-                            }}
-                            className="p-1.5 bg-slate-800/40 hover:bg-slate-800 text-slate-400 hover:text-white rounded border border-slate-800 transition-colors cursor-pointer"
-                            title="Actions"
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </button>
-                          {activeDropdownId === inv.id && (
-                            <div 
-                              onClick={(e) => e.stopPropagation()} 
-                              className="absolute right-0 mt-1 w-44 bg-slate-900 border border-slate-800 rounded-lg shadow-xl py-1 z-50 backdrop-blur-sm"
-                            >
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setActiveDropdownId(null);
-                                  navigate(`/invoices/preview/${inv.id}`);
-                                }}
-                                className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors flex items-center space-x-2 cursor-pointer"
-                              >
-                                <Eye className="h-3.5 w-3.5" />
-                                <span>View Preview</span>
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setActiveDropdownId(null);
-                                  navigate(`/invoices/edit/${inv.id}`);
-                                }}
-                                className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors flex items-center space-x-2 cursor-pointer"
-                              >
-                                <Edit2 className="h-3.5 w-3.5" />
-                                <span>Edit Invoice</span>
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setActiveDropdownId(null);
-                                  handleDownloadPDF(e, inv);
-                                }}
-                                disabled={downloadingInvoiceId === inv.id}
-                                className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors flex items-center space-x-2 disabled:opacity-50 cursor-pointer"
-                              >
-                                <Download className="h-3.5 w-3.5" />
-                                <span>{downloadingInvoiceId === inv.id ? 'Generating...' : 'Download PDF'}</span>
-                              </button>
-                              <div className="border-t border-slate-800/60 my-1" />
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setActiveDropdownId(null);
-                                  handleDelete(e, inv.id);
-                                }}
-                                className="w-full text-left px-4 py-2 text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors flex items-center space-x-2 cursor-pointer"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                                <span>Delete Invoice</span>
-                              </button>
-                            </div>
-                          )}
-                        </div>
+                      <td data-label="Actions" className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                        <ActionMenu
+                          isOpen={activeDropdownId === inv.id}
+                          onToggle={(e) => {
+                            e.stopPropagation();
+                            setActiveDropdownId(activeDropdownId === inv.id ? null : inv.id);
+                          }}
+                          onClose={() => setActiveDropdownId(null)}
+                          title={inv.invoice_number}
+                          items={[
+                            {
+                              label: 'View Preview',
+                              icon: <Eye className="h-4 w-4" />,
+                              onClick: () => navigate(`/invoices/preview/${inv.id}`),
+                            },
+                            {
+                              label: 'Edit Invoice',
+                              icon: <Edit2 className="h-4 w-4" />,
+                              onClick: () => navigate(`/invoices/edit/${inv.id}`),
+                            },
+                            {
+                              label: downloadingInvoiceId === inv.id ? 'Generating...' : 'Download PDF',
+                              icon: <Download className="h-4 w-4" />,
+                              disabled: downloadingInvoiceId === inv.id,
+                              onClick: () => { window.location.href = api.invoices.getPDFUrl(inv.id); },
+                            },
+                            {
+                              label: 'Delete Invoice',
+                              icon: <Trash2 className="h-4 w-4" />,
+                              variant: 'danger',
+                              onClick: () => handleDelete(inv.id),
+                            },
+                          ]}
+                        />
                       </td>
                     </tr>
                   ))}

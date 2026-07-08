@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   Users, 
   Search, 
@@ -13,12 +13,13 @@ import {
   Building,
   Eye,
   ArchiveRestore,
-  MoreVertical
 } from 'lucide-react';
+import ActionMenu from '../components/ActionMenu';
 import { api, Client } from '../lib/api';
 import { useFilters } from '../lib/FilterContext';
 
 export default function Clients() {
+  const navigate = useNavigate();
   const [clients, setClients] = useState<Client[]>([]);
   const { selectedClient } = useFilters();
   const [search, setSearch] = useState('');
@@ -32,16 +33,6 @@ export default function Clients() {
     ? clients.filter(c => c.id === parseInt(selectedClient, 10))
     : clients;
 
-  useEffect(() => {
-    if (activeDropdownId === null) return;
-    const handleOutsideClick = () => {
-      setActiveDropdownId(null);
-    };
-    window.addEventListener('click', handleOutsideClick);
-    return () => window.removeEventListener('click', handleOutsideClick);
-  }, [activeDropdownId]);
-
-  // Form states (Modal)
   const [modalOpen, setModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [formName, setFormName] = useState('');
@@ -163,8 +154,8 @@ export default function Clients() {
       {/* Title & Add Action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display font-bold text-3xl text-white">Clients</h1>
-          <p className="text-slate-400 text-sm mt-1">Manage your customer profiles and billing directory</p>
+          <h1 className="page-title">Clients</h1>
+          <p className="page-subtitle">Manage your customer profiles and billing directory</p>
         </div>
         <button
           onClick={openCreateModal}
@@ -212,7 +203,7 @@ export default function Clients() {
       )}
 
       {/* Table Listing */}
-      <div className="glass-card rounded-2xl border-slate-800/80 overflow-hidden">
+      <div className="glass-card rounded-2xl overflow-visible md:overflow-hidden">
         {loading ? (
           <div className="p-12 text-center">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent mx-auto" />
@@ -225,7 +216,7 @@ export default function Clients() {
           <div className="min-h-[220px]">
             <table className="responsive-table w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-800/50 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-950/20">
+                <tr className="border-b border-slate-100 text-xs text-slate-500 font-semibold uppercase tracking-wider bg-slate-50">
                   <th className="px-6 py-3.5">Client Details</th>
                   <th className="px-6 py-3.5">Contact info</th>
                   <th className="px-6 py-3.5">Tax Details</th>
@@ -233,39 +224,39 @@ export default function Clients() {
                   <th className="px-6 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/30 text-sm">
+              <tbody className="divide-y divide-slate-100 text-sm">
                 {displayedClients.map((client) => (
-                  <tr key={client.id} className="hover:bg-slate-800/10 transition-colors">
+                  <tr key={client.id} className="hover:bg-slate-50 transition-colors">
                     <td data-label="Client Details" className="px-6 py-4">
-                      <div className="font-semibold text-white">{client.name}</div>
+                      <div className="font-semibold text-slate-900">{client.name}</div>
                       {client.company_name && (
-                        <div className="text-slate-400 text-xs flex items-center mt-1">
-                          <Building className="h-3.5 w-3.5 mr-1 text-slate-500" />
+                        <div className="text-slate-500 text-xs flex items-center mt-1">
+                          <Building className="h-3.5 w-3.5 mr-1 text-slate-400" />
                           <span>{client.company_name}</span>
                         </div>
                       )}
                     </td>
                     <td data-label="Contact Info" className="px-6 py-4 space-y-1">
                       {client.email && (
-                        <div className="text-slate-300 text-xs flex items-center">
-                          <Mail className="h-3.5 w-3.5 mr-1.5 text-slate-500 shrink-0" />
+                        <div className="text-slate-600 text-xs flex items-center">
+                          <Mail className="h-3.5 w-3.5 mr-1.5 text-slate-400 shrink-0" />
                           <span className="truncate max-w-[200px]" title={client.email}>{client.email}</span>
                         </div>
                       )}
                       {client.phone && (
-                        <div className="text-slate-300 text-xs flex items-center">
-                          <Phone className="h-3.5 w-3.5 mr-1.5 text-slate-500 shrink-0" />
+                        <div className="text-slate-600 text-xs flex items-center">
+                          <Phone className="h-3.5 w-3.5 mr-1.5 text-slate-400 shrink-0" />
                           <span>{client.phone}</span>
                         </div>
                       )}
                     </td>
                     <td data-label="Tax Details" className="px-6 py-4">
                       {client.gstin ? (
-                        <span className="font-mono text-xs bg-slate-800/50 px-2 py-1 rounded text-slate-300 border border-slate-700/50">
+                        <span className="font-mono text-xs bg-slate-100 px-2 py-1 rounded text-slate-700 border border-slate-200">
                           GSTIN: {client.gstin}
                         </span>
                       ) : (
-                        <span className="text-slate-500 text-xs">-</span>
+                        <span className="text-slate-400 text-xs">-</span>
                       )}
                     </td>
                     <td data-label="Status" className="px-6 py-4">
@@ -275,77 +266,41 @@ export default function Clients() {
                         <span className="badge badge-paid">Active</span>
                       )}
                     </td>
-                    <td data-label="Actions" className="px-6 py-4 text-right relative" onClick={(e) => e.stopPropagation()}>
-                      <div className="inline-block text-left relative">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveDropdownId(activeDropdownId === client.id ? null : client.id);
-                          }}
-                          className="p-1.5 bg-slate-800/40 hover:bg-slate-800 text-slate-400 hover:text-white rounded border border-slate-800 transition-colors cursor-pointer"
-                          title="Actions"
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </button>
-                        {activeDropdownId === client.id && (
-                          <div 
-                            onClick={(e) => e.stopPropagation()} 
-                            className="absolute right-0 mt-1 w-44 bg-slate-900 border border-slate-800 rounded-lg shadow-xl py-1 z-50 backdrop-blur-sm"
-                          >
-                            <Link
-                              to={`/clients/${client.id}`}
-                              onClick={() => setActiveDropdownId(null)}
-                              className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors flex items-center space-x-2 cursor-pointer"
-                            >
-                              <Eye className="h-3.5 w-3.5" />
-                              <span>View History</span>
-                            </Link>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveDropdownId(null);
-                                openEditModal(client);
-                              }}
-                              className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors flex items-center space-x-2 cursor-pointer"
-                            >
-                              <Edit2 className="h-3.5 w-3.5" />
-                              <span>Edit Profile</span>
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveDropdownId(null);
-                                handleArchiveToggle(client);
-                              }}
-                              className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors flex items-center space-x-2 cursor-pointer"
-                            >
-                              {client.is_archived === 1 ? (
-                                <>
-                                  <ArchiveRestore className="h-3.5 w-3.5" />
-                                  <span>Restore Client</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Archive className="h-3.5 w-3.5" />
-                                  <span>Archive Client</span>
-                                </>
-                              )}
-                            </button>
-                            <div className="border-t border-slate-800/60 my-1" />
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveDropdownId(null);
-                                handleDeleteClient(client.id);
-                              }}
-                              className="w-full text-left px-4 py-2 text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors flex items-center space-x-2 cursor-pointer"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                              <span>Delete Client</span>
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                    <td data-label="Actions" className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                      <ActionMenu
+                        isOpen={activeDropdownId === client.id}
+                        onToggle={(e) => {
+                          e.stopPropagation();
+                          setActiveDropdownId(activeDropdownId === client.id ? null : client.id);
+                        }}
+                        onClose={() => setActiveDropdownId(null)}
+                        title={client.name}
+                        items={[
+                          {
+                            label: 'View History',
+                            icon: <Eye className="h-4 w-4" />,
+                            onClick: () => navigate(`/clients/${client.id}`),
+                          },
+                          {
+                            label: 'Edit Profile',
+                            icon: <Edit2 className="h-4 w-4" />,
+                            onClick: () => openEditModal(client),
+                          },
+                          {
+                            label: client.is_archived === 1 ? 'Restore Client' : 'Archive Client',
+                            icon: client.is_archived === 1
+                              ? <ArchiveRestore className="h-4 w-4" />
+                              : <Archive className="h-4 w-4" />,
+                            onClick: () => handleArchiveToggle(client),
+                          },
+                          {
+                            label: 'Delete Client',
+                            icon: <Trash2 className="h-4 w-4" />,
+                            variant: 'danger',
+                            onClick: () => handleDeleteClient(client.id),
+                          },
+                        ]}
+                      />
                     </td>
                   </tr>
                 ))}
