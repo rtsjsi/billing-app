@@ -260,8 +260,8 @@ export default function Invoices() {
           </div>
         ) : (
           <div>
-            <div className="overflow-x-auto min-h-[280px]">
-              <table className="w-full text-left border-collapse">
+            <div className="min-h-[280px]">
+              <table className="responsive-table w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-slate-800/50 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-950/20">
                     <th className="px-6 py-3.5">Invoice Number</th>
@@ -280,36 +280,36 @@ export default function Invoices() {
                       onClick={() => navigate(`/invoices/preview/${inv.id}`)}
                       className="hover:bg-slate-800/10 transition-colors cursor-pointer"
                     >
-                      <td className="px-6 py-4 font-mono font-medium text-slate-200">
+                      <td data-label="Invoice Number" className="px-6 py-4 font-mono font-medium text-slate-200">
                         {inv.invoice_number}
                       </td>
-                      <td className="px-6 py-4">
+                      <td data-label="Client Details" className="px-6 py-4">
                         <div className="font-semibold text-white">{inv.client_name}</div>
                         {inv.client_company && (
                           <div className="text-[10px] text-slate-500">{inv.client_company}</div>
                         )}
                       </td>
-                      <td className="px-6 py-4 font-mono text-xs text-slate-400">
+                      <td data-label="PO Linked" className="px-6 py-4 font-mono text-xs text-slate-400">
                         {inv.po_number ? inv.po_number : <span className="text-slate-600">-</span>}
                       </td>
-                      <td className="px-6 py-4 space-y-0.5">
+                      <td data-label="Dates" className="px-6 py-4 space-y-0.5">
                         <div className="text-xs text-slate-300">Issued: {formatDate(inv.issue_date)}</div>
                         {inv.due_date && (
                           <div className="text-[10px] text-slate-500">Due: {formatDate(inv.due_date)}</div>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td data-label="Amount Due" className="px-6 py-4 text-right">
                         <div className="font-medium text-white">{formatCurrency(inv.total, inv.currency)}</div>
                         {inv.amount_paid > 0 && (
                           <div className="text-[10px] text-emerald-400">Paid: {formatCurrency(inv.amount_paid, inv.currency)}</div>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td data-label="Status" className="px-6 py-4 text-center">
                         <span className={`badge badge-${inv.status}`}>
                           {inv.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right relative" onClick={(e) => e.stopPropagation()}>
+                      <td data-label="Actions" className="px-6 py-4 text-right relative" onClick={(e) => e.stopPropagation()}>
                         <div className="inline-block text-left relative">
                           <button
                             onClick={(e) => {

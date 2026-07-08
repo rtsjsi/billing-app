@@ -52,7 +52,7 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-transparent text-slate-100 flex flex-col md:flex-row">
       {/* Mobile Top Header */}
       <header className="md:hidden flex items-center justify-between px-4 py-3 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-50">
         <div className="flex items-center space-x-2">
@@ -140,21 +140,21 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col h-screen overflow-y-auto bg-slate-950 relative">
+      <main className="flex-1 flex flex-col h-screen overflow-y-auto bg-transparent relative">
         {/* Top Sticky Global Filter Header */}
-        <header className="no-print sticky top-0 bg-slate-950/80 backdrop-blur-md border-b border-slate-900/60 z-30 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <header className="no-print sticky top-0 bg-slate-50/85 backdrop-blur-md border-b border-slate-200/80 z-30 px-4 sm:px-6 py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           <div className="flex items-center space-x-2">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Global context filters</span>
           </div>
           
-          <div className="flex items-center gap-4 flex-wrap sm:flex-nowrap">
+          <div className="flex w-full lg:w-auto items-center gap-3 flex-wrap sm:flex-nowrap">
             {/* Financial Year Selector */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-between sm:justify-start w-full sm:w-auto space-x-2">
               <span className="text-xs text-slate-400 font-medium">Financial Year:</span>
               <select
                 value={selectedFY}
                 onChange={(e) => setSelectedFY(e.target.value)}
-                className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500 transition-all font-medium cursor-pointer shadow-sm"
+                className="bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-sky-500 transition-all font-medium cursor-pointer shadow-sm w-40 sm:w-auto"
               >
                 <option value="">All Years</option>
                 {availableYears.map((fy) => (
@@ -164,12 +164,12 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
             </div>
 
             {/* Client Selector */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-between sm:justify-start w-full sm:w-auto space-x-2">
               <span className="text-xs text-slate-400 font-medium">Client:</span>
               <select
                 value={selectedClient}
                 onChange={(e) => setSelectedClient(e.target.value)}
-                className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500 transition-all font-medium cursor-pointer shadow-sm max-w-[200px]"
+                className="bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-sky-500 transition-all font-medium cursor-pointer shadow-sm w-44 sm:max-w-[220px]"
               >
                 <option value="">All Clients</option>
                 {clients.map((client) => (
@@ -180,7 +180,7 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
           </div>
         </header>
 
-        <div className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto">
+        <div className="flex-1 p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto">
           {children}
         </div>
       </main>

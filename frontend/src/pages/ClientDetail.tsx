@@ -251,13 +251,13 @@ export default function ClientDetail() {
               <span>Invoice Ledger ({filteredInvoices.length})</span>
             </h2>
           </div>
-          <div className="overflow-x-auto">
+          <div>
             {filteredInvoices.length === 0 ? (
               <div className="p-8 text-center text-slate-500 text-sm">
                 No invoices issued for this client.
               </div>
             ) : (
-              <table className="w-full text-left border-collapse">
+              <table className="responsive-table w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-slate-800/50 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-950/20">
                     <th className="px-6 py-3">Number</th>
@@ -273,12 +273,12 @@ export default function ClientDetail() {
                       onClick={() => navigate(`/invoices/preview/${inv.id}`)}
                       className="hover:bg-slate-800/20 transition-all cursor-pointer"
                     >
-                      <td className="px-6 py-4 font-mono font-medium text-sky-400">{inv.invoice_number}</td>
-                      <td className="px-6 py-4 text-slate-300">{formatDate(inv.issue_date)}</td>
-                      <td className="px-6 py-4 text-right font-medium text-white">
+                      <td data-label="Number" className="px-6 py-4 font-mono font-medium text-sky-400">{inv.invoice_number}</td>
+                      <td data-label="Issue Date" className="px-6 py-4 text-slate-300">{formatDate(inv.issue_date)}</td>
+                      <td data-label="Amount" className="px-6 py-4 text-right font-medium text-white">
                         {formatCurrency(inv.total, inv.currency)}
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td data-label="Status" className="px-6 py-4 text-center">
                         <span className={`badge badge-${inv.status}`}>
                           {inv.status}
                         </span>
@@ -299,13 +299,13 @@ export default function ClientDetail() {
               <span>Purchase Orders ({filteredPOs.length})</span>
             </h2>
           </div>
-          <div className="overflow-x-auto">
+          <div>
             {filteredPOs.length === 0 ? (
               <div className="p-8 text-center text-slate-500 text-sm">
                 No Purchase Orders recorded for this client.
               </div>
             ) : (
-              <table className="w-full text-left border-collapse">
+              <table className="responsive-table w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-slate-800/50 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-950/20">
                     <th className="px-6 py-3">PO Number</th>
@@ -317,12 +317,12 @@ export default function ClientDetail() {
                 <tbody className="divide-y divide-slate-800/30 text-sm">
                   {filteredPOs.map((po) => (
                     <tr key={po.id} className="hover:bg-slate-800/10 transition-all">
-                      <td className="px-6 py-4 font-mono font-medium text-slate-300">{po.po_number}</td>
-                      <td className="px-6 py-4 text-slate-400">{formatDate(po.po_date)}</td>
-                      <td className="px-6 py-4 text-right font-medium text-white">
+                      <td data-label="PO Number" className="px-6 py-4 font-mono font-medium text-slate-300">{po.po_number}</td>
+                      <td data-label="PO Date" className="px-6 py-4 text-slate-400">{formatDate(po.po_date)}</td>
+                      <td data-label="Amount" className="px-6 py-4 text-right font-medium text-white">
                         {po.amount ? formatCurrency(po.amount, po.currency) : '-'}
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td data-label="Status" className="px-6 py-4 text-center">
                         <span className={`badge badge-${po.status}`}>
                           {po.status === 'partially_invoiced' ? 'Part. Invoiced' : po.status}
                         </span>

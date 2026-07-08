@@ -44,9 +44,18 @@
 }
 
 @layer base {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
   body {
-    background-color: #f8fafc; /* Slate 950 */
-    color: #1e293b; /* Slate 200 */
+    background:
+      radial-gradient(circle at top right, rgba(14, 165, 233, 0.08), transparent 40%),
+      radial-gradient(circle at bottom left, rgba(99, 102, 241, 0.08), transparent 45%),
+      #f8fafc;
+    color: #1e293b;
   }
   
   /* Smooth scrollbars */
@@ -68,9 +77,9 @@
 
 /* Glassmorphism Cards */
 .glass-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 252, 0.96) 100%);
+  border: 1px solid #dbe4ef;
+  box-shadow: 0 8px 24px -14px rgba(15, 23, 42, 0.28);
 }
 
 .glass-card-interactive {
@@ -82,6 +91,51 @@
   border-color: #cbd5e1;
   transform: translateY(-2px);
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+}
+
+.responsive-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+@media (max-width: 767px) {
+  .responsive-table thead {
+    display: none;
+  }
+
+  .responsive-table tbody,
+  .responsive-table tr,
+  .responsive-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .responsive-table tr {
+    border-bottom: 1px solid #e2e8f0 !important;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.8);
+  }
+
+  .responsive-table td {
+    border: 0 !important;
+    padding: 0.35rem 0 !important;
+    text-align: left !important;
+  }
+
+  .responsive-table td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 0.15rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #64748b;
+  }
+
+  .responsive-table td[data-label="Actions"]::before {
+    margin-bottom: 0.5rem;
+  }
 }
 
 /* Form input fields */

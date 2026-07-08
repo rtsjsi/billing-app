@@ -258,8 +258,8 @@ export default function PurchaseOrders() {
             No Purchase Orders found. Click "New PO" to record one!
           </div>
         ) : (
-          <div className="overflow-x-auto min-h-[200px]">
-            <table className="w-full text-left border-collapse">
+          <div className="min-h-[200px]">
+            <table className="responsive-table w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-800/50 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-950/20">
                   <th className="px-6 py-3.5">PO details</th>
@@ -274,24 +274,24 @@ export default function PurchaseOrders() {
               <tbody className="divide-y divide-slate-800/30 text-sm">
                 {pos.map((po) => (
                   <tr key={po.id} className="hover:bg-slate-800/10 transition-colors">
-                    <td className="px-6 py-4">
+                    <td data-label="PO Details" className="px-6 py-4">
                       <div className="font-mono font-semibold text-slate-200">{po.po_number}</div>
                       {po.description && (
                         <div className="text-slate-500 text-xs mt-0.5 truncate max-w-xs">{po.description}</div>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-white font-medium">{po.client_name}</td>
-                    <td className="px-6 py-4 text-slate-400">{formatDate(po.po_date)}</td>
-                    <td className="px-6 py-4 text-right font-medium text-white">
+                    <td data-label="Client" className="px-6 py-4 text-white font-medium">{po.client_name}</td>
+                    <td data-label="PO Date" className="px-6 py-4 text-slate-400">{formatDate(po.po_date)}</td>
+                    <td data-label="Amount" className="px-6 py-4 text-right font-medium text-white">
                       {po.amount ? formatCurrency(po.amount, po.currency) : '-'}
                     </td>
 
-                    <td className="px-6 py-4 text-center">
+                    <td data-label="Status" className="px-6 py-4 text-center">
                       <span className={`badge badge-${po.status}`}>
                         {po.status === 'partially_invoiced' ? 'Part. Invoiced' : po.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right relative" onClick={(e) => e.stopPropagation()}>
+                    <td data-label="Actions" className="px-6 py-4 text-right relative" onClick={(e) => e.stopPropagation()}>
                       <div className="inline-block text-left relative">
                         <button
                           onClick={(e) => {
