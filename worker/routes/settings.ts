@@ -10,6 +10,7 @@ import {
   exportPOs
 } from '../db/queries';
 import { hashPassword, generateSalt } from '../auth';
+import { checkRateLimit } from '../lib/rate-limit';
 
 const app = new Hono<{ Bindings: { DB: D1Database }; Variables: { jwtPayload: { userId: number, username: string } } }>();
 
@@ -74,6 +75,15 @@ app.put('/', async (c) => {
 // Change Password
 app.put('/password', async (c) => {
   try {
+    const rate = checkRateLimit(c, {
+      keyPrefix: 'password-change',
+      limit: 5,
+      windowMs: 60_000,
+    });
+    if (rate.limited) {
+      return c.json({ error: `Too many password change attempts. Retry in ${rate.retryAfterSec}s.` }, 429);
+    }
+
     const userId = c.get('jwtPayload').userId;
     const userPayload = c.get('jwtPayload');
     if (!userPayload) return c.json({ error: 'Unauthorized' }, 401);
@@ -145,7 +155,13 @@ app.get('/export/:entity', async (c) => {
       ...data.map(row => 
         headers.map(header => {
           const val = row[header];
-          const str = val === null || val === undefined ? '' : String(val);
+          let str = val === null || val === undefined ? '' : String(val);
+
+          // Spreadsheet formula injection hardening:
+          // If the cell starts with '=', '+', '-', '@' (optionally after whitespace), prefix with a single quote.
+          if (/^\s*[=+\-@]/.test(str)) {
+            str = `'${str}`;
+          }
           const escaped = str.replace(/"/g, '""');
           return escaped.includes(',') || escaped.includes('"') || escaped.includes('\n') 
             ? `"${escaped}"` 
