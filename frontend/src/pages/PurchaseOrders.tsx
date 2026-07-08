@@ -247,7 +247,7 @@ export default function PurchaseOrders() {
           <div className="min-h-[200px]">
             <table className="responsive-table w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-100 text-xs text-slate-500 font-semibold uppercase tracking-wider bg-slate-50">
+                <tr className="border-b border-slate-800/60 text-xs text-slate-400 font-semibold uppercase tracking-wider bg-slate-900/80">
                   <th className="px-6 py-3.5">PO details</th>
                   <th className="px-6 py-3.5">Client</th>
                   <th className="px-6 py-3.5">PO Date</th>
@@ -257,18 +257,18 @@ export default function PurchaseOrders() {
                   <th className="px-6 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-sm">
+              <tbody className="divide-y divide-slate-800/60 text-sm">
                 {pos.map((po) => (
-                  <tr key={po.id} className="hover:bg-slate-50 transition-colors">
+                  <tr key={po.id} className="hover:bg-slate-800/40 transition-colors">
                     <td data-label="PO Details" className="px-6 py-4">
-                      <div className="font-mono font-semibold text-slate-900">{po.po_number}</div>
+                      <div className="font-mono font-semibold text-slate-200">{po.po_number}</div>
                       {po.description && (
-                        <div className="text-slate-500 text-xs mt-0.5 truncate max-w-xs">{po.description}</div>
+                        <div className="text-slate-400 text-xs mt-0.5 truncate max-w-xs">{po.description}</div>
                       )}
                     </td>
-                    <td data-label="Client" className="px-6 py-4 text-slate-800 font-medium">{po.client_name}</td>
-                    <td data-label="PO Date" className="px-6 py-4 text-slate-600">{formatDate(po.po_date)}</td>
-                    <td data-label="Amount" className="px-6 py-4 text-right font-medium text-slate-900">
+                    <td data-label="Client" className="px-6 py-4 text-slate-200 font-medium">{po.client_name}</td>
+                    <td data-label="PO Date" className="px-6 py-4 text-slate-400">{formatDate(po.po_date)}</td>
+                    <td data-label="Amount" className="px-6 py-4 text-right font-medium text-slate-100">
                       {po.amount ? formatCurrency(po.amount, po.currency) : '-'}
                     </td>
 

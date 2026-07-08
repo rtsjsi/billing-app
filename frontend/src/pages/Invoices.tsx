@@ -253,7 +253,7 @@ export default function Invoices() {
             <div className="min-h-[280px]">
               <table className="responsive-table w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-100 text-xs text-slate-500 font-semibold uppercase tracking-wider bg-slate-50">
+                  <tr className="border-b border-slate-800/60 text-xs text-slate-400 font-semibold uppercase tracking-wider bg-slate-900/80">
                     <th className="px-6 py-3.5">Invoice Number</th>
                     <th className="px-6 py-3.5">Client Details</th>
                     <th className="px-6 py-3.5">PO Linked</th>
@@ -263,35 +263,35 @@ export default function Invoices() {
                     <th className="px-6 py-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-sm">
+                <tbody className="divide-y divide-slate-800/60 text-sm">
                   {invoices.map((inv) => (
                     <tr 
                       key={inv.id}
                       onClick={() => navigate(`/invoices/preview/${inv.id}`)}
-                      className="hover:bg-slate-50 transition-colors cursor-pointer"
+                      className="hover:bg-slate-800/40 transition-colors cursor-pointer"
                     >
-                      <td data-label="Invoice Number" className="px-6 py-4 font-mono font-medium text-slate-800">
+                      <td data-label="Invoice Number" className="px-6 py-4 font-mono font-medium text-slate-200">
                         {inv.invoice_number}
                       </td>
                       <td data-label="Client Details" className="px-6 py-4">
-                        <div className="font-semibold text-slate-900">{inv.client_name}</div>
+                        <div className="font-semibold text-slate-100">{inv.client_name}</div>
                         {inv.client_company && (
-                          <div className="text-xs text-slate-500">{inv.client_company}</div>
+                          <div className="text-xs text-slate-400">{inv.client_company}</div>
                         )}
                       </td>
-                      <td data-label="PO Linked" className="px-6 py-4 font-mono text-xs text-slate-600">
-                        {inv.po_number ? inv.po_number : <span className="text-slate-400">-</span>}
+                      <td data-label="PO Linked" className="px-6 py-4 font-mono text-xs text-slate-400">
+                        {inv.po_number ? inv.po_number : <span className="text-slate-500">-</span>}
                       </td>
                       <td data-label="Dates" className="px-6 py-4 space-y-0.5">
-                        <div className="text-xs text-slate-700">Issued: {formatDate(inv.issue_date)}</div>
+                        <div className="text-xs text-slate-300">Issued: {formatDate(inv.issue_date)}</div>
                         {inv.due_date && (
-                          <div className="text-xs text-slate-500">Due: {formatDate(inv.due_date)}</div>
+                          <div className="text-xs text-slate-400">Due: {formatDate(inv.due_date)}</div>
                         )}
                       </td>
                       <td data-label="Amount Due" className="px-6 py-4 text-right">
-                        <div className="font-medium text-slate-900">{formatCurrency(inv.total, inv.currency)}</div>
+                        <div className="font-medium text-slate-100">{formatCurrency(inv.total, inv.currency)}</div>
                         {inv.amount_paid > 0 && (
-                          <div className="text-xs text-emerald-600">Paid: {formatCurrency(inv.amount_paid, inv.currency)}</div>
+                          <div className="text-xs text-emerald-400">Paid: {formatCurrency(inv.amount_paid, inv.currency)}</div>
                         )}
                       </td>
                       <td data-label="Status" className="px-6 py-4 text-center">
