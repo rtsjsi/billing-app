@@ -200,8 +200,9 @@ app.get('/api/auth/me', async (c) => {
       businessName: settings.business_name,
       currency: settings.currency
     });
-  } catch {
-    return c.json({ authenticated: false }, 200);
+  } catch (error: any) {
+    console.error('Error in /api/auth/me:', error);
+    return c.json({ authenticated: false, debug_error: error.message || String(error) }, 200);
   }
 });
 

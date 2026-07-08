@@ -56,7 +56,8 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         });
         navigate('/');
       } else {
-        setError('Authentication succeeded but failed to load user profile settings.');
+        console.error('Auth me failed:', userRes);
+        setError(`Authentication succeeded but failed to load user profile settings. ${userRes.debug_error ? 'Details: ' + userRes.debug_error : ''}`);
       }
     } catch (err: any) {
       setError(err.message || 'Invalid username or password.');
