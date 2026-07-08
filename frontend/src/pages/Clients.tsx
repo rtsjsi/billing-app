@@ -15,6 +15,7 @@ import {
   ArchiveRestore,
 } from 'lucide-react';
 import ActionMenu from '../components/ActionMenu';
+import ConfirmModal from '../components/ConfirmModal';
 import { api, Client } from '../lib/api';
 import { useFilters } from '../lib/FilterContext';
 
@@ -34,6 +35,7 @@ export default function Clients() {
     : clients;
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [deleteClientId, setDeleteClientId] = useState<number | null>(null);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [formName, setFormName] = useState('');
   const [formCompany, setFormCompany] = useState('');
@@ -133,12 +135,16 @@ export default function Clients() {
     }
   };
 
-  const handleDeleteClient = async (id: number) => {
-    if (!window.confirm('Are you sure you want to permanently delete this client?')) return;
-    
+  const handleDeleteClient = (id: number) => {
+    setDeleteClientId(id);
+  };
+
+  const performDelete = async () => {
+    if (!deleteClientId) return;
     setDeleteConflict(null);
     try {
-      await api.clients.delete(id);
+      await api.clients.delete(deleteClientId);
+      setDeleteClientId(null);
       fetchClients();
     } catch (err: any) {
       if (err.message.includes('Cannot delete client')) {
@@ -146,6 +152,7 @@ export default function Clients() {
       } else {
         alert(err.message || 'Failed to delete client');
       }
+      setDeleteClientId(null);
     }
   };
 
@@ -434,6 +441,15 @@ export default function Clients() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={deleteClientId !== null}
+        title="Delete Client"
+        message="Are you sure you want to permanently delete this client?"
+        confirmText="Delete"
+        onConfirm={performDelete}
+        onCancel={() => setDeleteClientId(null)}
+      />
     </div>
   );
 }

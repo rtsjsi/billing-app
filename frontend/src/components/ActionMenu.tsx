@@ -69,6 +69,7 @@ export default function ActionMenu({ isOpen, onToggle, onClose, items, title = '
   return (
     <div ref={menuRef} className="inline-block text-left relative">
       <button
+        type="button"
         onClick={onToggle}
         className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 rounded-lg border border-slate-200 transition-colors cursor-pointer"
         title="Actions"
@@ -88,6 +89,7 @@ export default function ActionMenu({ isOpen, onToggle, onClose, items, title = '
         >
           {items.map((item, index) => (
             <button
+              type="button"
               key={index}
               role="menuitem"
               disabled={item.disabled}
@@ -123,6 +125,7 @@ export default function ActionMenu({ isOpen, onToggle, onClose, items, title = '
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
               <h3 className="text-base font-semibold text-slate-900">{title}</h3>
               <button
+                type="button"
                 onClick={onClose}
                 className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
                 aria-label="Close"
@@ -133,6 +136,7 @@ export default function ActionMenu({ isOpen, onToggle, onClose, items, title = '
             <div className="py-2">
               {items.map((item, index) => (
                 <button
+                  type="button"
                   key={index}
                   role="menuitem"
                   disabled={item.disabled}

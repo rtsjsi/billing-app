@@ -136,7 +136,7 @@ export async function authMiddleware(c: Context, next: Next) {
     }
     
     // Store user info in context
-    c.set('user', payload);
+    c.set('jwtPayload', payload);
     await next();
   } catch (err) {
     deleteCookie(c, 'session');

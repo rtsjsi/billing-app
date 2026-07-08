@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { api, Invoice, InvoiceItem, Payment, BusinessSettings } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/utils';
+import ConfirmModal from '../components/ConfirmModal';
 
 export default function InvoicePreview() {
   const { id } = useParams<{ id: string }>();
@@ -41,6 +42,7 @@ export default function InvoicePreview() {
   const [payRef, setPayRef] = useState('');
   const [payNotes, setPayNotes] = useState('');
   const [paySubmitting, setPaySubmitting] = useState(false);
+  const [deletePaymentId, setDeletePaymentId] = useState<number | null>(null);
 
   const invoiceRef = useRef<HTMLDivElement>(null);
 
@@ -117,10 +119,15 @@ export default function InvoicePreview() {
     }
   };
 
-  const handleDeletePayment = async (paymentId: number) => {
-    if (!window.confirm('Are you sure you want to remove this payment entry?')) return;
+  const handleDeletePayment = (paymentId: number) => {
+    setDeletePaymentId(paymentId);
+  };
+
+  const performDeletePayment = async () => {
+    if (!deletePaymentId) return;
     try {
-      await api.payments.delete(paymentId);
+      await api.payments.delete(deletePaymentId);
+      setDeletePaymentId(null);
       fetchData();
     } catch (err: any) {
       alert(err.message || 'Failed to delete payment.');
@@ -541,6 +548,15 @@ export default function InvoicePreview() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={deletePaymentId !== null}
+        title="Delete Payment"
+        message="Are you sure you want to remove this payment entry?"
+        confirmText="Delete"
+        onConfirm={performDeletePayment}
+        onCancel={() => setDeletePaymentId(null)}
+      />
     </div>
   );
 }

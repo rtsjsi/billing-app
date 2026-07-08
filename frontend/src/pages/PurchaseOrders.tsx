@@ -9,6 +9,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import ActionMenu from '../components/ActionMenu';
+import ConfirmModal from '../components/ConfirmModal';
 import { api, PurchaseOrder, Client, PurchaseOrderItem } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { useFilters } from '../lib/FilterContext';
@@ -41,6 +42,7 @@ export default function PurchaseOrders() {
 
   // Form states
   const [modalOpen, setModalOpen] = useState(false);
+  const [deletePOId, setDeletePOId] = useState<number | null>(null);
   const [editingPO, setEditingPO] = useState<PurchaseOrder | null>(null);
   const [formClientId, setFormClientId] = useState('');
   const [formPoNumber, setFormPoNumber] = useState('');
@@ -171,11 +173,15 @@ export default function PurchaseOrders() {
     }
   };
 
-  const handleDeletePO = async (id: number) => {
-    if (!window.confirm('Are you sure you want to permanently delete this Purchase Order? Any links to existing invoices will remain but the PO reference itself will be destroyed.')) return;
+  const handleDeletePO = (id: number) => {
+    setDeletePOId(id);
+  };
 
+  const performDelete = async () => {
+    if (!deletePOId) return;
     try {
-      await api.pos.delete(id);
+      await api.pos.delete(deletePOId);
+      setDeletePOId(null);
       fetchPOs();
     } catch (err: any) {
       alert(err.message || 'Failed to delete Purchase Order.');
@@ -539,6 +545,15 @@ export default function PurchaseOrders() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={deletePOId !== null}
+        title="Delete Purchase Order"
+        message="Are you sure you want to permanently delete this Purchase Order? Any links to existing invoices will remain but the PO reference itself will be destroyed."
+        confirmText="Delete"
+        onConfirm={performDelete}
+        onCancel={() => setDeletePOId(null)}
+      />
     </div>
   );
 }

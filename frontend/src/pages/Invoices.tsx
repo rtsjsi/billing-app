@@ -16,6 +16,7 @@ import {
   Edit2
 } from 'lucide-react';
 import ActionMenu from '../components/ActionMenu';
+import ConfirmModal from '../components/ConfirmModal';
 import { api, Invoice, Client, InvoiceItem, BusinessSettings } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { useFilters } from '../lib/FilterContext';
@@ -41,6 +42,7 @@ export default function Invoices() {
   const { selectedFY, selectedClient, clients } = useFilters();
   const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
   const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<number | null>(null);
+  const [deleteInvoiceId, setDeleteInvoiceId] = useState<number | null>(null);
 
   const handleDownloadPDF = (e: React.MouseEvent, inv: Invoice) => {
     e.stopPropagation();
@@ -100,11 +102,15 @@ export default function Invoices() {
     setPage(1);
   };
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm('Are you sure you want to permanently delete this invoice? This cannot be undone.')) return;
+  const handleDelete = (id: number) => {
+    setDeleteInvoiceId(id);
+  };
 
+  const performDelete = async () => {
+    if (!deleteInvoiceId) return;
     try {
-      await api.invoices.delete(id);
+      await api.invoices.delete(deleteInvoiceId);
+      setDeleteInvoiceId(null);
       fetchInvoices();
     } catch (err: any) {
       alert(err.message || 'Failed to delete invoice.');
@@ -365,6 +371,15 @@ export default function Invoices() {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={deleteInvoiceId !== null}
+        title="Delete Invoice"
+        message="Are you sure you want to permanently delete this invoice? This cannot be undone."
+        confirmText="Delete"
+        onConfirm={performDelete}
+        onCancel={() => setDeleteInvoiceId(null)}
+      />
     </div>
   );
 }
