@@ -168,11 +168,33 @@ export async function updateUserPassword(
 // ----------------------------------------------------
 
 export async function getSettings(db: D1Database, userId: number): Promise<BusinessSettings> {
-  const settings = await db.prepare('SELECT * FROM business_settings WHERE user_id = ?').bind(userId).first<BusinessSettings>();
-  if (!settings) {
-    throw new Error('Business settings not found');
-  }
-  return settings;
+  // Some deployments may have partially-populated rows in `business_settings`
+  // (e.g. older schema versions or manual DB edits). Normalize missing/empty
+  // values in code so the frontend can reliably render and proceed.
+  const raw = await db
+    .prepare('SELECT * FROM business_settings WHERE user_id = ?')
+    .bind(userId)
+    .first<any>();
+
+  if (!raw) throw new Error('Business settings not found');
+
+  const normalized: BusinessSettings = {
+    ...raw,
+    business_name: (raw.business_name && String(raw.business_name).trim()) ? String(raw.business_name) : 'Business',
+    currency: (raw.currency && String(raw.currency).trim()) ? String(raw.currency) : 'INR',
+    tax_label: (raw.tax_label && String(raw.tax_label).trim()) ? String(raw.tax_label) : 'GST',
+    default_tax_rate: raw.default_tax_rate ?? 0,
+    invoice_prefix: (raw.invoice_prefix && String(raw.invoice_prefix).trim()) ? String(raw.invoice_prefix) : 'INV-',
+    invoice_next_number: raw.invoice_next_number ?? 1,
+    invoice_number_reset: raw.invoice_number_reset ?? 'financial_year',
+    default_payment_terms_days: raw.default_payment_terms_days ?? 15,
+    // These are intentionally nullable in the DB schema.
+    default_notes: raw.default_notes ?? null,
+    default_terms: raw.default_terms ?? null,
+    updated_at: raw.updated_at ?? new Date().toISOString(),
+  };
+
+  return normalized;
 }
 
 export async function updateSettings(
