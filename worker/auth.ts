@@ -2,6 +2,30 @@ import { Context, Next } from 'hono';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import { sign, verify } from 'hono/jwt';
 
+let localJwtSecret: string | null = null;
+
+function isLocalRequest(c: Context): boolean {
+  const host = c.req.header('host') || '';
+  return host.includes('localhost') || host.startsWith('127.0.0.1');
+}
+
+export function getJwtSecret(c: Context): string {
+  const secret = c.env.JWT_SECRET;
+  if (secret && secret.trim() !== '') return secret;
+
+  // For free-tier dev, generate a per-isolate random secret rather than using a known fallback.
+  // In production, users should set JWT_SECRET via `wrangler secret put JWT_SECRET`.
+  if (isLocalRequest(c)) {
+    if (!localJwtSecret) {
+      // crypto.randomUUID is widely available in modern runtimes.
+      localJwtSecret = crypto.randomUUID();
+    }
+    return localJwtSecret;
+  }
+
+  throw new Error('JWT_SECRET is not configured. Set it via `wrangler secret put JWT_SECRET`.');
+}
+
 // Helper to hash password using Web Crypto API PBKDF2
 export async function hashPassword(password: string, salt: string): Promise<string> {
   const encoder = new TextEncoder();
@@ -48,6 +72,52 @@ export interface SessionPayload {
   exp: number;
 }
 
+export function generateCsrfToken(): string {
+  const array = new Uint8Array(16);
+  crypto.getRandomValues(array);
+  return Array.from(array)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function isUnsafeMethod(method: string): boolean {
+  return !['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase());
+}
+
+const CSRF_EXEMPT_PATHS = new Set([
+  '/api/auth/login',
+  '/api/auth/setup',
+]);
+
+/**
+ * CSRF protection for cookie-based session auth.
+ * - Requires a non-HttpOnly `csrf` cookie and a matching `x-csrf-token` header.
+ * - Exempts initial bootstrap/login endpoints.
+ */
+export async function csrfMiddleware(c: Context, next: Next) {
+  // Only enforce for state-changing requests
+  if (!isUnsafeMethod(c.req.method)) {
+    return next();
+  }
+
+  const path = c.req.path;
+  if (CSRF_EXEMPT_PATHS.has(path)) {
+    return next();
+  }
+
+  // If no session cookie exists, let auth middleware / handlers decide.
+  const sessionToken = getCookie(c, 'session');
+  if (!sessionToken) return next();
+
+  const cookieToken = getCookie(c, 'csrf');
+  const headerToken = c.req.header('x-csrf-token');
+  if (!cookieToken || !headerToken || cookieToken !== headerToken) {
+    return c.json({ error: 'Forbidden: CSRF validation failed' }, 403);
+  }
+
+  return next();
+}
+
 // Middleware to verify session from HttpOnly cookie
 export async function authMiddleware(c: Context, next: Next) {
   const token = getCookie(c, 'session');
@@ -56,7 +126,7 @@ export async function authMiddleware(c: Context, next: Next) {
   }
 
   try {
-    const secret = c.env.JWT_SECRET || 'local-dev-jwt-secret-key-change-in-production';
+    const secret = getJwtSecret(c);
     const payload = (await verify(token, secret, 'HS256')) as unknown as SessionPayload;
     
     // Check expiration
@@ -76,15 +146,26 @@ export async function authMiddleware(c: Context, next: Next) {
 
 // Create and set the session cookie
 export async function createSession(c: Context, userId: number, username: string) {
-  const secret = c.env.JWT_SECRET || 'local-dev-jwt-secret-key-change-in-production';
+  const secret = getJwtSecret(c);
   const exp = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7; // 7 days expiration
   
   const token = await sign({ userId, username, exp }, secret);
   
+  const csrfToken = generateCsrfToken();
+
   setCookie(c, 'session', token, {
     httpOnly: true,
     secure: true,
-    sameSite: 'Lax',
+    sameSite: 'Strict',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 7 // 7 days
+  });
+
+  // CSRF cookie must be readable by frontend JS to attach to X-CSRF-Token header.
+  setCookie(c, 'csrf', csrfToken, {
+    httpOnly: false,
+    secure: true,
+    sameSite: 'Strict',
     path: '/',
     maxAge: 60 * 60 * 24 * 7 // 7 days
   });
@@ -93,6 +174,10 @@ export async function createSession(c: Context, userId: number, username: string
 // Clear the session cookie
 export function clearSession(c: Context) {
   deleteCookie(c, 'session', {
+    path: '/'
+  });
+
+  deleteCookie(c, 'csrf', {
     path: '/'
   });
 }

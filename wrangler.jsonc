@@ -15,7 +15,5 @@
     }
   ],
 
-  "vars": {
-    "JWT_SECRET": "local-dev-jwt-secret-key-change-in-production"
-  }
+  "vars": {}
 }

@@ -1,13 +1,17 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { getCookie } from 'hono/cookie';
 import { 
   authMiddleware, 
   hashPassword, 
   generateSalt, 
   createSession, 
   clearSession, 
-  SessionPayload 
+  SessionPayload,
+  csrfMiddleware,
+  getJwtSecret
 } from './auth';
+import { checkRateLimit } from './lib/rate-limit';
 import { 
   getUserCount, 
   getUserByUsername, 
@@ -33,11 +37,29 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-// Enable CORS in dev if needed
-app.use('*', cors({
-  origin: (origin) => origin, // allow all origins dynamically for easy dev
-  credentials: true,
-}));
+// Free-tier hardening: restrict CORS to known dev origins.
+// Same-origin requests (app served from this Worker) don't need CORS.
+const allowedOrigins = new Set([
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:8787',
+  'http://127.0.0.1:8787',
+]);
+
+app.use(
+  '*',
+  cors({
+    origin: (origin) => {
+      // If Origin header is absent, it's typically a same-origin request; no CORS response is needed.
+      if (!origin) return undefined;
+      return allowedOrigins.has(origin) ? origin : undefined;
+    },
+    credentials: true,
+  })
+);
+
+// CSRF protection for cookie-based session auth.
+app.use('/api/*', csrfMiddleware);
 
 // ----------------------------------------------------
 // Public Authentication & Setup API
@@ -47,7 +69,8 @@ app.use('*', cors({
 app.get('/api/auth/setup-status', async (c) => {
   try {
     const userCount = await getUserCount(c.env.DB);
-    return c.json({ needsSetup: false }); // Multiple users allowed, setup is just register now
+    // If there are no users yet, the setup flow should be required.
+    return c.json({ needsSetup: userCount === 0 });
   } catch (error: any) {
     const errMsg = error.message || '';
     if (errMsg.includes('no such table') || errMsg.includes('no such table: users')) {
@@ -66,6 +89,20 @@ app.get('/api/auth/setup-status', async (c) => {
 // Setup admin user & business profile (now acts as standard registration)
 app.post('/api/auth/setup', async (c) => {
   try {
+    const rate = checkRateLimit(c, {
+      keyPrefix: 'auth-setup',
+      limit: 5,
+      windowMs: 60_000,
+    });
+    if (rate.limited) {
+      return c.json({ error: `Too many setup attempts. Retry in ${rate.retryAfterSec}s.` }, 429);
+    }
+
+    const userCount = await getUserCount(c.env.DB);
+    if (userCount > 0) {
+      return c.json({ error: 'Setup already completed' }, 409);
+    }
+
     const { username, password, business_name, owner_name, email } = await c.req.json();
     if (!username || !password || !business_name) {
       return c.json({ error: 'Username, password, and business name are required' }, 400);
@@ -101,6 +138,15 @@ app.post('/api/auth/setup', async (c) => {
 // User Login
 app.post('/api/auth/login', async (c) => {
   try {
+    const rate = checkRateLimit(c, {
+      keyPrefix: 'auth-login',
+      limit: 10,
+      windowMs: 60_000,
+    });
+    if (rate.limited) {
+      return c.json({ error: `Too many login attempts. Retry in ${rate.retryAfterSec}s.` }, 429);
+    }
+
     const { username, password } = await c.req.json();
     if (!username || !password) {
       return c.json({ error: 'Username and password are required' }, 400);
@@ -135,17 +181,10 @@ app.post('/api/auth/logout', (c) => {
 app.get('/api/auth/me', async (c) => {
   try {
     // If no token exists, return unauthenticated status
-    const req = c.req.raw;
-    const cookie = req.headers.get('Cookie');
-    if (!cookie || !cookie.includes('session=')) {
-      return c.json({ authenticated: false }, 200);
-    }
-
-    // Run auth middleware manually or return session info
-    const token = cookie.split(';').find(item => item.trim().startsWith('session='))?.split('=')[1];
+    const token = getCookie(c, 'session');
     if (!token) return c.json({ authenticated: false }, 200);
 
-    const secret = c.env.JWT_SECRET || 'local-dev-jwt-secret-key-change-in-production';
+    const secret = getJwtSecret(c);
     const { verify } = await import('hono/jwt');
     const payload = (await verify(token, secret, 'HS256')) as unknown as SessionPayload;
 

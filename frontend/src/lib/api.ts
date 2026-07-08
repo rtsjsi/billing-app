@@ -148,6 +148,15 @@ export interface InvoiceListResponse {
 
 const BASE_URL = '';
 
+function getCookieValue(name: string): string | null {
+  const cookies = document.cookie ? document.cookie.split('; ') : [];
+  for (const c of cookies) {
+    const [k, ...rest] = c.split('=');
+    if (k === name) return decodeURIComponent(rest.join('='));
+  }
+  return null;
+}
+
 async function request<T = any>(
   path: string,
   options: RequestInit = {}
@@ -163,6 +172,20 @@ async function request<T = any>(
       'Content-Type': 'application/json',
       ...(options.headers || {})
     };
+  }
+
+  // CSRF hardening for cookie-based sessions:
+  // For any state-changing request, attach X-CSRF-Token from the readable `csrf` cookie.
+  const method = (options.method || 'GET').toUpperCase();
+  const isUnsafeMethod = !['GET', 'HEAD', 'OPTIONS'].includes(method);
+  if (isUnsafeMethod) {
+    const csrfToken = getCookieValue('csrf');
+    if (csrfToken) {
+      options.headers = {
+        ...(options.headers || {}),
+        'x-csrf-token': csrfToken,
+      };
+    }
   }
 
   const response = await fetch(url, options);

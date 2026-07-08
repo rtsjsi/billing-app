@@ -55,20 +55,36 @@ app.get('/', async (c) => {
     const startDate = c.req.query('startDate') || undefined;
     const endDate = c.req.query('endDate') || undefined;
     
-    const limit = parseInt(c.req.query('limit') || '20', 10);
-    const page = parseInt(c.req.query('page') || '1', 10);
-    const offset = (page - 1) * limit;
+    const rawLimit = Number(c.req.query('limit') || '20');
+    const rawPage = Number(c.req.query('page') || '1');
 
-    const invoices = await listInvoices(c.env.DB, userId, status, clientId, startDate, endDate, limit, offset, poId);
+    const limit = Number.isFinite(rawLimit) ? rawLimit : 20;
+    const page = Number.isFinite(rawPage) ? rawPage : 1;
+
+    const clampedLimit = Math.min(Math.max(Math.floor(limit), 1), 100);
+    const clampedPage = Math.min(Math.max(Math.floor(page), 1), 1000);
+    const offset = (clampedPage - 1) * clampedLimit;
+
+    const invoices = await listInvoices(
+      c.env.DB,
+      userId,
+      status,
+      clientId,
+      startDate,
+      endDate,
+      clampedLimit,
+      offset,
+      poId
+    );
     const total = await countInvoices(c.env.DB, userId, status, clientId, startDate, endDate, poId);
 
     return c.json({
       invoices,
       pagination: {
-        page,
-        limit,
+        page: clampedPage,
+        limit: clampedLimit,
         total,
-        totalPages: Math.ceil(total / limit)
+        totalPages: Math.ceil(total / clampedLimit)
       }
     });
   } catch (error: any) {
