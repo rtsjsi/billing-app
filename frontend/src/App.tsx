@@ -75,10 +75,10 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent mx-auto" />
-          <p className="text-slate-500 text-xs font-medium tracking-wide">Syncing your billing workspace...</p>
+          <p className="text-slate-400 text-xs font-medium tracking-wide">Syncing your billing workspace...</p>
         </div>
       </div>
     );
