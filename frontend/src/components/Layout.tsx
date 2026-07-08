@@ -7,9 +7,9 @@ import {
   FileText, 
   Settings, 
   LogOut, 
-  Menu, 
-  X,
-  Zap
+  Zap,
+  MoreHorizontal,
+  X
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useFilters } from '../lib/FilterContext';
@@ -21,7 +21,7 @@ interface LayoutProps {
 }
 
 export default function Layout({ children, user, onLogout }: LayoutProps) {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { selectedFY, setSelectedFY, selectedClient, setSelectedClient, availableYears, clients } = useFilters();
@@ -36,7 +36,14 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
     }
   };
 
-  const navItems = [
+  const mainNavItems = [
+    { name: 'Home', path: '/', icon: LayoutDashboard },
+    { name: 'Invoices', path: '/invoices', icon: FileText },
+    { name: 'POs', path: '/purchase-orders', icon: FileSpreadsheet },
+    { name: 'Clients', path: '/clients', icon: Users },
+  ];
+
+  const sidebarNavItems = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
     { name: 'Invoices', path: '/invoices', icon: FileText },
     { name: 'Purchase Orders', path: '/purchase-orders', icon: FileSpreadsheet },
@@ -44,74 +51,57 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
 
-  // If in print mode, we render just the children without any layout elements (no sidebar, no headers)
   const isPrint = location.pathname.includes('/invoices/preview/');
 
   if (isPrint) {
     return <div className="min-h-screen bg-white text-black p-0 print:p-0">{children}</div>;
   }
 
-  return (
-    <div className="min-h-screen bg-transparent text-slate-100 flex flex-col md:flex-row">
-      {/* Mobile Top Header */}
-      <header className="md:hidden flex items-center justify-between px-4 py-3 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-50">
-        <div className="flex items-center space-x-2">
-          <Zap className="h-6 w-6 text-sky-400 fill-sky-400" />
-          <span className="font-display font-bold text-lg text-white">BillingApp</span>
-        </div>
-        <button 
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="text-slate-400 hover:text-white focus:outline-none"
-        >
-          {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </button>
-      </header>
+  const isActivePath = (path: string) => {
+    if (path === '/') return location.pathname === '/';
+    return location.pathname.startsWith(path);
+  };
 
-      {/* Sidebar Navigation */}
-      <aside className={`
-        fixed inset-y-0 left-0 z-40 w-64 bg-slate-900/90 backdrop-blur-md border-r border-slate-800/80 flex flex-col justify-between transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:h-screen
-        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col md:flex-row">
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex w-64 bg-white border-r border-slate-200 flex-col justify-between h-screen sticky top-0">
         <div>
-          {/* Logo & Header */}
-          <div className="px-6 py-5 hidden md:flex items-center space-x-2 border-b border-slate-800/50">
-            <div className="p-1.5 bg-sky-500/10 rounded-lg border border-sky-500/20">
-              <Zap className="h-5 w-5 text-sky-400 fill-sky-400/30" />
+          <div className="px-6 py-5 flex items-center space-x-2 border-b border-slate-100">
+            <div className="p-1.5 bg-sky-50 rounded-lg border border-sky-100">
+              <Zap className="h-5 w-5 text-sky-600 fill-sky-100" />
             </div>
-            <span className="font-display font-extrabold text-xl bg-gradient-to-r from-sky-400 to-indigo-400 bg-clip-text text-transparent">
+            <span className="font-display font-extrabold text-xl text-slate-900">
               BillingApp
             </span>
           </div>
 
-          {/* Business Name Badge */}
-          <div className="px-6 py-4 border-b border-slate-800/50 bg-slate-950/40">
-            <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">Business Profile</p>
-            <p className="font-medium text-slate-200 mt-1 truncate" title={user?.businessName}>
+          <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+            <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Business Profile</p>
+            <p className="font-medium text-slate-800 mt-1 truncate" title={user?.businessName}>
               {user?.businessName || 'Freelance Profile'}
             </p>
             <p className="text-xs text-slate-500 truncate mt-0.5">
-              User: <span className="text-slate-400 font-mono font-bold">{user?.username}</span>
+              User: <span className="text-slate-700 font-mono font-semibold">{user?.username}</span>
             </p>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="px-4 py-6 space-y-1.5">
-            {navItems.map((item) => {
+          <nav className="px-3 py-4 space-y-0.5">
+            {sidebarNavItems.map((item) => {
               const Icon = item.icon;
               return (
                 <NavLink
                   key={item.name}
                   to={item.path}
-                  onClick={() => setMobileMenuOpen(false)}
                   className={({ isActive }) => `
-                    flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 group
+                    flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
                     ${isActive 
-                      ? 'bg-sky-500/10 border-l-4 border-sky-400 text-sky-400 shadow-[inset_4px_0_12px_rgba(14,165,233,0.05)]' 
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border-l-4 border-transparent'
+                      ? 'bg-sky-50 text-sky-700 border border-sky-100' 
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                     }
                   `}
                 >
-                  <Icon className="h-5 w-5 shrink-0 transition-transform group-hover:scale-105" />
+                  <Icon className="h-5 w-5 shrink-0" />
                   <span>{item.name}</span>
                 </NavLink>
               );
@@ -119,42 +109,42 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
           </nav>
         </div>
 
-        {/* User / Logout Section */}
-        <div className="p-4 border-t border-slate-800/50 bg-slate-950/20">
+        <div className="p-3 border-t border-slate-100">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/5 transition-all duration-200 group"
+            className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:text-red-600 hover:bg-red-50 transition-all duration-200"
           >
-            <LogOut className="h-5 w-5 shrink-0 text-slate-500 group-hover:text-red-400" />
+            <LogOut className="h-5 w-5 shrink-0" />
             <span>Sign Out</span>
           </button>
         </div>
       </aside>
 
-      {/* Overlay for mobile sidebar */}
-      {mobileMenuOpen && (
-        <div 
-          onClick={() => setMobileMenuOpen(false)}
-          className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-30 md:hidden"
-        />
-      )}
-
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col h-screen overflow-y-auto bg-transparent relative">
-        {/* Top Sticky Global Filter Header */}
-        <header className="no-print sticky top-0 bg-slate-50/85 backdrop-blur-md border-b border-slate-200/80 z-30 px-4 sm:px-6 py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+      <main className="flex-1 flex flex-col min-h-screen md:h-screen md:overflow-y-auto relative">
+        {/* Mobile Top Header */}
+        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-slate-200 sticky top-0 z-40">
           <div className="flex items-center space-x-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Global context filters</span>
+            <Zap className="h-5 w-5 text-sky-600 fill-sky-100" />
+            <span className="font-display font-bold text-lg text-slate-900">BillingApp</span>
           </div>
-          
-          <div className="flex w-full lg:w-auto items-center gap-3 flex-wrap sm:flex-nowrap">
-            {/* Financial Year Selector */}
-            <div className="flex items-center justify-between sm:justify-start w-full sm:w-auto space-x-2">
-              <span className="text-xs text-slate-400 font-medium">Financial Year:</span>
+          <p className="text-xs text-slate-500 truncate max-w-[140px]" title={user?.businessName}>
+            {user?.businessName}
+          </p>
+        </header>
+
+        {/* Global Filters */}
+        <header className="no-print sticky top-0 md:top-0 z-30 bg-white border-b border-slate-200 px-4 sm:px-6 py-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-2.5">
+            Filters
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-slate-600 mb-1">Financial Year</label>
               <select
                 value={selectedFY}
                 onChange={(e) => setSelectedFY(e.target.value)}
-                className="bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-sky-500 transition-all font-medium cursor-pointer shadow-sm w-40 sm:w-auto"
+                className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 font-medium cursor-pointer"
               >
                 <option value="">All Years</option>
                 {availableYears.map((fy) => (
@@ -162,14 +152,12 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
                 ))}
               </select>
             </div>
-
-            {/* Client Selector */}
-            <div className="flex items-center justify-between sm:justify-start w-full sm:w-auto space-x-2">
-              <span className="text-xs text-slate-400 font-medium">Client:</span>
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-slate-600 mb-1">Client</label>
               <select
                 value={selectedClient}
                 onChange={(e) => setSelectedClient(e.target.value)}
-                className="bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-sky-500 transition-all font-medium cursor-pointer shadow-sm w-44 sm:max-w-[220px]"
+                className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 font-medium cursor-pointer"
               >
                 <option value="">All Clients</option>
                 {clients.map((client) => (
@@ -180,10 +168,89 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
           </div>
         </header>
 
-        <div className="flex-1 p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto">
+        <div className="flex-1 p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto pb-24 md:pb-8">
           {children}
         </div>
       </main>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-white border-t border-slate-200 safe-area-bottom">
+        <div className="flex items-stretch justify-around px-1 pt-1 pb-1">
+          {mainNavItems.map((item) => {
+            const Icon = item.icon;
+            const active = isActivePath(item.path);
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                onClick={() => setMoreMenuOpen(false)}
+                className={`flex flex-col items-center justify-center flex-1 py-2 px-1 rounded-lg transition-colors min-w-0 ${
+                  active
+                    ? 'text-sky-700'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <Icon className={`h-5 w-5 ${active ? 'stroke-[2.5px]' : ''}`} />
+                <span className={`text-[10px] mt-0.5 truncate w-full text-center ${active ? 'font-semibold' : 'font-medium'}`}>
+                  {item.name}
+                </span>
+              </NavLink>
+            );
+          })}
+          <button
+            onClick={() => setMoreMenuOpen(true)}
+            className={`flex flex-col items-center justify-center flex-1 py-2 px-1 rounded-lg transition-colors min-w-0 ${
+              moreMenuOpen || location.pathname === '/settings'
+                ? 'text-sky-700'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <MoreHorizontal className="h-5 w-5" />
+            <span className="text-[10px] mt-0.5 font-medium">More</span>
+          </button>
+        </div>
+      </nav>
+
+      {/* Mobile More Menu (bottom sheet) */}
+      {moreMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-[60] flex items-end justify-center">
+          <div
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
+            onClick={() => setMoreMenuOpen(false)}
+          />
+          <div className="relative w-full max-w-lg bg-white rounded-t-2xl shadow-2xl animate-slide-up safe-area-bottom">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <h3 className="text-base font-semibold text-slate-900">More</h3>
+              <button
+                onClick={() => setMoreMenuOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="py-2">
+              <NavLink
+                to="/settings"
+                onClick={() => setMoreMenuOpen(false)}
+                className="flex items-center gap-3 px-5 py-3.5 text-base font-medium text-slate-800 active:bg-slate-50"
+              >
+                <Settings className="h-5 w-5 text-slate-500" />
+                Settings
+              </NavLink>
+              <button
+                onClick={() => {
+                  setMoreMenuOpen(false);
+                  handleLogout();
+                }}
+                className="w-full flex items-center gap-3 px-5 py-3.5 text-base font-medium text-red-600 active:bg-red-50"
+              >
+                <LogOut className="h-5 w-5 text-red-500" />
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

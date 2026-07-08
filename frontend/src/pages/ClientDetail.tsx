@@ -117,15 +117,15 @@ export default function ClientDetail() {
         <div className="space-y-1.5">
           <Link 
             to="/clients"
-            className="flex items-center space-x-1.5 text-xs text-slate-400 hover:text-white transition-colors"
+            className="inline-flex items-center gap-1.5 text-sm text-sky-600 hover:text-sky-700 font-medium transition-colors"
           >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Back to Clients</span>
+            <ArrowLeft className="h-4 w-4" />
+            <span>Clients</span>
           </Link>
-          <h1 className="font-display font-bold text-3xl text-white">{client.name}</h1>
+          <h1 className="page-title">{client.name}</h1>
           {client.company_name && (
-            <p className="text-slate-400 text-sm flex items-center font-medium">
-              <Building className="h-4 w-4 mr-1.5 text-slate-500" />
+            <p className="text-slate-600 text-sm flex items-center font-medium">
+              <Building className="h-4 w-4 mr-1.5 text-slate-400" />
               <span>{client.company_name}</span>
             </p>
           )}
