@@ -77,12 +77,12 @@ export default function ClientDetail() {
       <div className="space-y-4">
         <button 
           onClick={() => navigate('/clients')}
-          className="flex items-center space-x-1.5 text-sm text-slate-400 hover:text-white"
+          className="flex items-center space-x-1.5 text-sm text-slate-400 hover:text-slate-900"
         >
           <ArrowLeft className="h-4 w-4" />
           <span>Back to Clients</span>
         </button>
-        <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-xl text-red-200 text-sm">
+        <div className="p-6 bg-red-100 border border-red-500/20 rounded-xl text-red-600 text-sm">
           {error || 'Client profile not found.'}
         </div>
       </div>
@@ -135,7 +135,7 @@ export default function ClientDetail() {
         <div className="flex items-center space-x-3">
           <Link
             to={`/purchase-orders?client_id=${client.id}`}
-            className="flex items-center space-x-1.5 px-4 py-2 border border-slate-800 hover:border-slate-700 bg-slate-900/50 hover:bg-slate-900 rounded-lg text-sm font-medium text-slate-300 transition-colors cursor-pointer"
+            className="flex items-center space-x-1.5 px-4 py-2 border border-slate-200 hover:border-slate-300 bg-white hover:bg-white rounded-lg text-sm font-medium text-slate-700 transition-colors cursor-pointer"
           >
             <Plus className="h-4 w-4" />
             <span>Add PO</span>
@@ -153,46 +153,46 @@ export default function ClientDetail() {
       {/* Grid: Details Card & Stats Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Left Column: Profile Card */}
-        <div className="lg:col-span-2 glass-card p-6 rounded-2xl border-slate-800/80 space-y-6">
-          <h2 className="text-sm font-semibold text-sky-400 border-b border-slate-800/50 pb-2 uppercase tracking-wider">
+        <div className="lg:col-span-2 glass-card p-6 rounded-2xl border-slate-200 space-y-6">
+          <h2 className="text-sm font-semibold text-blue-600 border-b border-slate-200 pb-2 uppercase tracking-wider">
             Contact & billing profile
           </h2>
 
           <div className="space-y-4 text-sm">
             {client.email && (
-              <div className="flex items-center space-x-3 text-slate-300">
+              <div className="flex items-center space-x-3 text-slate-700">
                 <Mail className="h-4 w-4 text-slate-500 shrink-0" />
-                <a href={`mailto:${client.email}`} className="hover:text-sky-400 transition-colors truncate">
+                <a href={`mailto:${client.email}`} className="hover:text-blue-600 transition-colors truncate">
                   {client.email}
                 </a>
               </div>
             )}
             
             {client.phone && (
-              <div className="flex items-center space-x-3 text-slate-300">
+              <div className="flex items-center space-x-3 text-slate-700">
                 <Phone className="h-4 w-4 text-slate-500 shrink-0" />
                 <span>{client.phone}</span>
               </div>
             )}
 
             {client.billing_address && (
-              <div className="flex items-start space-x-3 text-slate-300">
+              <div className="flex items-start space-x-3 text-slate-700">
                 <MapPin className="h-4 w-4 text-slate-500 mt-0.5 shrink-0" />
                 <span className="whitespace-pre-line leading-relaxed">{client.billing_address}</span>
               </div>
             )}
 
             {client.gstin && (
-              <div className="pt-2 border-t border-slate-800/50">
+              <div className="pt-2 border-t border-slate-200">
                 <p className="text-[10px] text-slate-500 uppercase tracking-wider">Tax Registration (GSTIN)</p>
-                <p className="font-mono text-sm text-slate-200 mt-0.5">{client.gstin}</p>
+                <p className="font-mono text-sm text-slate-800 mt-0.5">{client.gstin}</p>
               </div>
             )}
 
             {client.notes && (
-              <div className="pt-2 border-t border-slate-800/50">
+              <div className="pt-2 border-t border-slate-200">
                 <p className="text-[10px] text-slate-500 uppercase tracking-wider">Private Notes</p>
-                <p className="text-slate-400 text-xs mt-1 bg-slate-950/30 p-2.5 rounded border border-slate-850">{client.notes}</p>
+                <p className="text-slate-400 text-xs mt-1 bg-slate-50 p-2.5 rounded border border-slate-850">{client.notes}</p>
               </div>
             )}
           </div>
@@ -201,39 +201,39 @@ export default function ClientDetail() {
         {/* Right Columns: Aggregate stats cards */}
         <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-4">
           {/* Total Billed */}
-          <div className="glass-card p-5 rounded-2xl flex items-center space-x-4 border-slate-800/80">
-            <div className="p-3 bg-sky-500/10 rounded-xl text-sky-400">
+          <div className="glass-card p-5 rounded-2xl flex items-center space-x-4 border-slate-200">
+            <div className="p-3 bg-blue-100 rounded-xl text-blue-600">
               <FileText className="h-5 w-5" />
             </div>
             <div>
               <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Total Invoiced</p>
-              <h3 className="font-display font-bold text-xl text-white mt-1">
+              <h3 className="font-display font-bold text-xl text-slate-900 mt-1">
                 {formatCurrency(totalBilled)}
               </h3>
             </div>
           </div>
 
           {/* Total Paid */}
-          <div className="glass-card p-5 rounded-2xl flex items-center space-x-4 border-slate-800/80">
-            <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400">
+          <div className="glass-card p-5 rounded-2xl flex items-center space-x-4 border-slate-200">
+            <div className="p-3 bg-emerald-100 rounded-xl text-emerald-600">
               <CheckCircle2 className="h-5 w-5" />
             </div>
             <div>
               <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Total Collected</p>
-              <h3 className="font-display font-bold text-xl text-white mt-1">
+              <h3 className="font-display font-bold text-xl text-slate-900 mt-1">
                 {formatCurrency(totalPaid)}
               </h3>
             </div>
           </div>
 
           {/* Outstanding */}
-          <div className="glass-card p-5 rounded-2xl flex items-center space-x-4 border-slate-800/80">
-            <div className="p-3 bg-amber-500/10 rounded-xl text-amber-400">
+          <div className="glass-card p-5 rounded-2xl flex items-center space-x-4 border-slate-200">
+            <div className="p-3 bg-amber-100 rounded-xl text-amber-600">
               <Clock className="h-5 w-5" />
             </div>
             <div>
               <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Outstanding Balance</p>
-              <h3 className="font-display font-bold text-xl text-white mt-1">
+              <h3 className="font-display font-bold text-xl text-slate-900 mt-1">
                 {formatCurrency(totalOutstanding)}
               </h3>
             </div>
@@ -244,10 +244,10 @@ export default function ClientDetail() {
       {/* Tabs: Invoices & Purchase Orders */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Invoices List */}
-        <div className="glass-card rounded-2xl border-slate-800/80 overflow-hidden flex flex-col">
-          <div className="px-6 py-4 border-b border-slate-800/50 bg-slate-900/10">
-            <h2 className="font-display font-bold text-base text-white flex items-center space-x-2">
-              <FileText className="h-5 w-5 text-sky-400" />
+        <div className="glass-card rounded-2xl border-slate-200 overflow-hidden flex flex-col">
+          <div className="px-6 py-4 border-b border-slate-200 bg-white/10">
+            <h2 className="font-display font-bold text-base text-slate-900 flex items-center space-x-2">
+              <FileText className="h-5 w-5 text-blue-600" />
               <span>Invoice Ledger ({filteredInvoices.length})</span>
             </h2>
           </div>
@@ -259,23 +259,23 @@ export default function ClientDetail() {
             ) : (
               <table className="responsive-table w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-800/50 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-950/20">
+                  <tr className="border-b border-slate-200 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-50">
                     <th className="px-6 py-3">Number</th>
                     <th className="px-6 py-3">Issue Date</th>
                     <th className="px-6 py-3 text-right">Amount</th>
                     <th className="px-6 py-3 text-center">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/30 text-sm">
+                <tbody className="divide-y divide-slate-100 text-sm">
                   {filteredInvoices.map((inv) => (
                     <tr 
                       key={inv.id}
                       onClick={() => navigate(`/invoices/preview/${inv.id}`)}
-                      className="hover:bg-slate-800/20 transition-all cursor-pointer"
+                      className="hover:bg-slate-50 transition-all cursor-pointer"
                     >
-                      <td data-label="Number" className="px-6 py-4 font-mono font-medium text-sky-400">{inv.invoice_number}</td>
-                      <td data-label="Issue Date" className="px-6 py-4 text-slate-300">{formatDate(inv.issue_date)}</td>
-                      <td data-label="Amount" className="px-6 py-4 text-right font-medium text-white">
+                      <td data-label="Number" className="px-6 py-4 font-mono font-medium text-blue-600">{inv.invoice_number}</td>
+                      <td data-label="Issue Date" className="px-6 py-4 text-slate-700">{formatDate(inv.issue_date)}</td>
+                      <td data-label="Amount" className="px-6 py-4 text-right font-medium text-slate-900">
                         {formatCurrency(inv.total, inv.currency)}
                       </td>
                       <td data-label="Status" className="px-6 py-4 text-center">
@@ -292,10 +292,10 @@ export default function ClientDetail() {
         </div>
 
         {/* PO List */}
-        <div className="glass-card rounded-2xl border-slate-800/80 overflow-hidden flex flex-col">
-          <div className="px-6 py-4 border-b border-slate-800/50 bg-slate-900/10">
-            <h2 className="font-display font-bold text-base text-white flex items-center space-x-2">
-              <FileCheck className="h-5 w-5 text-sky-400" />
+        <div className="glass-card rounded-2xl border-slate-200 overflow-hidden flex flex-col">
+          <div className="px-6 py-4 border-b border-slate-200 bg-white/10">
+            <h2 className="font-display font-bold text-base text-slate-900 flex items-center space-x-2">
+              <FileCheck className="h-5 w-5 text-blue-600" />
               <span>Purchase Orders ({filteredPOs.length})</span>
             </h2>
           </div>
@@ -307,19 +307,19 @@ export default function ClientDetail() {
             ) : (
               <table className="responsive-table w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-800/50 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-950/20">
+                  <tr className="border-b border-slate-200 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-50">
                     <th className="px-6 py-3">PO Number</th>
                     <th className="px-6 py-3">PO Date</th>
                     <th className="px-6 py-3 text-right">Amount</th>
                     <th className="px-6 py-3 text-center">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/30 text-sm">
+                <tbody className="divide-y divide-slate-100 text-sm">
                   {filteredPOs.map((po) => (
-                    <tr key={po.id} className="hover:bg-slate-800/10 transition-all">
-                      <td data-label="PO Number" className="px-6 py-4 font-mono font-medium text-slate-300">{po.po_number}</td>
+                    <tr key={po.id} className="hover:bg-slate-50/10 transition-all">
+                      <td data-label="PO Number" className="px-6 py-4 font-mono font-medium text-slate-700">{po.po_number}</td>
                       <td data-label="PO Date" className="px-6 py-4 text-slate-400">{formatDate(po.po_date)}</td>
-                      <td data-label="Amount" className="px-6 py-4 text-right font-medium text-white">
+                      <td data-label="Amount" className="px-6 py-4 text-right font-medium text-slate-900">
                         {po.amount ? formatCurrency(po.amount, po.currency) : '-'}
                       </td>
                       <td data-label="Status" className="px-6 py-4 text-center">

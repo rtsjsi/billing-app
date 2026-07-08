@@ -338,12 +338,12 @@ export default function InvoiceEditor() {
       <div className="space-y-1.5">
         <Link 
           to="/invoices"
-          className="flex items-center space-x-1.5 text-xs text-slate-400 hover:text-white transition-colors"
+          className="flex items-center space-x-1.5 text-xs text-slate-400 hover:text-slate-900 transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           <span>Back to Invoices Ledger</span>
         </Link>
-        <h1 className="font-display font-bold text-3xl text-white">
+        <h1 className="font-display font-bold text-3xl text-slate-900">
           {isEdit ? 'Edit Invoice' : 'Create Invoice'}
         </h1>
         <p className="text-slate-400 text-sm mt-0.5">
@@ -352,14 +352,14 @@ export default function InvoiceEditor() {
       </div>
 
       {error && (
-        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start space-x-3 text-red-200 text-sm">
-          <AlertCircle className="h-5 w-5 shrink-0 text-red-400 mt-0.5" />
+        <div className="p-4 bg-red-100 border border-red-500/20 rounded-xl flex items-start space-x-3 text-red-600 text-sm">
+          <AlertCircle className="h-5 w-5 shrink-0 text-red-600 mt-0.5" />
           <span>{error}</span>
         </div>
       )}
 
       {/* Main Form Box */}
-      <div className="glass-card rounded-2xl border-slate-800/80 p-6 md:p-8 space-y-8">
+      <div className="glass-card rounded-2xl border-slate-200 p-6 md:p-8 space-y-8">
         
         {/* Core fields (Client, PO, dates) */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -371,7 +371,7 @@ export default function InvoiceEditor() {
               <button
                 type="button"
                 onClick={() => setInlineClientOpen(true)}
-                className="text-xs text-sky-400 hover:text-sky-300 font-medium flex items-center space-x-1 cursor-pointer"
+                className="text-xs text-blue-600 hover:text-blue-500 font-medium flex items-center space-x-1 cursor-pointer"
               >
                 <UserPlus className="h-3 w-3" />
                 <span>+ New Client</span>
@@ -451,14 +451,14 @@ export default function InvoiceEditor() {
 
         {/* Line Items Table */}
         <div className="space-y-4">
-          <h3 className="font-display font-semibold text-lg text-white border-b border-slate-800/80 pb-2">
+          <h3 className="font-display font-semibold text-lg text-slate-900 border-b border-slate-200 pb-2">
             Line Items
           </h3>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[600px]">
               <thead>
-                <tr className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-800/60 pb-2">
+                <tr className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-200 pb-2">
                   <th className="py-2 pr-4 w-3/5">Item Description *</th>
                   <th className="py-2 px-4 w-1/12 text-right">Quantity</th>
                   <th className="py-2 px-4 w-1/6 text-right">Unit Price</th>
@@ -466,7 +466,7 @@ export default function InvoiceEditor() {
                   <th className="py-2 w-10"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/30">
+              <tbody className="divide-y divide-slate-100">
                 {items.map((item, index) => (
                   <tr key={index} className="align-top py-2">
                     <td className="py-3 pr-4">
@@ -501,7 +501,7 @@ export default function InvoiceEditor() {
                         onChange={(e) => handleItemFieldChange(index, 'unit_price', e.target.value)}
                       />
                     </td>
-                    <td className="py-3 pl-4 text-right align-middle font-mono font-medium text-white text-sm">
+                    <td className="py-3 pl-4 text-right align-middle font-mono font-medium text-slate-900 text-sm">
                       {item.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td className="py-3 text-right align-middle">
@@ -509,7 +509,7 @@ export default function InvoiceEditor() {
                         type="button"
                         onClick={() => removeLineItem(index)}
                         disabled={items.length <= 1}
-                        className="text-slate-500 hover:text-red-400 p-1 rounded disabled:opacity-30 disabled:hover:text-slate-500 cursor-pointer"
+                        className="text-slate-500 hover:text-red-600 p-1 rounded disabled:opacity-30 disabled:hover:text-slate-500 cursor-pointer"
                         title="Remove Line Item"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -524,7 +524,7 @@ export default function InvoiceEditor() {
           <button
             type="button"
             onClick={addLineItem}
-            className="flex items-center space-x-1.5 px-3.5 py-2 border border-dashed border-slate-800 hover:border-slate-700 bg-slate-900/30 hover:bg-slate-900/60 text-slate-300 hover:text-white rounded-lg text-xs font-semibold cursor-pointer transition-colors"
+            className="flex items-center space-x-1.5 px-3.5 py-2 border border-dashed border-slate-200 hover:border-slate-300 bg-slate-50 hover:bg-white/60 text-slate-700 hover:text-slate-900 rounded-lg text-xs font-semibold cursor-pointer transition-colors"
           >
             <Plus className="h-4 w-4" />
             <span>Add Row</span>
@@ -532,7 +532,7 @@ export default function InvoiceEditor() {
         </div>
 
         {/* Aggregates Calculations & Terms */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-slate-800/80">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-slate-200">
           {/* Notes / Terms */}
           <div className="space-y-4">
             <div>
@@ -558,10 +558,10 @@ export default function InvoiceEditor() {
           </div>
 
           {/* Live Totals summary */}
-          <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-5 space-y-4 max-w-md ml-auto w-full">
+          <div className="bg-slate-100/40 border border-slate-200 rounded-xl p-5 space-y-4 max-w-md ml-auto w-full">
             <div className="flex justify-between items-center text-sm">
               <span className="text-slate-400">Subtotal:</span>
-              <span className="font-mono text-slate-200">{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              <span className="font-mono text-slate-800">{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
             </div>
 
             {/* Tax Settings */}
@@ -583,7 +583,7 @@ export default function InvoiceEditor() {
                 />
                 <span className="text-slate-400 text-xs">%</span>
               </div>
-              <span className="font-mono text-slate-200">+{taxAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              <span className="font-mono text-slate-800">+{taxAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
             </div>
 
             {/* Discount */}
@@ -601,9 +601,9 @@ export default function InvoiceEditor() {
             </div>
 
             {/* Grand Total */}
-            <div className="border-t border-slate-800/80 pt-4 flex justify-between items-center">
-              <span className="font-display font-semibold text-white">Grand Total:</span>
-              <span className="font-display font-extrabold text-2xl text-sky-400 bg-sky-500/5 border border-sky-500/10 px-3 py-1 rounded">
+            <div className="border-t border-slate-200 pt-4 flex justify-between items-center">
+              <span className="font-display font-semibold text-slate-900">Grand Total:</span>
+              <span className="font-display font-extrabold text-2xl text-blue-600 bg-sky-500/5 border border-sky-500/10 px-3 py-1 rounded">
                 {currency} {total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </span>
             </div>
@@ -611,10 +611,10 @@ export default function InvoiceEditor() {
         </div>
 
         {/* Form Action Controls */}
-        <div className="pt-6 border-t border-slate-800/80 flex items-center justify-between">
+        <div className="pt-6 border-t border-slate-200 flex items-center justify-between">
           <Link
             to="/invoices"
-            className="px-5 py-2.5 border border-slate-800 hover:border-slate-700 bg-slate-900/50 rounded-lg text-sm font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer"
+            className="px-5 py-2.5 border border-slate-200 hover:border-slate-300 bg-white rounded-lg text-sm font-semibold text-slate-400 hover:text-slate-900 transition-colors cursor-pointer"
           >
             Discard
           </Link>
@@ -624,7 +624,7 @@ export default function InvoiceEditor() {
               type="button"
               disabled={submitting}
               onClick={() => handleSubmit('draft')}
-              className="px-5 py-2.5 border border-slate-800 hover:border-slate-750 bg-slate-850 hover:bg-slate-800 rounded-lg text-sm font-semibold text-slate-200 transition-colors cursor-pointer"
+              className="px-5 py-2.5 border border-slate-200 hover:border-slate-750 bg-white hover:bg-slate-50 rounded-lg text-sm font-semibold text-slate-800 transition-colors cursor-pointer"
             >
               {submitting ? 'Saving...' : 'Save as Draft'}
             </button>
@@ -644,14 +644,14 @@ export default function InvoiceEditor() {
 
       {/* Inline Client Creator Panel */}
       {inlineClientOpen && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden">
-            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-800">
-              <h2 className="font-display font-semibold text-white flex items-center space-x-1.5">
-                <UserPlus className="h-5 w-5 text-sky-400" />
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden">
+            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-200">
+              <h2 className="font-display font-semibold text-slate-900 flex items-center space-x-1.5">
+                <UserPlus className="h-5 w-5 text-blue-600" />
                 <span>Quick Client Creation</span>
               </h2>
-              <button onClick={() => setInlineClientOpen(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setInlineClientOpen(false)} className="text-slate-400 hover:text-slate-900">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -659,7 +659,7 @@ export default function InvoiceEditor() {
             <form onSubmit={handleCreateInlineClient}>
               <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
                 {inlineError && (
-                  <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-300 rounded-lg text-xs">
+                  <div className="p-3 bg-red-100 border border-red-500/20 text-red-600 rounded-lg text-xs">
                     {inlineError}
                   </div>
                 )}
@@ -725,11 +725,11 @@ export default function InvoiceEditor() {
                   />
                 </div>
               </div>
-              <div className="px-6 py-4 border-t border-slate-800 bg-slate-950/20 flex items-center justify-end space-x-3">
+              <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end space-x-3">
                 <button
                   type="button"
                   onClick={() => setInlineClientOpen(false)}
-                  className="px-4 py-2 border border-slate-800 hover:border-slate-700 bg-slate-900/50 rounded-lg text-sm font-semibold text-slate-300 transition-colors cursor-pointer"
+                  className="px-4 py-2 border border-slate-200 hover:border-slate-300 bg-white rounded-lg text-sm font-semibold text-slate-700 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>

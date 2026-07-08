@@ -167,7 +167,7 @@ export default function Clients() {
       </div>
 
       {/* Filters bar */}
-      <div className="glass-card p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 border-slate-800/80">
+      <div className="glass-card p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 border-slate-200">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <input 
@@ -182,11 +182,11 @@ export default function Clients() {
           <input 
             type="checkbox"
             id="archived"
-            className="h-4 w-4 rounded border-slate-700 bg-slate-900 text-sky-500 focus:ring-sky-500 cursor-pointer"
+            className="h-4 w-4 rounded border-slate-300 bg-white text-sky-500 focus:ring-sky-500 cursor-pointer"
             checked={includeArchived}
             onChange={(e) => setIncludeArchived(e.target.checked)}
           />
-          <label htmlFor="archived" className="text-sm text-slate-300 font-medium cursor-pointer">
+          <label htmlFor="archived" className="text-sm text-slate-700 font-medium cursor-pointer">
             Include archived clients
           </label>
         </div>
@@ -194,9 +194,9 @@ export default function Clients() {
 
       {/* Delete Conflict Toast */}
       {deleteConflict && (
-        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start justify-between text-red-200 text-sm">
+        <div className="p-4 bg-red-100 border border-red-500/20 rounded-xl flex items-start justify-between text-red-600 text-sm">
           <span>{deleteConflict}</span>
-          <button onClick={() => setDeleteConflict(null)} className="text-red-400 hover:text-red-300 ml-4 font-bold">
+          <button onClick={() => setDeleteConflict(null)} className="text-red-600 hover:text-red-600 ml-4 font-bold">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -216,7 +216,7 @@ export default function Clients() {
           <div className="min-h-[220px]">
             <table className="responsive-table w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-800/60 text-xs text-slate-400 font-semibold uppercase tracking-wider bg-slate-900/80">
+                <tr className="border-b border-slate-200 text-xs text-slate-400 font-semibold uppercase tracking-wider bg-slate-50">
                   <th className="px-6 py-3.5">Client Details</th>
                   <th className="px-6 py-3.5">Contact info</th>
                   <th className="px-6 py-3.5">Tax Details</th>
@@ -224,11 +224,11 @@ export default function Clients() {
                   <th className="px-6 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 text-sm">
+              <tbody className="divide-y divide-slate-200 text-sm">
                 {displayedClients.map((client) => (
-                  <tr key={client.id} className="hover:bg-slate-800/40 transition-colors">
+                  <tr key={client.id} className="hover:bg-slate-50 transition-colors">
                     <td data-label="Client Details" className="px-6 py-4">
-                      <div className="font-semibold text-slate-100">{client.name}</div>
+                      <div className="font-semibold text-slate-800">{client.name}</div>
                       {client.company_name && (
                         <div className="text-slate-400 text-xs flex items-center mt-1">
                           <Building className="h-3.5 w-3.5 mr-1 text-slate-500" />
@@ -252,7 +252,7 @@ export default function Clients() {
                     </td>
                     <td data-label="Tax Details" className="px-6 py-4">
                       {client.gstin ? (
-                        <span className="font-mono text-xs bg-slate-800 px-2 py-1 rounded text-slate-300 border border-slate-700">
+                        <span className="font-mono text-xs bg-slate-50 px-2 py-1 rounded text-slate-700 border border-slate-300">
                           GSTIN: {client.gstin}
                         </span>
                       ) : (
@@ -312,15 +312,15 @@ export default function Clients() {
 
       {/* Editor Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden">
-            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-800">
-              <h2 className="font-display font-semibold text-lg text-white">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden">
+            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-200">
+              <h2 className="font-display font-semibold text-lg text-slate-900">
                 {editingClient ? 'Edit Client Profile' : 'Create New Client'}
               </h2>
               <button 
                 onClick={() => setModalOpen(false)} 
-                className="text-slate-400 hover:text-white"
+                className="text-slate-400 hover:text-slate-900"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -329,7 +329,7 @@ export default function Clients() {
             <form onSubmit={handleFormSubmit}>
               <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
                 {error && (
-                  <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-300 rounded-lg text-xs">
+                  <div className="p-3 bg-red-100 border border-red-500/20 text-red-600 rounded-lg text-xs">
                     {error}
                   </div>
                 )}
@@ -414,11 +414,11 @@ export default function Clients() {
                 </div>
               </div>
 
-              <div className="px-6 py-4 border-t border-slate-800 bg-slate-950/20 flex items-center justify-end space-x-3">
+              <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end space-x-3">
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 border border-slate-800 hover:border-slate-700 bg-slate-900/50 rounded-lg text-sm font-semibold text-slate-300 transition-colors cursor-pointer"
+                  className="px-4 py-2 border border-slate-200 hover:border-slate-300 bg-white rounded-lg text-sm font-semibold text-slate-700 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>

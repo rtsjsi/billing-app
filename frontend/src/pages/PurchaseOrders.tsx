@@ -247,7 +247,7 @@ export default function PurchaseOrders() {
           <div className="min-h-[200px]">
             <table className="responsive-table w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-800/60 text-xs text-slate-400 font-semibold uppercase tracking-wider bg-slate-900/80">
+                <tr className="border-b border-slate-200 text-xs text-slate-400 font-semibold uppercase tracking-wider bg-slate-50">
                   <th className="px-6 py-3.5">PO details</th>
                   <th className="px-6 py-3.5">Client</th>
                   <th className="px-6 py-3.5">PO Date</th>
@@ -257,18 +257,18 @@ export default function PurchaseOrders() {
                   <th className="px-6 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 text-sm">
+              <tbody className="divide-y divide-slate-200 text-sm">
                 {pos.map((po) => (
-                  <tr key={po.id} className="hover:bg-slate-800/40 transition-colors">
+                  <tr key={po.id} className="hover:bg-slate-50 transition-colors">
                     <td data-label="PO Details" className="px-6 py-4">
-                      <div className="font-mono font-semibold text-slate-200">{po.po_number}</div>
+                      <div className="font-mono font-semibold text-slate-800">{po.po_number}</div>
                       {po.description && (
                         <div className="text-slate-400 text-xs mt-0.5 truncate max-w-xs">{po.description}</div>
                       )}
                     </td>
-                    <td data-label="Client" className="px-6 py-4 text-slate-200 font-medium">{po.client_name}</td>
+                    <td data-label="Client" className="px-6 py-4 text-slate-800 font-medium">{po.client_name}</td>
                     <td data-label="PO Date" className="px-6 py-4 text-slate-400">{formatDate(po.po_date)}</td>
-                    <td data-label="Amount" className="px-6 py-4 text-right font-medium text-slate-100">
+                    <td data-label="Amount" className="px-6 py-4 text-right font-medium text-slate-800">
                       {po.amount ? formatCurrency(po.amount, po.currency) : '-'}
                     </td>
 
@@ -316,15 +316,15 @@ export default function PurchaseOrders() {
 
       {/* Editor Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden">
-            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-800">
-              <h2 className="font-display font-semibold text-lg text-white">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-4xl bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden">
+            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-200">
+              <h2 className="font-display font-semibold text-lg text-slate-900">
                 {editingPO ? 'Edit Purchase Order' : 'Record Purchase Order'}
               </h2>
               <button 
                 onClick={() => setModalOpen(false)} 
-                className="text-slate-400 hover:text-white"
+                className="text-slate-400 hover:text-slate-900"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -333,7 +333,7 @@ export default function PurchaseOrders() {
             <form onSubmit={handleFormSubmit}>
               <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
                 {error && (
-                  <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-300 rounded-lg text-xs flex items-start space-x-2">
+                  <div className="p-3 bg-red-100 border border-red-500/20 text-red-600 rounded-lg text-xs flex items-start space-x-2">
                     <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                     <span>{error}</span>
                   </div>
@@ -402,13 +402,13 @@ export default function PurchaseOrders() {
                   />
                 </div>
 
-                <div className="mt-6 border-t border-slate-800 pt-6">
+                <div className="mt-6 border-t border-slate-200 pt-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-semibold text-slate-300">Line Items *</h3>
+                    <h3 className="text-sm font-semibold text-slate-700">Line Items *</h3>
                     <button
                       type="button"
                       onClick={() => setFormItems([...formItems, { description: '', quantity: 1, unit_price: 0, amount: 0, sort_order: formItems.length }])}
-                      className="text-xs flex items-center space-x-1 text-sky-400 hover:text-sky-300 transition-colors"
+                      className="text-xs flex items-center space-x-1 text-blue-600 hover:text-blue-500 transition-colors"
                     >
                       <Plus className="h-3.5 w-3.5" />
                       <span>Add Item</span>
@@ -417,7 +417,7 @@ export default function PurchaseOrders() {
 
                   <div className="space-y-3">
                     {formItems.map((item, index) => (
-                      <div key={index} className="flex flex-wrap sm:flex-nowrap items-start gap-3 bg-slate-950/30 p-3 rounded-lg border border-slate-800/50">
+                      <div key={index} className="flex flex-wrap sm:flex-nowrap items-start gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
                         <div className="w-full sm:flex-1">
                           <input
                             type="text"
@@ -467,7 +467,7 @@ export default function PurchaseOrders() {
                           />
                         </div>
                         <div className="w-32 shrink-0">
-                          <div className="w-full form-input text-xs bg-slate-900 text-slate-400 flex items-center">
+                          <div className="w-full form-input text-xs bg-white text-slate-400 flex items-center">
                             {formatCurrency(item.amount, formCurrency)}
                           </div>
                         </div>
@@ -477,23 +477,23 @@ export default function PurchaseOrders() {
                             const newItems = formItems.filter((_, i) => i !== index);
                             setFormItems(newItems);
                           }}
-                          className="shrink-0 p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors mt-0.5 sm:mt-0"
+                          className="shrink-0 p-2 text-slate-500 hover:text-red-600 hover:bg-red-100 rounded-lg transition-colors mt-0.5 sm:mt-0"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     ))}
                     {formItems.length === 0 && (
-                      <div className="text-center py-6 border border-dashed border-slate-800 rounded-lg text-slate-500 text-xs">
+                      <div className="text-center py-6 border border-dashed border-slate-200 rounded-lg text-slate-500 text-xs">
                         No line items added. At least one item is required.
                       </div>
                     )}
                   </div>
                   
-                  <div className="flex justify-end mt-4 pt-4 border-t border-slate-800/50">
+                  <div className="flex justify-end mt-4 pt-4 border-t border-slate-200">
                     <div className="text-right">
                       <div className="text-xs text-slate-500 mb-1 uppercase tracking-wider font-semibold">Total Amount</div>
-                      <div className="text-xl font-mono font-semibold text-white">
+                      <div className="text-xl font-mono font-semibold text-slate-900">
                         {formatCurrency(formItems.reduce((sum, item) => sum + item.amount, 0), formCurrency)}
                       </div>
                     </div>
@@ -519,11 +519,11 @@ export default function PurchaseOrders() {
 
               </div>
 
-              <div className="px-6 py-4 border-t border-slate-800 bg-slate-950/20 flex items-center justify-end space-x-3">
+              <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end space-x-3">
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 border border-slate-800 hover:border-slate-700 bg-slate-900/50 rounded-lg text-sm font-semibold text-slate-300 transition-colors cursor-pointer"
+                  className="px-4 py-2 border border-slate-200 hover:border-slate-300 bg-white rounded-lg text-sm font-semibold text-slate-700 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>

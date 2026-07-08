@@ -190,7 +190,7 @@ export default function Settings() {
     <div className="space-y-8">
       {/* Title */}
       <div>
-        <h1 className="font-display font-bold text-3xl text-white">Settings</h1>
+        <h1 className="font-display font-bold text-3xl text-slate-900">Settings</h1>
         <p className="text-slate-400 text-sm mt-1">Configure business letterheads, billing sequences, and export database files</p>
       </div>
 
@@ -201,21 +201,21 @@ export default function Settings() {
           <form onSubmit={handleSettingsSubmit} className="space-y-8">
             
             {/* Business Details */}
-            <div className="glass-card p-6 md:p-8 rounded-2xl border-slate-800/80 space-y-6">
-              <h2 className="font-display font-semibold text-lg text-white flex items-center space-x-2">
-                <SettingsIcon className="h-5 w-5 text-sky-400" />
+            <div className="glass-card p-6 md:p-8 rounded-2xl border-slate-200 space-y-6">
+              <h2 className="font-display font-semibold text-lg text-slate-900 flex items-center space-x-2">
+                <SettingsIcon className="h-5 w-5 text-blue-600" />
                 <span>1. Business Letterhead & Info</span>
               </h2>
 
               {settingsError && (
-                <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-350 rounded-lg text-xs flex items-center space-x-2">
+                <div className="p-3 bg-red-100 border border-red-500/20 text-red-600 rounded-lg text-xs flex items-center space-x-2">
                   <AlertCircle className="h-4 w-4 shrink-0" />
                   <span>{settingsError}</span>
                 </div>
               )}
 
               {settingsSuccess && (
-                <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-350 rounded-lg text-xs flex items-center space-x-2">
+                <div className="p-3 bg-emerald-100 border border-emerald-500/20 text-emerald-600 rounded-lg text-xs flex items-center space-x-2">
                   <CheckCircle className="h-4 w-4 shrink-0" />
                   <span>{settingsSuccess}</span>
                 </div>
@@ -301,9 +301,9 @@ export default function Settings() {
             </div>
 
             {/* Bank Coordinates */}
-            <div className="glass-card p-6 md:p-8 rounded-2xl border-slate-800/80 space-y-6">
-              <h2 className="font-display font-semibold text-lg text-white flex items-center space-x-2">
-                <Database className="h-5 w-5 text-emerald-400" />
+            <div className="glass-card p-6 md:p-8 rounded-2xl border-slate-200 space-y-6">
+              <h2 className="font-display font-semibold text-lg text-slate-900 flex items-center space-x-2">
+                <Database className="h-5 w-5 text-emerald-600" />
                 <span>2. Remittance & Banking Details</span>
               </h2>
 
@@ -363,9 +363,9 @@ export default function Settings() {
             </div>
 
             {/* Sequence & Presets */}
-            <div className="glass-card p-6 md:p-8 rounded-2xl border-slate-800/80 space-y-6">
-              <h2 className="font-display font-semibold text-lg text-white flex items-center space-x-2">
-                <Database className="h-5 w-5 text-indigo-400" />
+            <div className="glass-card p-6 md:p-8 rounded-2xl border-slate-200 space-y-6">
+              <h2 className="font-display font-semibold text-lg text-slate-900 flex items-center space-x-2">
+                <Database className="h-5 w-5 text-indigo-600" />
                 <span>3. Invoicing Sequences & Presets</span>
               </h2>
 
@@ -478,20 +478,20 @@ export default function Settings() {
         <div className="space-y-8">
           
           {/* Change password */}
-          <div className="glass-card p-6 rounded-2xl border-slate-800/80 space-y-5">
-            <h2 className="font-display font-semibold text-base text-white flex items-center space-x-2">
-              <Key className="h-4.5 w-4.5 text-sky-400" />
+          <div className="glass-card p-6 rounded-2xl border-slate-200 space-y-5">
+            <h2 className="font-display font-semibold text-base text-slate-900 flex items-center space-x-2">
+              <Key className="h-4.5 w-4.5 text-blue-600" />
               <span>Change Login Password</span>
             </h2>
 
             {passwordError && (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-350 rounded-lg text-xs">
+              <div className="p-3 bg-red-100 border border-red-500/20 text-red-600 rounded-lg text-xs">
                 {passwordError}
               </div>
             )}
 
             {passwordSuccess && (
-              <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-350 rounded-lg text-xs">
+              <div className="p-3 bg-emerald-100 border border-emerald-500/20 text-emerald-600 rounded-lg text-xs">
                 {passwordSuccess}
               </div>
             )}
@@ -533,7 +533,7 @@ export default function Settings() {
               <button
                 type="submit"
                 disabled={passwordSaving}
-                className="w-full py-2 bg-slate-800 hover:bg-slate-750 border border-slate-750 text-slate-200 text-xs font-semibold rounded cursor-pointer transition-colors"
+                className="w-full py-2 bg-slate-50 hover:bg-slate-750 border border-slate-750 text-slate-800 text-xs font-semibold rounded cursor-pointer transition-colors"
               >
                 {passwordSaving ? 'Updating...' : 'Change Password'}
               </button>
@@ -541,9 +541,9 @@ export default function Settings() {
           </div>
 
           {/* Backup exports box */}
-          <div className="glass-card p-6 rounded-2xl border-slate-800/80 space-y-5">
-            <h2 className="font-display font-semibold text-base text-white flex items-center space-x-2">
-              <Database className="h-4.5 w-4.5 text-indigo-400" />
+          <div className="glass-card p-6 rounded-2xl border-slate-200 space-y-5">
+            <h2 className="font-display font-semibold text-base text-slate-900 flex items-center space-x-2">
+              <Database className="h-4.5 w-4.5 text-indigo-600" />
               <span>Offsite Data Backups</span>
             </h2>
             <p className="text-slate-400 text-xs leading-relaxed">
@@ -553,21 +553,21 @@ export default function Settings() {
             <div className="space-y-2.5 pt-2">
               <button
                 onClick={() => triggerExport('clients')}
-                className="w-full flex items-center justify-between px-4 py-2.5 border border-slate-800 bg-slate-900/30 hover:bg-slate-900/80 rounded text-xs font-semibold text-slate-300 hover:text-white transition-colors cursor-pointer"
+                className="w-full flex items-center justify-between px-4 py-2.5 border border-slate-200 bg-slate-50 hover:bg-slate-50 rounded text-xs font-semibold text-slate-700 hover:text-slate-900 transition-colors cursor-pointer"
               >
                 <span>Export Clients (CSV)</span>
                 <Download className="h-4 w-4 text-slate-500" />
               </button>
               <button
                 onClick={() => triggerExport('invoices')}
-                className="w-full flex items-center justify-between px-4 py-2.5 border border-slate-800 bg-slate-900/30 hover:bg-slate-900/80 rounded text-xs font-semibold text-slate-300 hover:text-white transition-colors cursor-pointer"
+                className="w-full flex items-center justify-between px-4 py-2.5 border border-slate-200 bg-slate-50 hover:bg-slate-50 rounded text-xs font-semibold text-slate-700 hover:text-slate-900 transition-colors cursor-pointer"
               >
                 <span>Export Invoices (CSV)</span>
                 <Download className="h-4 w-4 text-slate-500" />
               </button>
               <button
                 onClick={() => triggerExport('purchase-orders')}
-                className="w-full flex items-center justify-between px-4 py-2.5 border border-slate-800 bg-slate-900/30 hover:bg-slate-900/80 rounded text-xs font-semibold text-slate-300 hover:text-white transition-colors cursor-pointer"
+                className="w-full flex items-center justify-between px-4 py-2.5 border border-slate-200 bg-slate-50 hover:bg-slate-50 rounded text-xs font-semibold text-slate-700 hover:text-slate-900 transition-colors cursor-pointer"
               >
                 <span>Export Purchase Orders (CSV)</span>
                 <Download className="h-4 w-4 text-slate-500" />

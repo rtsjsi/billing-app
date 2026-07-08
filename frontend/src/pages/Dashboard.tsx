@@ -53,7 +53,7 @@ export default function Dashboard() {
 
   if (error) {
     return (
-      <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-xl text-red-200 text-sm">
+      <div className="p-6 bg-red-100 border border-red-500/20 rounded-xl text-red-600 text-sm">
         {error}
       </div>
     );
@@ -74,7 +74,7 @@ export default function Dashboard() {
         <div className="flex items-center space-x-3">
           <Link 
             to="/purchase-orders" 
-            className="flex items-center space-x-1.5 px-4 py-2 border border-slate-800 hover:border-slate-700 bg-slate-900/50 hover:bg-slate-900 rounded-lg text-sm font-medium transition-all text-slate-300 cursor-pointer"
+            className="flex items-center space-x-1.5 px-4 py-2 border border-slate-200 hover:border-slate-300 bg-white hover:bg-white rounded-lg text-sm font-medium transition-all text-slate-700 cursor-pointer"
           >
             <Plus className="h-4 w-4" />
             <span>New PO</span>
@@ -92,15 +92,15 @@ export default function Dashboard() {
       {/* Grid Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Total PO Amount */}
-        <div className="glass-card p-5 rounded-2xl flex flex-col justify-between border-slate-800/80">
+        <div className="glass-card p-5 rounded-2xl flex flex-col justify-between border-slate-200">
           <div className="flex justify-between items-start">
             <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Total PO Amount</span>
-            <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-400">
+            <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
               <FileCheck className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-4">
-            <h3 className="font-display font-bold text-2xl text-white mt-1">
+            <h3 className="font-display font-bold text-2xl text-slate-900 mt-1">
               {formatCurrency(stats?.totalPOAmount)}
             </h3>
             <p className="text-[10px] text-slate-500 mt-1">Sum of all purchase orders</p>
@@ -108,15 +108,15 @@ export default function Dashboard() {
         </div>
 
         {/* Total Invoiced */}
-        <div className="glass-card p-5 rounded-2xl flex flex-col justify-between border-slate-800/80">
+        <div className="glass-card p-5 rounded-2xl flex flex-col justify-between border-slate-200">
           <div className="flex justify-between items-start">
             <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Total Invoiced</span>
-            <div className="p-2 bg-sky-500/10 rounded-lg text-sky-400">
+            <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
               <DollarSign className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-4">
-            <h3 className="font-display font-bold text-2xl text-white mt-1">
+            <h3 className="font-display font-bold text-2xl text-slate-900 mt-1">
               {formatCurrency(stats?.totalInvoiceAmount)}
             </h3>
             <p className="text-[10px] text-slate-500 mt-1">Sum of all invoices (excl. cancelled)</p>
@@ -124,15 +124,15 @@ export default function Dashboard() {
         </div>
 
         {/* Invoice Pending */}
-        <div className="glass-card p-5 rounded-2xl flex flex-col justify-between border-slate-800/80">
+        <div className="glass-card p-5 rounded-2xl flex flex-col justify-between border-slate-200">
           <div className="flex justify-between items-start">
             <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Invoice Pending</span>
-            <div className="p-2 bg-violet-500/10 rounded-lg text-violet-400">
+            <div className="p-2 bg-violet-100 rounded-lg text-violet-600">
               <FileText className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-4">
-            <h3 className="font-display font-bold text-2xl text-white mt-1">
+            <h3 className="font-display font-bold text-2xl text-slate-900 mt-1">
               {formatCurrency(stats?.invoicePendingAmount)}
             </h3>
             <p className="text-[10px] text-slate-500 mt-1">Unbilled purchase order balance</p>
@@ -140,15 +140,15 @@ export default function Dashboard() {
         </div>
 
         {/* Total Paid */}
-        <div className="glass-card p-5 rounded-2xl flex flex-col justify-between border-slate-800/80">
+        <div className="glass-card p-5 rounded-2xl flex flex-col justify-between border-slate-200">
           <div className="flex justify-between items-start">
             <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Total Paid</span>
-            <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-400">
+            <div className="p-2 bg-emerald-100 rounded-lg text-emerald-600">
               <CheckCircle2 className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-4">
-            <h3 className="font-display font-bold text-2xl text-white mt-1">
+            <h3 className="font-display font-bold text-2xl text-slate-900 mt-1">
               {formatCurrency(stats?.totalPaidAmount)}
             </h3>
             <p className="text-[10px] text-slate-500 mt-1">Total payments collected</p>
@@ -156,15 +156,15 @@ export default function Dashboard() {
         </div>
 
         {/* Total Outstanding */}
-        <div className="glass-card p-5 rounded-2xl flex flex-col justify-between border-slate-800/80">
+        <div className="glass-card p-5 rounded-2xl flex flex-col justify-between border-slate-200">
           <div className="flex justify-between items-start">
             <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Total Outstanding</span>
-            <div className="p-2 bg-amber-500/10 rounded-lg text-amber-400">
+            <div className="p-2 bg-amber-100 rounded-lg text-amber-600">
               <Clock className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-4">
-            <h3 className="font-display font-bold text-2xl text-white mt-1">
+            <h3 className="font-display font-bold text-2xl text-slate-900 mt-1">
               {formatCurrency(stats?.totalOutstanding)}
             </h3>
             <p className="text-[10px] text-slate-500 mt-1">Unpaid balance of sent invoices</p>
@@ -172,18 +172,18 @@ export default function Dashboard() {
         </div>
 
         {/* Overdue Invoices */}
-        <div className="glass-card p-5 rounded-2xl flex flex-col justify-between border-slate-800/80">
+        <div className="glass-card p-5 rounded-2xl flex flex-col justify-between border-slate-200">
           <div className="flex justify-between items-start">
             <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Overdue Invoices</span>
-            <div className="p-2 bg-red-500/10 rounded-lg text-red-400">
+            <div className="p-2 bg-red-100 rounded-lg text-red-600">
               <AlertCircle className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-4">
-            <h3 className="font-display font-bold text-2xl text-red-400 mt-1">
+            <h3 className="font-display font-bold text-2xl text-red-600 mt-1">
               {stats?.overdueCount}
             </h3>
-            <p className="text-[10px] text-red-500/80 mt-1">Needs immediate follow-up</p>
+            <p className="text-[10px] text-red-500 mt-1">Needs immediate follow-up</p>
           </div>
         </div>
       </div>
@@ -191,15 +191,15 @@ export default function Dashboard() {
       {/* Grid Split: Recent Invoices & Open Purchase Orders */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Recent Invoices Widget */}
-        <div className="glass-card rounded-2xl border-slate-800/80 overflow-hidden flex flex-col">
-          <div className="px-6 py-5 border-b border-slate-800/50 flex items-center justify-between">
+        <div className="glass-card rounded-2xl border-slate-200 overflow-hidden flex flex-col">
+          <div className="px-6 py-5 border-b border-slate-200 flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <FileText className="h-5 w-5 text-sky-400" />
-              <h2 className="font-display font-bold text-lg text-white">Recent Invoices</h2>
+              <FileText className="h-5 w-5 text-blue-600" />
+              <h2 className="font-display font-bold text-lg text-slate-900">Recent Invoices</h2>
             </div>
             <Link 
               to="/invoices" 
-              className="text-xs text-sky-400 hover:text-sky-300 font-medium flex items-center space-x-1"
+              className="text-xs text-blue-600 hover:text-blue-500 font-medium flex items-center space-x-1"
             >
               <span>View All</span>
               <ArrowRight className="h-3.5 w-3.5" />
@@ -214,7 +214,7 @@ export default function Dashboard() {
             ) : (
               <table className="responsive-table w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-800/50 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-950/20">
+                  <tr className="border-b border-slate-200 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-50">
                     <th className="px-6 py-3">Invoice Number</th>
                     <th className="px-6 py-3">Client</th>
                     <th className="px-6 py-3">Issue Date</th>
@@ -222,20 +222,20 @@ export default function Dashboard() {
                     <th className="px-6 py-3 text-center">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/30">
+                <tbody className="divide-y divide-slate-100">
                   {recentInvoices.map((inv) => (
                     <tr 
                       key={inv.id} 
                       onClick={() => navigate(`/invoices/preview/${inv.id}`)}
-                      className="hover:bg-slate-800/20 transition-all duration-150 cursor-pointer text-sm"
+                      className="hover:bg-slate-50 transition-all duration-150 cursor-pointer text-sm"
                     >
-                      <td data-label="Invoice Number" className="px-6 py-4 font-mono font-medium text-slate-300">{inv.invoice_number}</td>
-                      <td data-label="Client" className="px-6 py-4 text-slate-200">
+                      <td data-label="Invoice Number" className="px-6 py-4 font-mono font-medium text-slate-700">{inv.invoice_number}</td>
+                      <td data-label="Client" className="px-6 py-4 text-slate-800">
                         <div className="font-medium">{inv.client_name}</div>
                         <div className="text-[10px] text-slate-500">{inv.client_company}</div>
                       </td>
                       <td data-label="Issue Date" className="px-6 py-4 text-slate-400">{formatDate(inv.issue_date)}</td>
-                      <td data-label="Amount" className="px-6 py-4 text-right font-medium text-white">{formatCurrency(inv.total, inv.currency)}</td>
+                      <td data-label="Amount" className="px-6 py-4 text-right font-medium text-slate-900">{formatCurrency(inv.total, inv.currency)}</td>
                       <td data-label="Status" className="px-6 py-4 text-center">
                         <span className={`badge badge-${inv.status}`}>
                           {inv.status === 'partially_paid' ? 'Part. Paid' : inv.status}
@@ -250,15 +250,15 @@ export default function Dashboard() {
         </div>
 
         {/* Open Purchase Orders Widget */}
-        <div className="glass-card rounded-2xl border-slate-800/80 overflow-hidden flex flex-col">
-          <div className="px-6 py-5 border-b border-slate-800/50 flex items-center justify-between">
+        <div className="glass-card rounded-2xl border-slate-200 overflow-hidden flex flex-col">
+          <div className="px-6 py-5 border-b border-slate-200 flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <FileCheck className="h-5 w-5 text-sky-400" />
-              <h2 className="font-display font-bold text-lg text-white">Active Purchase Orders</h2>
+              <FileCheck className="h-5 w-5 text-blue-600" />
+              <h2 className="font-display font-bold text-lg text-slate-900">Active Purchase Orders</h2>
             </div>
             <Link 
               to="/purchase-orders" 
-              className="text-xs text-sky-400 hover:text-sky-300 font-medium flex items-center space-x-1"
+              className="text-xs text-blue-600 hover:text-blue-500 font-medium flex items-center space-x-1"
             >
               <span>View All</span>
               <ArrowRight className="h-3.5 w-3.5" />
@@ -273,7 +273,7 @@ export default function Dashboard() {
             ) : (
               <table className="responsive-table w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-800/50 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-950/20">
+                  <tr className="border-b border-slate-200 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-50">
                     <th className="px-6 py-3">PO Number</th>
                     <th className="px-6 py-3">Client</th>
                     <th className="px-6 py-3">PO Date</th>
@@ -281,17 +281,17 @@ export default function Dashboard() {
                     <th className="px-6 py-3 text-center">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/30">
+                <tbody className="divide-y divide-slate-100">
                   {openPOs.map((po) => (
                     <tr 
                       key={po.id} 
                       onClick={() => navigate(`/clients/${po.client_id}`)}
-                      className="hover:bg-slate-800/20 transition-all duration-150 cursor-pointer text-sm"
+                      className="hover:bg-slate-50 transition-all duration-150 cursor-pointer text-sm"
                     >
-                      <td data-label="PO Number" className="px-6 py-4 font-mono font-medium text-slate-300">{po.po_number}</td>
-                      <td data-label="Client" className="px-6 py-4 text-slate-200 font-medium">{po.client_name}</td>
+                      <td data-label="PO Number" className="px-6 py-4 font-mono font-medium text-slate-700">{po.po_number}</td>
+                      <td data-label="Client" className="px-6 py-4 text-slate-800 font-medium">{po.client_name}</td>
                       <td data-label="PO Date" className="px-6 py-4 text-slate-400">{formatDate(po.po_date)}</td>
-                      <td data-label="Amount" className="px-6 py-4 text-right font-medium text-white">
+                      <td data-label="Amount" className="px-6 py-4 text-right font-medium text-slate-900">
                         {po.amount ? formatCurrency(po.amount, po.currency) : '-'}
                       </td>
                       <td data-label="Status" className="px-6 py-4 text-center">

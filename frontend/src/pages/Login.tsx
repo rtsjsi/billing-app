@@ -67,24 +67,24 @@ export default function Login({ onLoginSuccess }: LoginProps) {
 
   if (checking) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background glowing blobs */}
       <div className="absolute top-[-25%] left-[-15%] w-[60%] h-[60%] bg-sky-500/5 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-[-25%] right-[-15%] w-[60%] h-[60%] bg-indigo-500/5 rounded-full blur-[140px] pointer-events-none" />
 
-      <div className="w-full max-w-md bg-slate-900/60 backdrop-blur-xl border border-slate-800/80 rounded-2xl p-8 shadow-2xl relative z-10">
+      <div className="w-full max-w-md bg-white/60 backdrop-blur-xl border border-slate-200 rounded-2xl p-8 shadow-2xl relative z-10">
         <div className="flex flex-col items-center text-center mb-8">
-          <div className="p-3 bg-sky-500/10 rounded-2xl border border-sky-500/20 mb-4">
-            <Zap className="h-8 w-8 text-sky-400 fill-sky-400/20" />
+          <div className="p-3 bg-blue-100 rounded-2xl border border-sky-500/20 mb-4">
+            <Zap className="h-8 w-8 text-blue-600 fill-sky-400/20" />
           </div>
-          <h1 className="font-display font-extrabold text-2xl text-white tracking-tight">
+          <h1 className="font-display font-extrabold text-2xl text-slate-900 tracking-tight">
             Sign In to BillingApp
           </h1>
           <p className="text-slate-400 text-sm mt-1.5">
@@ -93,8 +93,8 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start space-x-3 text-red-200 text-sm">
-            <ShieldAlert className="h-5 w-5 shrink-0 text-red-400" />
+          <div className="mb-6 p-4 bg-red-100 border border-red-500/20 rounded-xl flex items-start space-x-3 text-red-600 text-sm">
+            <ShieldAlert className="h-5 w-5 shrink-0 text-red-600" />
             <span>{error}</span>
           </div>
         )}
@@ -147,7 +147,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
           </div>
         </form>
 
-        <div className="mt-8 pt-6 border-t border-slate-800/40 text-center flex items-center justify-center space-x-2 text-xs text-slate-500">
+        <div className="mt-8 pt-6 border-t border-slate-200/40 text-center flex items-center justify-center space-x-2 text-xs text-slate-500">
           <Lock className="h-3.5 w-3.5" />
           <span>Secured with HttpOnly Cookies</span>
         </div>

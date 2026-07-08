@@ -138,11 +138,11 @@ export default function InvoicePreview() {
   if (error || !invoice || !settings) {
     return (
       <div className="space-y-4">
-        <button onClick={() => navigate('/invoices')} className="flex items-center space-x-1 text-slate-400 hover:text-white">
+        <button onClick={() => navigate('/invoices')} className="flex items-center space-x-1 text-slate-400 hover:text-slate-900">
           <ArrowLeft className="h-4 w-4" />
           <span>Back to Invoices Ledger</span>
         </button>
-        <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-xl text-red-200">
+        <div className="p-6 bg-red-100 border border-red-500/20 rounded-xl text-red-600">
           {error || 'Invoice not found.'}
         </div>
       </div>
@@ -159,7 +159,7 @@ export default function InvoicePreview() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <Link 
             to="/invoices" 
-            className="flex items-center space-x-2 px-4 py-2.5 border border-slate-700 hover:border-slate-600 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-semibold text-slate-200 transition-colors cursor-pointer shadow-sm shadow-slate-900/20"
+            className="flex items-center space-x-2 px-4 py-2.5 border border-slate-300 hover:border-slate-400 bg-slate-50 hover:bg-slate-700 rounded-lg text-sm font-semibold text-slate-800 transition-colors cursor-pointer shadow-sm shadow-slate-900/20"
           >
             <ArrowLeft className="h-4 w-4" />
             <span>Back to Invoices Ledger</span>
@@ -185,7 +185,7 @@ export default function InvoicePreview() {
             )}
             <Link 
               to={`/invoices/edit/${invoice.id}`}
-              className="bg-slate-800 hover:bg-slate-700 border border-slate-750 text-slate-200 text-xs font-semibold py-1.5 px-3 rounded flex items-center space-x-1"
+              className="bg-slate-50 hover:bg-slate-700 border border-slate-750 text-slate-800 text-xs font-semibold py-1.5 px-3 rounded flex items-center space-x-1"
             >
               <FileEdit className="h-3.5 w-3.5" />
               <span>Edit</span>
@@ -193,7 +193,7 @@ export default function InvoicePreview() {
             {invoice.status !== 'cancelled' && (
               <button 
                 onClick={() => handleUpdateStatus('cancelled')}
-                className="bg-red-500/10 hover:bg-red-500/20 border border-red-550/20 text-red-400 text-xs font-semibold py-1.5 px-3 rounded cursor-pointer"
+                className="bg-red-100 hover:bg-red-500/20 border border-red-550/20 text-red-600 text-xs font-semibold py-1.5 px-3 rounded cursor-pointer"
               >
                 <span>Cancel Invoice</span>
               </button>
@@ -202,7 +202,7 @@ export default function InvoicePreview() {
         </div>
 
         {/* Big Action Buttons */}
-        <div className="glass-card p-4 rounded-xl flex flex-wrap gap-4 items-center justify-between border-slate-800/80">
+        <div className="glass-card p-4 rounded-xl flex flex-wrap gap-4 items-center justify-between border-slate-200">
           <div className="flex items-center space-x-2.5">
             <span className="text-slate-400 text-sm">Status:</span>
             <span className={`badge badge-${invoice.status}`}>{invoice.status}</span>
@@ -216,7 +216,7 @@ export default function InvoicePreview() {
           <div className="flex items-center space-x-3">
             <button 
               onClick={handleDownloadPDF}
-              className="flex items-center space-x-2 px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-sm font-semibold rounded-lg text-white cursor-pointer transition-colors shadow-lg shadow-sky-500/20"
+              className="flex items-center space-x-2 px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-sm font-semibold rounded-lg text-slate-900 cursor-pointer transition-colors shadow-lg shadow-sky-500/20"
             >
               <Download className="h-4 w-4" />
               <span>Download PDF</span>
@@ -396,16 +396,16 @@ export default function InvoicePreview() {
 
       {/* Payments History log (Hidden on print) */}
       {payments.length > 0 && (
-        <div className="no-print glass-card rounded-2xl border-slate-800/80 p-6 space-y-4">
-          <h2 className="font-display font-semibold text-lg text-white flex items-center space-x-2">
-            <CreditCard className="h-5 w-5 text-sky-400" />
+        <div className="no-print glass-card rounded-2xl border-slate-200 p-6 space-y-4">
+          <h2 className="font-display font-semibold text-lg text-slate-900 flex items-center space-x-2">
+            <CreditCard className="h-5 w-5 text-blue-600" />
             <span>Payments History Log ({payments.length})</span>
           </h2>
           
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="border-b border-slate-800/50 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-950/20">
+                <tr className="border-b border-slate-200 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-50">
                   <th className="px-6 py-2.5">Date</th>
                   <th className="px-6 py-2.5">Method</th>
                   <th className="px-6 py-2.5">Reference ID</th>
@@ -414,18 +414,18 @@ export default function InvoicePreview() {
                   <th className="px-6 py-2.5 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/30 text-xs">
+              <tbody className="divide-y divide-slate-100 text-xs">
                 {payments.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-800/10">
-                    <td className="px-6 py-3 text-slate-300">{formatDate(p.payment_date)}</td>
+                  <tr key={p.id} className="hover:bg-slate-50/10">
+                    <td className="px-6 py-3 text-slate-700">{formatDate(p.payment_date)}</td>
                     <td className="px-6 py-3 text-slate-400 font-medium capitalize">{p.method?.replace('_', ' ')}</td>
-                    <td className="px-6 py-3 font-mono text-slate-300">{p.reference || '-'}</td>
+                    <td className="px-6 py-3 font-mono text-slate-700">{p.reference || '-'}</td>
                     <td className="px-6 py-3 text-slate-400">{p.notes || '-'}</td>
-                    <td className="px-6 py-3 text-right font-medium text-emerald-400 font-mono">{formatCurrency(p.amount, invoice.currency)}</td>
+                    <td className="px-6 py-3 text-right font-medium text-emerald-600 font-mono">{formatCurrency(p.amount, invoice.currency)}</td>
                     <td className="px-6 py-3 text-right">
                       <button 
                         onClick={() => handleDeletePayment(p.id)}
-                        className="text-red-400 hover:text-red-300 p-1 rounded cursor-pointer"
+                        className="text-red-600 hover:text-red-600 p-1 rounded cursor-pointer"
                         title="Delete Payment Entry"
                       >
                         <Trash2 className="h-4 w-4 inline" />
@@ -441,21 +441,21 @@ export default function InvoicePreview() {
 
       {/* Record Payment Modal */}
       {paymentModalOpen && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden">
-            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-800">
-              <h2 className="font-display font-semibold text-lg text-white flex items-center space-x-2">
-                <DollarSign className="h-5 w-5 text-emerald-400" />
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden">
+            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-200">
+              <h2 className="font-display font-semibold text-lg text-slate-900 flex items-center space-x-2">
+                <DollarSign className="h-5 w-5 text-emerald-600" />
                 <span>Record Invoice Payment</span>
               </h2>
-              <button onClick={() => setPaymentModalOpen(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setPaymentModalOpen(false)} className="text-slate-400 hover:text-slate-900">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             <form onSubmit={handleRecordPayment}>
               <div className="p-6 space-y-4">
-                <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 rounded-lg text-xs flex items-center space-x-2">
+                <div className="p-3 bg-emerald-100 border border-emerald-500/20 text-emerald-600 rounded-lg text-xs flex items-center space-x-2">
                   <Check className="h-4 w-4" />
                   <span>Remaining Outstanding Balance: <b>{invoice.currency} {remainingDue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</b></span>
                 </div>
@@ -466,7 +466,7 @@ export default function InvoicePreview() {
                     type="number" 
                     step="0.01"
                     required
-                    className="w-full form-input text-sm font-mono text-emerald-400"
+                    className="w-full form-input text-sm font-mono text-emerald-600"
                     value={payAmount}
                     onChange={(e) => setPayAmount(e.target.value)}
                   />
@@ -521,11 +521,11 @@ export default function InvoicePreview() {
                 </div>
               </div>
 
-              <div className="px-6 py-4 border-t border-slate-800 bg-slate-950/20 flex items-center justify-end space-x-3">
+              <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end space-x-3">
                 <button
                   type="button"
                   onClick={() => setPaymentModalOpen(false)}
-                  className="px-4 py-2 border border-slate-800 hover:border-slate-700 bg-slate-900/50 rounded-lg text-sm font-semibold text-slate-300 transition-colors cursor-pointer"
+                  className="px-4 py-2 border border-slate-200 hover:border-slate-300 bg-white rounded-lg text-sm font-semibold text-slate-700 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
