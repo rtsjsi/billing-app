@@ -51,8 +51,8 @@ app.use(
   cors({
     origin: (origin) => {
       // If Origin header is absent, it's typically a same-origin request; no CORS response is needed.
-      if (!origin) return false;
-      return allowedOrigins.has(origin) ? origin : false;
+      if (!origin) return undefined;
+      return allowedOrigins.has(origin) ? origin : undefined;
     },
     credentials: true,
   })
