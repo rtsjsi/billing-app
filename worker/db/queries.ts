@@ -14,7 +14,8 @@ export interface User {
 }
 
 export interface BusinessSettings {
-  id: 1;
+  id: number;
+  user_id: number;
   business_name: string;
   owner_name: string | null;
   email: string | null;
@@ -41,6 +42,7 @@ export interface BusinessSettings {
 
 export interface Client {
   id: number;
+  user_id: number;
   name: string;
   company_name: string | null;
   email: string | null;
@@ -55,6 +57,7 @@ export interface Client {
 
 export interface PurchaseOrder {
   id: number;
+  user_id: number;
   client_id: number;
   client_name?: string;
   po_number: string;
@@ -72,6 +75,7 @@ export interface PurchaseOrder {
 
 export interface Invoice {
   id: number;
+  user_id: number;
   invoice_number: string;
   client_id: number;
   client_name?: string;
@@ -136,12 +140,15 @@ export async function createUser(
   username: string,
   passwordHash: string,
   passwordSalt: string
-): Promise<void> {
+): Promise<number> {
   const now = new Date().toISOString();
-  await db
-    .prepare('INSERT INTO users (username, password_hash, password_salt, created_at) VALUES (?, ?, ?, ?)')
+  const res = await db
+    .prepare('INSERT INTO users (username, password_hash, password_salt, created_at) VALUES (?, ?, ?, ?) RETURNING id')
     .bind(username, passwordHash, passwordSalt, now)
-    .run();
+    .first<{ id: number }>();
+  
+  if (!res) throw new Error('Failed to create user');
+  return res.id;
 }
 
 export async function updateUserPassword(
@@ -160,8 +167,8 @@ export async function updateUserPassword(
 // Settings Queries
 // ----------------------------------------------------
 
-export async function getSettings(db: D1Database): Promise<BusinessSettings> {
-  const settings = await db.prepare('SELECT * FROM business_settings WHERE id = 1').first<BusinessSettings>();
+export async function getSettings(db: D1Database, userId: number): Promise<BusinessSettings> {
+  const settings = await db.prepare('SELECT * FROM business_settings WHERE user_id = ?').bind(userId).first<BusinessSettings>();
   if (!settings) {
     throw new Error('Business settings not found');
   }
@@ -170,7 +177,8 @@ export async function getSettings(db: D1Database): Promise<BusinessSettings> {
 
 export async function updateSettings(
   db: D1Database,
-  settings: Partial<Omit<BusinessSettings, 'id' | 'updated_at'>>
+  userId: number,
+  settings: Partial<Omit<BusinessSettings, 'id' | 'user_id' | 'updated_at'>>
 ): Promise<void> {
   const now = new Date().toISOString();
   const keys = Object.keys(settings);
@@ -179,8 +187,8 @@ export async function updateSettings(
   const sets = keys.map(k => `${k} = ?`).join(', ');
   const values = keys.map(k => (settings as any)[k]);
   
-  const query = `UPDATE business_settings SET ${sets}, updated_at = ? WHERE id = 1`;
-  await db.prepare(query).bind(...values, now).run();
+  const query = `UPDATE business_settings SET ${sets}, updated_at = ? WHERE user_id = ?`;
+  await db.prepare(query).bind(...values, now, userId).run();
 }
 
 // ----------------------------------------------------
@@ -189,11 +197,12 @@ export async function updateSettings(
 
 export async function listClients(
   db: D1Database,
+  userId: number,
   includeArchived: boolean = false,
   search: string = ''
 ): Promise<Client[]> {
-  let query = 'SELECT * FROM clients WHERE 1=1';
-  const binds: any[] = [];
+  let query = 'SELECT * FROM clients WHERE user_id = ?';
+  const binds: any[] = [userId];
 
   if (!includeArchived) {
     query += ' AND is_archived = 0';
@@ -209,18 +218,19 @@ export async function listClients(
   return results || [];
 }
 
-export async function getClientById(db: D1Database, id: number): Promise<Client | null> {
-  return await db.prepare('SELECT * FROM clients WHERE id = ?').bind(id).first<Client>();
+export async function getClientById(db: D1Database, userId: number, id: number): Promise<Client | null> {
+  return await db.prepare('SELECT * FROM clients WHERE user_id = ? AND id = ?').bind(userId, id).first<Client>();
 }
 
-export async function createClient(db: D1Database, client: Omit<Client, 'id' | 'is_archived' | 'created_at' | 'updated_at'>): Promise<number> {
+export async function createClient(db: D1Database, userId: number, client: Omit<Client, 'id' | 'user_id' | 'is_archived' | 'created_at' | 'updated_at'>): Promise<number> {
   const now = new Date().toISOString();
   const result = await db
     .prepare(
-      `INSERT INTO clients (name, company_name, email, phone, billing_address, gstin, notes, is_archived, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`
+      `INSERT INTO clients (user_id, name, company_name, email, phone, billing_address, gstin, notes, is_archived, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`
     )
     .bind(
+      userId,
       client.name,
       client.company_name || null,
       client.email || null,
@@ -236,7 +246,7 @@ export async function createClient(db: D1Database, client: Omit<Client, 'id' | '
   return result.meta.last_row_id ?? 0;
 }
 
-export async function updateClient(db: D1Database, id: number, client: Partial<Omit<Client, 'id' | 'created_at' | 'updated_at'>>): Promise<void> {
+export async function updateClient(db: D1Database, userId: number, id: number, client: Partial<Omit<Client, 'id' | 'user_id' | 'created_at' | 'updated_at'>>): Promise<void> {
   const now = new Date().toISOString();
   const keys = Object.keys(client);
   if (keys.length === 0) return;
@@ -244,36 +254,36 @@ export async function updateClient(db: D1Database, id: number, client: Partial<O
   const sets = keys.map(k => `${k} = ?`).join(', ');
   const values = keys.map(k => (client as any)[k]);
 
-  const query = `UPDATE clients SET ${sets}, updated_at = ? WHERE id = ?`;
-  await db.prepare(query).bind(...values, now, id).run();
+  const query = `UPDATE clients SET ${sets}, updated_at = ? WHERE user_id = ? AND id = ?`;
+  await db.prepare(query).bind(...values, now, userId, id).run();
 }
 
-export async function getClientReferences(db: D1Database, id: number): Promise<{ invoices: number; pos: number }> {
-  const invoices = await db.prepare('SELECT COUNT(*) as count FROM invoices WHERE client_id = ?').bind(id).first<{ count: number }>();
-  const pos = await db.prepare('SELECT COUNT(*) as count FROM purchase_orders WHERE client_id = ?').bind(id).first<{ count: number }>();
+export async function getClientReferences(db: D1Database, userId: number, id: number): Promise<{ invoices: number; pos: number }> {
+  const invoices = await db.prepare('SELECT COUNT(*) as count FROM invoices WHERE user_id = ? AND client_id = ?').bind(userId, id).first<{ count: number }>();
+  const pos = await db.prepare('SELECT COUNT(*) as count FROM purchase_orders WHERE user_id = ? AND client_id = ?').bind(userId, id).first<{ count: number }>();
   return {
     invoices: invoices?.count ?? 0,
     pos: pos?.count ?? 0
   };
 }
 
-export async function deleteClient(db: D1Database, id: number): Promise<void> {
-  await db.prepare('DELETE FROM clients WHERE id = ?').bind(id).run();
+export async function deleteClient(db: D1Database, userId: number, id: number): Promise<void> {
+  await db.prepare('DELETE FROM clients WHERE user_id = ? AND id = ?').bind(userId, id).run();
 }
 
 // ----------------------------------------------------
 // Purchase Order Queries
 // ----------------------------------------------------
 
-export async function listPOs(db: D1Database, clientId?: number, status?: string): Promise<PurchaseOrder[]> {
+export async function listPOs(db: D1Database, userId: number, clientId?: number, status?: string): Promise<PurchaseOrder[]> {
   let query = `
     SELECT po.*, c.name as client_name,
            (SELECT COALESCE(SUM(total), 0) FROM invoices WHERE po_id = po.id AND status != 'cancelled') as invoiced_amount
     FROM purchase_orders po
     JOIN clients c ON po.client_id = c.id
-    WHERE 1=1
+    WHERE po.user_id = ?
   `;
-  const binds: any[] = [];
+  const binds: any[] = [userId];
 
   if (clientId) {
     query += ' AND po.client_id = ?';
@@ -289,32 +299,33 @@ export async function listPOs(db: D1Database, clientId?: number, status?: string
   return results || [];
 }
 
-export async function getPOById(db: D1Database, id: number): Promise<PurchaseOrder | null> {
+export async function getPOById(db: D1Database, userId: number, id: number): Promise<PurchaseOrder | null> {
   return await db.prepare(`
     SELECT po.*, c.name as client_name,
            (SELECT COALESCE(SUM(total), 0) FROM invoices WHERE po_id = po.id AND status != 'cancelled') as invoiced_amount
     FROM purchase_orders po
     JOIN clients c ON po.client_id = c.id
-    WHERE po.id = ?
-  `).bind(id).first<PurchaseOrder>();
+    WHERE po.user_id = ? AND po.id = ?
+  `).bind(userId, id).first<PurchaseOrder>();
 }
 
-export async function getPOItems(db: D1Database, poId: number): Promise<any[]> {
+export async function getPOItems(db: D1Database, userId: number, poId: number): Promise<any[]> {
   const { results } = await db
-    .prepare('SELECT * FROM purchase_order_items WHERE po_id = ? ORDER BY sort_order ASC, id ASC')
-    .bind(poId)
+    .prepare('SELECT poi.* FROM purchase_order_items poi JOIN purchase_orders po ON poi.po_id = po.id WHERE po.user_id = ? AND po.id = ? ORDER BY poi.sort_order ASC, poi.id ASC')
+    .bind(userId, poId)
     .all();
   return results || [];
 }
 
-export async function createPO(db: D1Database, po: Omit<PurchaseOrder, 'id' | 'created_at' | 'updated_at'>, items?: any[]): Promise<number> {
+export async function createPO(db: D1Database, userId: number, po: Omit<PurchaseOrder, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: any[]): Promise<number> {
   const now = new Date().toISOString();
   const stmts = [];
   
   const insertPOStmt = db.prepare(`
-    INSERT INTO purchase_orders (client_id, po_number, po_date, description, amount, currency, status, attachment_key, notes, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO purchase_orders (user_id, client_id, po_number, po_date, description, amount, currency, status, attachment_key, notes, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).bind(
+    userId,
     po.client_id,
     po.po_number,
     po.po_date || null,
@@ -353,7 +364,7 @@ export async function createPO(db: D1Database, po: Omit<PurchaseOrder, 'id' | 'c
   return poId;
 }
 
-export async function updatePO(db: D1Database, id: number, po: Partial<Omit<PurchaseOrder, 'id' | 'created_at' | 'updated_at'>>, items?: any[]): Promise<void> {
+export async function updatePO(db: D1Database, userId: number, id: number, po: Partial<Omit<PurchaseOrder, 'id' | 'user_id' | 'created_at' | 'updated_at'>>, items?: any[]): Promise<void> {
   const now = new Date().toISOString();
   const keys = Object.keys(po).filter(k => k !== 'items');
   const stmts = [];
@@ -361,7 +372,7 @@ export async function updatePO(db: D1Database, id: number, po: Partial<Omit<Purc
   if (keys.length > 0) {
     const sets = keys.map(k => `${k} = ?`).join(', ');
     const values = keys.map(k => (po as any)[k]);
-    const updateStmt = db.prepare(`UPDATE purchase_orders SET ${sets}, updated_at = ? WHERE id = ?`).bind(...values, now, id);
+    const updateStmt = db.prepare(`UPDATE purchase_orders SET ${sets}, updated_at = ? WHERE user_id = ? AND id = ?`).bind(...values, now, userId, id);
     stmts.push(updateStmt);
   }
 
@@ -387,16 +398,16 @@ export async function updatePO(db: D1Database, id: number, po: Partial<Omit<Purc
   }
 }
 
-export async function deletePO(db: D1Database, id: number): Promise<void> {
-  await db.prepare('DELETE FROM purchase_orders WHERE id = ?').bind(id).run();
+export async function deletePO(db: D1Database, userId: number, id: number): Promise<void> {
+  await db.prepare('DELETE FROM purchase_orders WHERE user_id = ? AND id = ?').bind(userId, id).run();
 }
 
-export async function getPOInvoicedAmount(db: D1Database, poId: number): Promise<number> {
+export async function getPOInvoicedAmount(db: D1Database, userId: number, poId: number): Promise<number> {
   const result = await db.prepare(`
     SELECT SUM(total) as invoiced 
     FROM invoices 
-    WHERE po_id = ? AND status != 'cancelled'
-  `).bind(poId).first<{ invoiced: number | null }>();
+    WHERE user_id = ? AND po_id = ? AND status != 'cancelled'
+  `).bind(userId, poId).first<{ invoiced: number | null }>();
   return result?.invoiced ?? 0;
 }
 
@@ -417,6 +428,7 @@ const INVOICE_SELECT_FIELDS = `
 
 export async function listInvoices(
   db: D1Database,
+  userId: number,
   status?: string,
   clientId?: number,
   startDate?: string,
@@ -430,9 +442,9 @@ export async function listInvoices(
     FROM invoices i
     JOIN clients c ON i.client_id = c.id
     LEFT JOIN purchase_orders po ON i.po_id = po.id
-    WHERE 1=1
+    WHERE i.user_id = ?
   `;
-  const binds: any[] = [];
+  const binds: any[] = [userId];
 
   if (clientId) {
     query += ' AND i.client_id = ?';
@@ -470,6 +482,7 @@ export async function listInvoices(
 
 export async function countInvoices(
   db: D1Database,
+  userId: number,
   status?: string,
   clientId?: number,
   startDate?: string,
@@ -479,9 +492,9 @@ export async function countInvoices(
   let query = `
     SELECT COUNT(*) as count
     FROM invoices i
-    WHERE 1=1
+    WHERE i.user_id = ?
   `;
-  const binds: any[] = [];
+  const binds: any[] = [userId];
 
   if (clientId) {
     query += ' AND i.client_id = ?';
@@ -513,25 +526,25 @@ export async function countInvoices(
   return result?.count ?? 0;
 }
 
-export async function getInvoiceById(db: D1Database, id: number): Promise<Invoice | null> {
+export async function getInvoiceById(db: D1Database, userId: number, id: number): Promise<Invoice | null> {
   return await db.prepare(`
     SELECT ${INVOICE_SELECT_FIELDS}
     FROM invoices i
     JOIN clients c ON i.client_id = c.id
     LEFT JOIN purchase_orders po ON i.po_id = po.id
-    WHERE i.id = ?
-  `).bind(id).first<Invoice>();
+    WHERE i.user_id = ? AND i.id = ?
+  `).bind(userId, id).first<Invoice>();
 }
 
-export async function getInvoiceItems(db: D1Database, invoiceId: number): Promise<InvoiceItem[]> {
+export async function getInvoiceItems(db: D1Database, userId: number, invoiceId: number): Promise<InvoiceItem[]> {
   const { results } = await db
-    .prepare('SELECT * FROM invoice_items WHERE invoice_id = ? ORDER BY sort_order ASC, id ASC')
-    .bind(invoiceId)
+    .prepare('SELECT ii.* FROM invoice_items ii JOIN invoices i ON ii.invoice_id = i.id WHERE i.user_id = ? AND i.id = ? ORDER BY ii.sort_order ASC, ii.id ASC')
+    .bind(userId, invoiceId)
     .all<InvoiceItem>();
   return results || [];
 }
 
-export async function getNextInvoiceNumber(db: D1Database, settings: BusinessSettings): Promise<{ invoiceNumber: string; nextNumValue: number }> {
+export async function getNextInvoiceNumber(db: D1Database, userId: number, settings: BusinessSettings): Promise<{ invoiceNumber: string; nextNumValue: number }> {
   const now = new Date();
   
   // Calculate the prefix pattern for the current period (e.g., 'INV-2026-27-%')
@@ -542,12 +555,12 @@ export async function getNextInvoiceNumber(db: D1Database, settings: BusinessSet
   const maxQuery = `
     SELECT CAST(SUBSTR(invoice_number, ?) AS INTEGER) as max_num 
     FROM invoices 
-    WHERE invoice_number LIKE ? 
+    WHERE user_id = ? AND invoice_number LIKE ? 
     ORDER BY max_num DESC 
     LIMIT 1
   `;
   
-  const res = await db.prepare(maxQuery).bind(prefixWithoutPercent.length + 1, pattern).first<{ max_num: number | null }>();
+  const res = await db.prepare(maxQuery).bind(prefixWithoutPercent.length + 1, userId, pattern).first<{ max_num: number | null }>();
   
   let nextNumber = 1;
   if (res && res.max_num !== null) {
@@ -560,12 +573,13 @@ export async function getNextInvoiceNumber(db: D1Database, settings: BusinessSet
 
 export async function createInvoice(
   db: D1Database,
-  invoice: Omit<Invoice, 'id' | 'invoice_number' | 'amount_paid' | 'created_at' | 'updated_at'>,
+  userId: number,
+  invoice: Omit<Invoice, 'id' | 'user_id' | 'invoice_number' | 'amount_paid' | 'created_at' | 'updated_at'>,
   items: Omit<InvoiceItem, 'id' | 'invoice_id'>[]
 ): Promise<number> {
   const now = new Date().toISOString();
-  const settings = await getSettings(db);
-  const { invoiceNumber, nextNumValue } = await getNextInvoiceNumber(db, settings);
+  const settings = await getSettings(db, userId);
+  const { invoiceNumber, nextNumValue } = await getNextInvoiceNumber(db, userId, settings);
 
   // We write statements to run in a D1 transaction batch
   const stmts = [];
@@ -573,10 +587,11 @@ export async function createInvoice(
   // 1. Insert invoice
   const insertInvoiceStmt = db.prepare(`
     INSERT INTO invoices (
-      invoice_number, client_id, po_id, issue_date, due_date, status, currency, 
+      user_id, invoice_number, client_id, po_id, issue_date, due_date, status, currency, 
       subtotal, tax_label, tax_rate, tax_amount, discount_amount, total, amount_paid, notes, terms, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
   `).bind(
+    userId,
     invoiceNumber,
     invoice.client_id,
     invoice.po_id || null,
@@ -626,7 +641,7 @@ export async function createInvoice(
 
   // Update PO status if the invoice references a PO
   if (invoice.po_id) {
-    await updatePOStatusFromInvoices(db, invoice.po_id);
+    await updatePOStatusFromInvoices(db, userId, invoice.po_id);
   }
 
   return invoiceId;
@@ -634,12 +649,13 @@ export async function createInvoice(
 
 export async function updateInvoice(
   db: D1Database,
+  userId: number,
   id: number,
-  invoice: Partial<Omit<Invoice, 'id' | 'invoice_number' | 'amount_paid' | 'created_at' | 'updated_at'>>,
+  invoice: Partial<Omit<Invoice, 'id' | 'user_id' | 'invoice_number' | 'amount_paid' | 'created_at' | 'updated_at'>>,
   items?: Omit<InvoiceItem, 'id' | 'invoice_id'>[]
 ): Promise<void> {
   const now = new Date().toISOString();
-  const oldInvoice = await getInvoiceById(db, id);
+  const oldInvoice = await getInvoiceById(db, userId, id);
   if (!oldInvoice) throw new Error('Invoice not found');
 
   const stmts = [];
@@ -650,8 +666,8 @@ export async function updateInvoice(
     const sets = keys.map(k => `${k} = ?`).join(', ');
     const values = keys.map(k => (invoice as any)[k]);
     const updateStmt = db
-      .prepare(`UPDATE invoices SET ${sets}, updated_at = ? WHERE id = ?`)
-      .bind(...values, now, id);
+      .prepare(`UPDATE invoices SET ${sets}, updated_at = ? WHERE user_id = ? AND id = ?`)
+      .bind(...values, now, userId, id);
     stmts.push(updateStmt);
   }
 
@@ -682,41 +698,42 @@ export async function updateInvoice(
 
   // Handle PO updates
   if (oldInvoice.po_id) {
-    await updatePOStatusFromInvoices(db, oldInvoice.po_id);
+    await updatePOStatusFromInvoices(db, userId, oldInvoice.po_id);
   }
   if (invoice.po_id && invoice.po_id !== oldInvoice.po_id) {
-    await updatePOStatusFromInvoices(db, invoice.po_id);
+    await updatePOStatusFromInvoices(db, userId, invoice.po_id);
   }
 }
 
-export async function deleteInvoice(db: D1Database, id: number): Promise<void> {
-  const invoice = await getInvoiceById(db, id);
-  await db.prepare('DELETE FROM invoices WHERE id = ?').bind(id).run();
+export async function deleteInvoice(db: D1Database, userId: number, id: number): Promise<void> {
+  const invoice = await getInvoiceById(db, userId, id);
+  await db.prepare('DELETE FROM invoices WHERE user_id = ? AND id = ?').bind(userId, id).run();
   
   if (invoice?.po_id) {
-    await updatePOStatusFromInvoices(db, invoice.po_id);
+    await updatePOStatusFromInvoices(db, userId, invoice.po_id);
   }
 }
 
-export async function updateInvoiceStatus(db: D1Database, id: number, status: string): Promise<void> {
+export async function updateInvoiceStatus(db: D1Database, userId: number, id: number, status: string): Promise<void> {
   const now = new Date().toISOString();
-  await db.prepare('UPDATE invoices SET status = ?, updated_at = ? WHERE id = ?').bind(status, now, id).run();
+  await db.prepare('UPDATE invoices SET status = ?, updated_at = ? WHERE user_id = ? AND id = ?').bind(status, now, userId, id).run();
 }
 
 // ----------------------------------------------------
 // Payment Queries
 // ----------------------------------------------------
 
-export async function listPaymentsByInvoiceId(db: D1Database, invoiceId: number): Promise<Payment[]> {
+export async function listPaymentsByInvoiceId(db: D1Database, userId: number, invoiceId: number): Promise<Payment[]> {
   const { results } = await db
-    .prepare('SELECT * FROM payments WHERE invoice_id = ? ORDER BY payment_date DESC, id DESC')
-    .bind(invoiceId)
+    .prepare('SELECT p.* FROM payments p JOIN invoices i ON p.invoice_id = i.id WHERE i.user_id = ? AND p.invoice_id = ? ORDER BY p.payment_date DESC, p.id DESC')
+    .bind(userId, invoiceId)
     .all<Payment>();
   return results || [];
 }
 
 export async function addPayment(
   db: D1Database,
+  userId: number,
   invoiceId: number,
   amount: number,
   paymentDate: string,
@@ -726,6 +743,10 @@ export async function addPayment(
 ): Promise<number> {
   const now = new Date().toISOString();
   
+  // Verify invoice belongs to user
+  const invoice = await getInvoiceById(db, userId, invoiceId);
+  if (!invoice) throw new Error('Invoice not found');
+
   // Insert payment and update invoice amount_paid & status in a transaction batch
   const insertPaymentStmt = db.prepare(`
     INSERT INTO payments (invoice_id, amount, payment_date, method, reference, notes, created_at)
@@ -737,20 +758,20 @@ export async function addPayment(
   if (!paymentId) throw new Error('Failed to record payment');
 
   // Recalculate invoice totals and status
-  await recalculateInvoicePayment(db, invoiceId);
+  await recalculateInvoicePayment(db, userId, invoiceId);
 
   return paymentId;
 }
 
-export async function deletePayment(db: D1Database, id: number): Promise<void> {
-  const payment = await db.prepare('SELECT invoice_id FROM payments WHERE id = ?').bind(id).first<Payment>();
+export async function deletePayment(db: D1Database, userId: number, id: number): Promise<void> {
+  const payment = await db.prepare('SELECT p.invoice_id FROM payments p JOIN invoices i ON p.invoice_id = i.id WHERE i.user_id = ? AND p.id = ?').bind(userId, id).first<Payment>();
   if (!payment) return;
 
   await db.prepare('DELETE FROM payments WHERE id = ?').bind(id).run();
-  await recalculateInvoicePayment(db, payment.invoice_id);
+  await recalculateInvoicePayment(db, userId, payment.invoice_id);
 }
 
-async function recalculateInvoicePayment(db: D1Database, invoiceId: number): Promise<void> {
+async function recalculateInvoicePayment(db: D1Database, userId: number, invoiceId: number): Promise<void> {
   const totalPaymentsRes = await db
     .prepare('SELECT SUM(amount) as sum_amount FROM payments WHERE invoice_id = ?')
     .bind(invoiceId)
@@ -758,7 +779,7 @@ async function recalculateInvoicePayment(db: D1Database, invoiceId: number): Pro
   
   const sumAmount = totalPaymentsRes?.sum_amount ?? 0;
   
-  const invoice = await getInvoiceById(db, invoiceId);
+  const invoice = await getInvoiceById(db, userId, invoiceId);
   if (!invoice) return;
 
   let newStatus = invoice.status;
@@ -774,8 +795,8 @@ async function recalculateInvoicePayment(db: D1Database, invoiceId: number): Pro
 
   const now = new Date().toISOString();
   await db
-    .prepare('UPDATE invoices SET amount_paid = ?, status = ?, updated_at = ? WHERE id = ?')
-    .bind(sumAmount, newStatus, now, invoiceId)
+    .prepare('UPDATE invoices SET amount_paid = ?, status = ?, updated_at = ? WHERE user_id = ? AND id = ?')
+    .bind(sumAmount, newStatus, now, userId, invoiceId)
     .run();
 }
 
@@ -784,11 +805,11 @@ async function recalculateInvoicePayment(db: D1Database, invoiceId: number): Pro
 // ----------------------------------------------------
 
 // Automatically derive PO status (open | partially_invoiced | fulfilled | cancelled)
-export async function updatePOStatusFromInvoices(db: D1Database, poId: number): Promise<void> {
-  const po = await getPOById(db, poId);
+export async function updatePOStatusFromInvoices(db: D1Database, userId: number, poId: number): Promise<void> {
+  const po = await getPOById(db, userId, poId);
   if (!po || po.status === 'cancelled') return;
 
-  const invoicedAmount = await getPOInvoicedAmount(db, poId);
+  const invoicedAmount = await getPOInvoicedAmount(db, userId, poId);
   const poAmount = po.amount || 0;
 
   let newStatus: PurchaseOrder['status'] = 'open';
@@ -800,8 +821,8 @@ export async function updatePOStatusFromInvoices(db: D1Database, poId: number): 
 
   const now = new Date().toISOString();
   await db
-    .prepare('UPDATE purchase_orders SET status = ?, updated_at = ? WHERE id = ?')
-    .bind(newStatus, now, poId)
+    .prepare('UPDATE purchase_orders SET status = ?, updated_at = ? WHERE user_id = ? AND id = ?')
+    .bind(newStatus, now, userId, poId)
     .run();
 }
 
@@ -833,6 +854,7 @@ function getFYDateRange(fy: string): { start: string; end: string } {
 
 export async function getDashboardStats(
   db: D1Database,
+  userId: number,
   financialYear?: string,
   clientId?: number
 ): Promise<DashboardStats> {
@@ -845,8 +867,8 @@ export async function getDashboardStats(
   }
 
   // Build Invoice WHERE filters
-  let invoiceWhere = "";
-  const invoiceParams: any[] = [];
+  let invoiceWhere = " AND user_id = ?";
+  const invoiceParams: any[] = [userId];
   if (clientId) {
     invoiceWhere += " AND client_id = ?";
     invoiceParams.push(clientId);
@@ -891,8 +913,8 @@ export async function getDashboardStats(
     .first<{ count: number | null }>();
 
   // Build PO WHERE filters
-  let poWhere = "status != 'cancelled'";
-  const poParams: any[] = [];
+  let poWhere = "status != 'cancelled' AND user_id = ?";
+  const poParams: any[] = [userId];
   if (clientId) {
     poWhere += " AND client_id = ?";
     poParams.push(clientId);
@@ -925,6 +947,7 @@ export async function getDashboardStats(
 
 export async function getRecentActivity(
   db: D1Database,
+  userId: number,
   financialYear?: string,
   clientId?: number
 ): Promise<{ recentInvoices: Invoice[]; openPOs: PurchaseOrder[] }> {
@@ -937,8 +960,8 @@ export async function getRecentActivity(
   }
 
   // Recent 5 invoices
-  let invoiceWhere = "WHERE 1=1";
-  const invoiceParams: any[] = [];
+  let invoiceWhere = "WHERE i.user_id = ?";
+  const invoiceParams: any[] = [userId];
   if (clientId) {
     invoiceWhere += " AND i.client_id = ?";
     invoiceParams.push(clientId);
@@ -962,8 +985,8 @@ export async function getRecentActivity(
     .all<Invoice>();
 
   // Open Purchase Orders not yet fully invoiced (status is 'open' or 'partially_invoiced')
-  let poWhere = "WHERE po.status IN ('open', 'partially_invoiced')";
-  const poParams: any[] = [];
+  let poWhere = "WHERE po.user_id = ? AND po.status IN ('open', 'partially_invoiced')";
+  const poParams: any[] = [userId];
   if (clientId) {
     poWhere += " AND po.client_id = ?";
     poParams.push(clientId);
@@ -991,7 +1014,7 @@ export async function getRecentActivity(
   };
 }
 
-export async function getAvailableFinancialYears(db: D1Database): Promise<string[]> {
+export async function getAvailableFinancialYears(db: D1Database, userId: number): Promise<string[]> {
   const query = `
     SELECT DISTINCT
       CASE 
@@ -1000,7 +1023,7 @@ export async function getAvailableFinancialYears(db: D1Database): Promise<string
         ELSE CAST(CAST(strftime('%Y', po_date) AS INTEGER) - 1 AS TEXT) || '-' || SUBSTR(strftime('%Y', po_date), 3, 2)
       END as fy
     FROM purchase_orders 
-    WHERE po_date IS NOT NULL AND status != 'cancelled'
+    WHERE user_id = ? AND po_date IS NOT NULL AND status != 'cancelled'
     UNION
     SELECT DISTINCT
       CASE 
@@ -1009,10 +1032,10 @@ export async function getAvailableFinancialYears(db: D1Database): Promise<string
         ELSE CAST(CAST(strftime('%Y', issue_date) AS INTEGER) - 1 AS TEXT) || '-' || SUBSTR(strftime('%Y', issue_date), 3, 2)
       END as fy
     FROM invoices 
-    WHERE issue_date IS NOT NULL AND status != 'cancelled'
+    WHERE user_id = ? AND issue_date IS NOT NULL AND status != 'cancelled'
   `;
   
-  const { results } = await db.prepare(query).all<{ fy: string }>();
+  const { results } = await db.prepare(query).bind(userId, userId).all<{ fy: string }>();
   
   const now = new Date();
   const currentYear = now.getFullYear();
@@ -1037,17 +1060,17 @@ export async function getAvailableFinancialYears(db: D1Database): Promise<string
 // Export Data Queries
 // ----------------------------------------------------
 
-export async function exportClients(db: D1Database): Promise<any[]> {
-  const { results } = await db.prepare('SELECT * FROM clients ORDER BY id ASC').all();
+export async function exportClients(db: D1Database, userId: number): Promise<any[]> {
+  const { results } = await db.prepare('SELECT * FROM clients WHERE user_id = ? ORDER BY id ASC').bind(userId).all();
   return results || [];
 }
 
-export async function exportInvoices(db: D1Database): Promise<any[]> {
-  const { results } = await db.prepare('SELECT * FROM invoices ORDER BY id ASC').all();
+export async function exportInvoices(db: D1Database, userId: number): Promise<any[]> {
+  const { results } = await db.prepare('SELECT * FROM invoices WHERE user_id = ? ORDER BY id ASC').bind(userId).all();
   return results || [];
 }
 
-export async function exportPOs(db: D1Database): Promise<any[]> {
-  const { results } = await db.prepare('SELECT * FROM purchase_orders ORDER BY id ASC').all();
+export async function exportPOs(db: D1Database, userId: number): Promise<any[]> {
+  const { results } = await db.prepare('SELECT * FROM purchase_orders WHERE user_id = ? ORDER BY id ASC').bind(userId).all();
   return results || [];
 }

@@ -43,11 +43,11 @@ app.use('*', cors({
 // Public Authentication & Setup API
 // ----------------------------------------------------
 
-// Check if setup is needed
+// Check if setup is needed (we allow multiple signups, so this is just to auto-initialize the schema if needed)
 app.get('/api/auth/setup-status', async (c) => {
   try {
     const userCount = await getUserCount(c.env.DB);
-    return c.json({ needsSetup: userCount === 0 });
+    return c.json({ needsSetup: false }); // Multiple users allowed, setup is just register now
   } catch (error: any) {
     const errMsg = error.message || '';
     if (errMsg.includes('no such table') || errMsg.includes('no such table: users')) {
@@ -63,14 +63,9 @@ app.get('/api/auth/setup-status', async (c) => {
   }
 });
 
-// Setup admin user & business profile
+// Setup admin user & business profile (now acts as standard registration)
 app.post('/api/auth/setup', async (c) => {
   try {
-    const userCount = await getUserCount(c.env.DB);
-    if (userCount > 0) {
-      return c.json({ error: 'Setup has already been completed.' }, 400);
-    }
-
     const { username, password, business_name, owner_name, email } = await c.req.json();
     if (!username || !password || !business_name) {
       return c.json({ error: 'Username, password, and business name are required' }, 400);
@@ -79,20 +74,23 @@ app.post('/api/auth/setup', async (c) => {
     // Create user
     const salt = generateSalt();
     const hash = await hashPassword(password, salt);
-    await createUser(c.env.DB, username, hash, salt);
+    
+    // Check if username already exists
+    const existing = await getUserByUsername(c.env.DB, username);
+    if (existing) {
+      return c.json({ error: 'Username is already taken' }, 400);
+    }
 
-    // Get the seeded settings and update it with user profile
-    await updateSettings(c.env.DB, {
-      business_name,
-      owner_name: owner_name || '',
-      email: email || ''
-    });
+    const userId = await createUser(c.env.DB, username, hash, salt);
+
+    // Create business profile for the new user
+    await c.env.DB.prepare(`
+      INSERT INTO business_settings (user_id, business_name, owner_name, email, updated_at) 
+      VALUES (?, ?, ?, ?, ?)
+    `).bind(userId, business_name, owner_name || '', email || '', new Date().toISOString()).run();
 
     // Automatically log in
-    const user = await getUserByUsername(c.env.DB, username);
-    if (!user) throw new Error('Failed to retrieve setup user');
-
-    await createSession(c, user.id, user.username);
+    await createSession(c, userId, username);
 
     return c.json({ message: 'Setup completed successfully and logged in' }, 201);
   } catch (error: any) {
@@ -155,7 +153,7 @@ app.get('/api/auth/me', async (c) => {
       return c.json({ authenticated: false }, 200);
     }
 
-    const settings = await getSettings(c.env.DB);
+    const settings = await getSettings(c.env.DB, payload.userId);
 
     return c.json({
       authenticated: true,

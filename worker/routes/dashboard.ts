@@ -1,17 +1,18 @@
 import { Hono } from 'hono';
 import { getDashboardStats, getRecentActivity, getAvailableFinancialYears } from '../db/queries';
 
-const app = new Hono<{ Bindings: { DB: D1Database } }>();
+const app = new Hono<{ Bindings: { DB: D1Database }, Variables: { jwtPayload: { userId: number, username: string } } }>();
 
 app.get('/stats', async (c) => {
   try {
+    const userId = c.get('jwtPayload').userId;
     const financialYear = c.req.query('financialYear') || undefined;
     const clientIdStr = c.req.query('clientId');
     const clientId = clientIdStr ? parseInt(clientIdStr, 10) : undefined;
 
-    const stats = await getDashboardStats(c.env.DB, financialYear, clientId);
-    const activity = await getRecentActivity(c.env.DB, financialYear, clientId);
-    const availableYears = await getAvailableFinancialYears(c.env.DB);
+    const stats = await getDashboardStats(c.env.DB, userId, financialYear, clientId);
+    const activity = await getRecentActivity(c.env.DB, userId, financialYear, clientId);
+    const availableYears = await getAvailableFinancialYears(c.env.DB, userId);
 
     return c.json({
       stats,

@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { addPayment, deletePayment } from '../db/queries';
 
-const app = new Hono<{ Bindings: { DB: D1Database } }>();
+const app = new Hono<{ Bindings: { DB: D1Database }, Variables: { jwtPayload: { userId: number, username: string } } }>();
 
 const paymentSchema = z.object({
   invoice_id: z.number().int('Invalid invoice ID'),
@@ -16,6 +16,7 @@ const paymentSchema = z.object({
 // Record Payment
 app.post('/', async (c) => {
   try {
+    const userId = c.get('jwtPayload').userId;
     const body = await c.req.json();
     const parsed = paymentSchema.safeParse(body);
     if (!parsed.success) {
@@ -24,8 +25,7 @@ app.post('/', async (c) => {
 
     const { invoice_id, amount, payment_date, method, reference, notes } = parsed.data;
     
-    const paymentId = await addPayment(
-      c.env.DB,
+    const paymentId = await addPayment(c.env.DB, userId,
       invoice_id,
       amount,
       payment_date,
@@ -43,10 +43,11 @@ app.post('/', async (c) => {
 // Delete Payment
 app.delete('/:id', async (c) => {
   try {
+    const userId = c.get('jwtPayload').userId;
     const id = parseInt(c.req.param('id'), 10);
     if (isNaN(id)) return c.json({ error: 'Invalid payment ID' }, 400);
 
-    await deletePayment(c.env.DB, id);
+    await deletePayment(c.env.DB, userId, id);
     return c.json({ message: 'Payment deleted successfully' });
   } catch (error: any) {
     return c.json({ error: error.message || 'Failed to delete payment' }, 500);

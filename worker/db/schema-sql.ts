@@ -1,6 +1,7 @@
 export const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS business_settings (
-  id INTEGER PRIMARY KEY CHECK (id = 1),
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id),
   business_name TEXT NOT NULL,
   owner_name TEXT,
   email TEXT,
@@ -22,7 +23,8 @@ CREATE TABLE IF NOT EXISTS business_settings (
   default_payment_terms_days INTEGER NOT NULL DEFAULT 15,
   default_notes TEXT,
   default_terms TEXT,
-  updated_at TEXT NOT NULL
+  updated_at TEXT NOT NULL,
+  UNIQUE(user_id)
 );
 
 CREATE TABLE IF NOT EXISTS users (
@@ -35,6 +37,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS clients (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id),
   name TEXT NOT NULL,
   company_name TEXT,
   email TEXT,
@@ -51,6 +54,7 @@ CREATE INDEX IF NOT EXISTS idx_clients_name ON clients(name);
 
 CREATE TABLE IF NOT EXISTS purchase_orders (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id),
   client_id INTEGER NOT NULL REFERENCES clients(id),
   po_number TEXT NOT NULL,
   po_date TEXT,
@@ -80,7 +84,8 @@ CREATE INDEX IF NOT EXISTS idx_items_po ON purchase_order_items(po_id);
 
 CREATE TABLE IF NOT EXISTS invoices (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  invoice_number TEXT NOT NULL UNIQUE,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  invoice_number TEXT NOT NULL,
   client_id INTEGER NOT NULL REFERENCES clients(id),
   po_id INTEGER REFERENCES purchase_orders(id),
   issue_date TEXT NOT NULL,
@@ -97,7 +102,8 @@ CREATE TABLE IF NOT EXISTS invoices (
   notes TEXT,
   terms TEXT,
   created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
+  updated_at TEXT NOT NULL,
+  UNIQUE(user_id, invoice_number)
 );
 CREATE INDEX IF NOT EXISTS idx_invoices_client ON invoices(client_id);
 CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status);
@@ -126,39 +132,4 @@ CREATE TABLE IF NOT EXISTS payments (
 );
 CREATE INDEX IF NOT EXISTS idx_payments_invoice ON payments(invoice_id);
 
-INSERT OR IGNORE INTO business_settings (
-  id,
-  business_name,
-  owner_name,
-  email,
-  phone,
-  address,
-  currency,
-  tax_label,
-  default_tax_rate,
-  invoice_prefix,
-  invoice_next_number,
-  invoice_number_reset,
-  default_payment_terms_days,
-  default_notes,
-  default_terms,
-  updated_at
-) VALUES (
-  1,
-  'Freelancer Business',
-  '',
-  '',
-  '',
-  '',
-  'INR',
-  'GST',
-  18.0,
-  'INV-',
-  1,
-  'financial_year',
-  15,
-  'Thank you for your business!',
-  'Please pay within payment terms. Bank account details listed above.',
-  '2026-06-21T12:00:00Z'
-);
 `;

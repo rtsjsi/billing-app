@@ -9,7 +9,7 @@ import {
   deletePO 
 } from '../db/queries';
 
-const app = new Hono<{ Bindings: { DB: D1Database } }>();
+const app = new Hono<{ Bindings: { DB: D1Database }, Variables: { jwtPayload: { userId: number, username: string } } }>();
 
 const poItemSchema = z.object({
   description: z.string().min(1, 'Description is required'),
@@ -35,11 +35,12 @@ const poSchema = z.object({
 // List Purchase Orders
 app.get('/', async (c) => {
   try {
+    const userId = c.get('jwtPayload').userId;
     const clientIdStr = c.req.query('client_id');
     const clientId = clientIdStr ? parseInt(clientIdStr, 10) : undefined;
     const status = c.req.query('status') || undefined;
     
-    const pos = await listPOs(c.env.DB, clientId, status);
+    const pos = await listPOs(c.env.DB, userId, clientId, status);
     return c.json(pos);
   } catch (error: any) {
     return c.json({ error: error.message || 'Failed to list Purchase Orders' }, 500);
@@ -49,13 +50,14 @@ app.get('/', async (c) => {
 // Get PO by ID
 app.get('/:id', async (c) => {
   try {
+    const userId = c.get('jwtPayload').userId;
     const id = parseInt(c.req.param('id'), 10);
     if (isNaN(id)) return c.json({ error: 'Invalid PO ID' }, 400);
 
-    const po = await getPOById(c.env.DB, id);
+    const po = await getPOById(c.env.DB, userId, id);
     if (!po) return c.json({ error: 'Purchase Order not found' }, 404);
 
-    const items = await getPOItems(c.env.DB, id);
+    const items = await getPOItems(c.env.DB, userId, id);
 
     return c.json({ ...po, items });
   } catch (error: any) {
@@ -66,15 +68,16 @@ app.get('/:id', async (c) => {
 // Create PO
 app.post('/', async (c) => {
   try {
+    const userId = c.get('jwtPayload').userId;
     const body = await c.req.json();
     const parsed = poSchema.safeParse(body);
     if (!parsed.success) {
       return c.json({ error: 'Validation failed', details: parsed.error.format() }, 400);
     }
 
-    const poId = await createPO(c.env.DB, parsed.data as any, parsed.data.items);
-    const newPO = await getPOById(c.env.DB, poId);
-    const newItems = await getPOItems(c.env.DB, poId);
+    const poId = await createPO(c.env.DB, userId, parsed.data as any, parsed.data.items);
+    const newPO = await getPOById(c.env.DB, userId, poId);
+    const newItems = await getPOItems(c.env.DB, userId, poId);
     return c.json({ message: 'Purchase Order created successfully', po: { ...newPO, items: newItems } }, 201);
   } catch (error: any) {
     return c.json({ error: error.message || 'Failed to create Purchase Order' }, 500);
@@ -84,6 +87,7 @@ app.post('/', async (c) => {
 // Update PO
 app.put('/:id', async (c) => {
   try {
+    const userId = c.get('jwtPayload').userId;
     const id = parseInt(c.req.param('id'), 10);
     if (isNaN(id)) return c.json({ error: 'Invalid PO ID' }, 400);
 
@@ -93,9 +97,9 @@ app.put('/:id', async (c) => {
       return c.json({ error: 'Validation failed', details: parsed.error.format() }, 400);
     }
 
-    await updatePO(c.env.DB, id, parsed.data, parsed.data.items);
-    const updated = await getPOById(c.env.DB, id);
-    const updatedItems = await getPOItems(c.env.DB, id);
+    await updatePO(c.env.DB, userId, id, parsed.data, parsed.data.items);
+    const updated = await getPOById(c.env.DB, userId, id);
+    const updatedItems = await getPOItems(c.env.DB, userId, id);
     return c.json({ message: 'Purchase Order updated successfully', po: { ...updated, items: updatedItems } });
   } catch (error: any) {
     return c.json({ error: error.message || 'Failed to update Purchase Order' }, 500);
@@ -105,14 +109,15 @@ app.put('/:id', async (c) => {
 // Delete PO
 app.delete('/:id', async (c) => {
   try {
+    const userId = c.get('jwtPayload').userId;
     const id = parseInt(c.req.param('id'), 10);
     if (isNaN(id)) return c.json({ error: 'Invalid PO ID' }, 400);
 
-    const po = await getPOById(c.env.DB, id);
+    const po = await getPOById(c.env.DB, userId, id);
     if (!po) return c.json({ error: 'Purchase Order not found' }, 404);
 
 
-    await deletePO(c.env.DB, id);
+    await deletePO(c.env.DB, userId, id);
     return c.json({ message: 'Purchase Order deleted successfully' });
   } catch (error: any) {
     return c.json({ error: error.message || 'Failed to delete Purchase Order' }, 500);

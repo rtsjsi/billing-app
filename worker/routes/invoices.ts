@@ -15,7 +15,7 @@ import {
   getSettings
 } from '../db/queries';
 
-const app = new Hono<{ Bindings: { DB: D1Database } }>();
+const app = new Hono<{ Bindings: { DB: D1Database }, Variables: { jwtPayload: { userId: number, username: string } } }>();
 
 const itemSchema = z.object({
   description: z.string().min(1, 'Item description is required'),
@@ -46,6 +46,7 @@ const invoiceSchema = z.object({
 // List invoices with pagination and filters
 app.get('/', async (c) => {
   try {
+    const userId = c.get('jwtPayload').userId;
     const status = c.req.query('status') || undefined;
     const clientIdStr = c.req.query('client_id');
     const clientId = clientIdStr ? parseInt(clientIdStr, 10) : undefined;
@@ -58,8 +59,8 @@ app.get('/', async (c) => {
     const page = parseInt(c.req.query('page') || '1', 10);
     const offset = (page - 1) * limit;
 
-    const invoices = await listInvoices(c.env.DB, status, clientId, startDate, endDate, limit, offset, poId);
-    const total = await countInvoices(c.env.DB, status, clientId, startDate, endDate, poId);
+    const invoices = await listInvoices(c.env.DB, userId, status, clientId, startDate, endDate, limit, offset, poId);
+    const total = await countInvoices(c.env.DB, userId, status, clientId, startDate, endDate, poId);
 
     return c.json({
       invoices,
@@ -78,14 +79,15 @@ app.get('/', async (c) => {
 // Get invoice by ID (includes items & payments)
 app.get('/:id', async (c) => {
   try {
+    const userId = c.get('jwtPayload').userId;
     const id = parseInt(c.req.param('id'), 10);
     if (isNaN(id)) return c.json({ error: 'Invalid invoice ID' }, 400);
 
-    const invoice = await getInvoiceById(c.env.DB, id);
+    const invoice = await getInvoiceById(c.env.DB, userId, id);
     if (!invoice) return c.json({ error: 'Invoice not found' }, 404);
 
-    const items = await getInvoiceItems(c.env.DB, id);
-    const payments = await listPaymentsByInvoiceId(c.env.DB, id);
+    const items = await getInvoiceItems(c.env.DB, userId, id);
+    const payments = await listPaymentsByInvoiceId(c.env.DB, userId, id);
 
     return c.json({
       invoice,
@@ -100,14 +102,15 @@ app.get('/:id', async (c) => {
 // Download Invoice PDF
 app.get('/:id/pdf', async (c) => {
   try {
+    const userId = c.get('jwtPayload').userId;
     const id = parseInt(c.req.param('id'), 10);
     if (isNaN(id)) return c.json({ error: 'Invalid invoice ID' }, 400);
 
-    const invoice = await getInvoiceById(c.env.DB, id);
+    const invoice = await getInvoiceById(c.env.DB, userId, id);
     if (!invoice) return c.json({ error: 'Invoice not found' }, 404);
 
-    const items = await getInvoiceItems(c.env.DB, id);
-    const settings = await getSettings(c.env.DB);
+    const items = await getInvoiceItems(c.env.DB, userId, id);
+    const settings = await getSettings(c.env.DB, userId);
 
     const pdfDoc = await PDFDocument.create();
     const page = pdfDoc.addPage([595.28, 841.89]); // A4
@@ -275,6 +278,7 @@ app.get('/:id/pdf', async (c) => {
 // Create Invoice
 app.post('/', async (c) => {
   try {
+    const userId = c.get('jwtPayload').userId;
     const body = await c.req.json();
     const parsed = invoiceSchema.safeParse(body);
     if (!parsed.success) {
@@ -282,8 +286,8 @@ app.post('/', async (c) => {
     }
 
     const { items, ...invoiceData } = parsed.data;
-    const invoiceId = await createInvoice(c.env.DB, invoiceData as any, items);
-    const newInvoice = await getInvoiceById(c.env.DB, invoiceId);
+    const invoiceId = await createInvoice(c.env.DB, userId, invoiceData as any, items);
+    const newInvoice = await getInvoiceById(c.env.DB, userId, invoiceId);
 
     return c.json({ message: 'Invoice created successfully', invoice: newInvoice }, 201);
   } catch (error: any) {
@@ -294,6 +298,7 @@ app.post('/', async (c) => {
 // Update Invoice
 app.put('/:id', async (c) => {
   try {
+    const userId = c.get('jwtPayload').userId;
     const id = parseInt(c.req.param('id'), 10);
     if (isNaN(id)) return c.json({ error: 'Invalid invoice ID' }, 400);
 
@@ -304,8 +309,8 @@ app.put('/:id', async (c) => {
     }
 
     const { items, ...invoiceData } = parsed.data;
-    await updateInvoice(c.env.DB, id, invoiceData as any, items);
-    const updated = await getInvoiceById(c.env.DB, id);
+    await updateInvoice(c.env.DB, userId, id, invoiceData as any, items);
+    const updated = await getInvoiceById(c.env.DB, userId, id);
 
     return c.json({ message: 'Invoice updated successfully', invoice: updated });
   } catch (error: any) {
@@ -316,10 +321,11 @@ app.put('/:id', async (c) => {
 // Delete Invoice
 app.delete('/:id', async (c) => {
   try {
+    const userId = c.get('jwtPayload').userId;
     const id = parseInt(c.req.param('id'), 10);
     if (isNaN(id)) return c.json({ error: 'Invalid invoice ID' }, 400);
 
-    await deleteInvoice(c.env.DB, id);
+    await deleteInvoice(c.env.DB, userId, id);
     return c.json({ message: 'Invoice deleted successfully' });
   } catch (error: any) {
     return c.json({ error: error.message || 'Failed to delete invoice' }, 500);
@@ -329,6 +335,7 @@ app.delete('/:id', async (c) => {
 // Mark status (e.g. Sent, Cancelled)
 app.post('/:id/status', async (c) => {
   try {
+    const userId = c.get('jwtPayload').userId;
     const id = parseInt(c.req.param('id'), 10);
     if (isNaN(id)) return c.json({ error: 'Invalid invoice ID' }, 400);
 
@@ -338,7 +345,7 @@ app.post('/:id/status', async (c) => {
       return c.json({ error: 'Invalid status' }, 400);
     }
 
-    await updateInvoiceStatus(c.env.DB, id, status);
+    await updateInvoiceStatus(c.env.DB, userId, id, status);
     return c.json({ message: `Invoice status updated to ${status}` });
   } catch (error: any) {
     return c.json({ error: error.message || 'Failed to update invoice status' }, 500);
@@ -348,13 +355,14 @@ app.post('/:id/status', async (c) => {
 // Duplicate Invoice (clones into new draft)
 app.post('/:id/duplicate', async (c) => {
   try {
+    const userId = c.get('jwtPayload').userId;
     const id = parseInt(c.req.param('id'), 10);
     if (isNaN(id)) return c.json({ error: 'Invalid invoice ID' }, 400);
 
-    const invoice = await getInvoiceById(c.env.DB, id);
+    const invoice = await getInvoiceById(c.env.DB, userId, id);
     if (!invoice) return c.json({ error: 'Invoice to duplicate not found' }, 404);
 
-    const items = await getInvoiceItems(c.env.DB, id);
+    const items = await getInvoiceItems(c.env.DB, userId, id);
 
     // Strip identifier details and set status to draft
     const clonedInvoice = {
@@ -382,8 +390,8 @@ app.post('/:id/duplicate', async (c) => {
       sort_order: item.sort_order
     }));
 
-    const newInvoiceId = await createInvoice(c.env.DB, clonedInvoice, clonedItems);
-    const newInvoice = await getInvoiceById(c.env.DB, newInvoiceId);
+    const newInvoiceId = await createInvoice(c.env.DB, userId, clonedInvoice, clonedItems);
+    const newInvoice = await getInvoiceById(c.env.DB, userId, newInvoiceId);
 
     return c.json({ message: 'Invoice duplicated successfully', invoice: newInvoice }, 201);
   } catch (error: any) {

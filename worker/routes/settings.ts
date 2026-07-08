@@ -11,7 +11,7 @@ import {
 } from '../db/queries';
 import { hashPassword, generateSalt } from '../auth';
 
-const app = new Hono<{ Bindings: { DB: D1Database }; Variables: { user: any } }>();
+const app = new Hono<{ Bindings: { DB: D1Database }; Variables: { jwtPayload: { userId: number, username: string } } }>();
 
 const settingsSchema = z.object({
   business_name: z.string().min(1, 'Business name is required'),
@@ -45,7 +45,8 @@ const passwordSchema = z.object({
 // Fetch settings
 app.get('/', async (c) => {
   try {
-    const settings = await getSettings(c.env.DB);
+    const userId = c.get('jwtPayload').userId;
+    const settings = await getSettings(c.env.DB, userId);
     return c.json(settings);
   } catch (error: any) {
     return c.json({ error: error.message || 'Failed to fetch settings' }, 500);
@@ -55,14 +56,15 @@ app.get('/', async (c) => {
 // Update settings
 app.put('/', async (c) => {
   try {
+    const userId = c.get('jwtPayload').userId;
     const body = await c.req.json();
     const parsed = settingsSchema.safeParse(body);
     if (!parsed.success) {
       return c.json({ error: 'Validation failed', details: parsed.error.format() }, 400);
     }
 
-    await updateSettings(c.env.DB, parsed.data);
-    const updated = await getSettings(c.env.DB);
+    await updateSettings(c.env.DB, userId, parsed.data);
+    const updated = await getSettings(c.env.DB, userId);
     return c.json({ message: 'Settings updated successfully', settings: updated });
   } catch (error: any) {
     return c.json({ error: error.message || 'Failed to update settings' }, 500);
@@ -72,7 +74,8 @@ app.put('/', async (c) => {
 // Change Password
 app.put('/password', async (c) => {
   try {
-    const userPayload = c.get('user');
+    const userId = c.get('jwtPayload').userId;
+    const userPayload = c.get('jwtPayload');
     if (!userPayload) return c.json({ error: 'Unauthorized' }, 401);
 
     const body = await c.req.json();
@@ -108,18 +111,19 @@ app.put('/password', async (c) => {
 // Data Export (CSV downloads)
 app.get('/export/:entity', async (c) => {
   try {
+    const userId = c.get('jwtPayload').userId;
     const entity = c.req.param('entity');
     let data: any[] = [];
     let filename = 'backup';
 
     if (entity === 'clients') {
-      data = await exportClients(c.env.DB);
+      data = await exportClients(c.env.DB, userId);
       filename = 'clients_backup.csv';
     } else if (entity === 'invoices') {
-      data = await exportInvoices(c.env.DB);
+      data = await exportInvoices(c.env.DB, userId);
       filename = 'invoices_backup.csv';
     } else if (entity === 'purchase-orders') {
-      data = await exportPOs(c.env.DB);
+      data = await exportPOs(c.env.DB, userId);
       filename = 'purchase_orders_backup.csv';
     } else {
       return c.json({ error: 'Invalid entity parameter. Use clients, invoices, or purchase-orders.' }, 400);
