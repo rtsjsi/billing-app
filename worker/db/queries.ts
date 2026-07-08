@@ -171,12 +171,24 @@ export async function getSettings(db: D1Database, userId: number): Promise<Busin
   // Some deployments may have partially-populated rows in `business_settings`
   // (e.g. older schema versions or manual DB edits). Normalize missing/empty
   // values in code so the frontend can reliably render and proceed.
-  const raw = await db
+  let raw = await db
     .prepare('SELECT * FROM business_settings WHERE user_id = ?')
     .bind(userId)
     .first<any>();
 
-  if (!raw) throw new Error('Business settings not found');
+  if (!raw) {
+    const now = new Date().toISOString();
+    await db.prepare(
+      'INSERT INTO business_settings (user_id, business_name, updated_at) VALUES (?, ?, ?)'
+    ).bind(userId, 'Business', now).run();
+    
+    raw = await db
+      .prepare('SELECT * FROM business_settings WHERE user_id = ?')
+      .bind(userId)
+      .first<any>();
+      
+    if (!raw) throw new Error('Failed to initialize business settings');
+  }
 
   const normalized: BusinessSettings = {
     ...raw,
