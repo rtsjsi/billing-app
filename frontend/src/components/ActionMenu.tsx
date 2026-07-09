@@ -71,7 +71,7 @@ export default function ActionMenu({ isOpen, onToggle, onClose, items, title = '
       <button
         type="button"
         onClick={onToggle}
-        className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 rounded-lg border border-slate-200 transition-colors cursor-pointer"
+        className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 rounded-xl transition-colors cursor-pointer min-w-[2.5rem] min-h-[2.5rem]"
         title="Actions"
         aria-expanded={isOpen}
         aria-haspopup="menu"
@@ -119,10 +119,11 @@ export default function ActionMenu({ isOpen, onToggle, onClose, items, title = '
             aria-hidden="true"
           />
           <div
-            className="relative w-full max-w-lg bg-white rounded-t-2xl shadow-2xl animate-slide-up safe-area-bottom"
+            className="relative w-full max-w-lg bottom-sheet animate-slide-up safe-area-bottom"
             role="menu"
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+            <div className="bottom-sheet-handle" />
+            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
               <h3 className="text-base font-semibold text-slate-900">{title}</h3>
               <button
                 type="button"

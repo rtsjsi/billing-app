@@ -18,6 +18,8 @@ import ActionMenu from '../components/ActionMenu';
 import ConfirmModal from '../components/ConfirmModal';
 import { api, Client } from '../lib/api';
 import { useFilters } from '../lib/FilterContext';
+import PageHeader from '../components/PageHeader';
+import MobileModal from '../components/MobileModal';
 
 export default function Clients() {
   const navigate = useNavigate();
@@ -157,46 +159,45 @@ export default function Clients() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Title & Add Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="page-title">Clients</h1>
-          <p className="page-subtitle">Manage your customer profiles and billing directory</p>
-        </div>
-        <button
-          onClick={openCreateModal}
-          className="flex items-center justify-center space-x-1.5 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 px-4 py-2.5 rounded-lg text-sm font-semibold text-white cursor-pointer shadow-lg shadow-sky-500/10 transition-all duration-200"
-        >
-          <Plus className="h-4.5 w-4.5" />
-          <span>New Client</span>
-        </button>
+    <div className="space-y-5">
+      <div className="hidden md:block">
+        <PageHeader
+          title="Clients"
+          subtitle="Manage your customer profiles and billing directory"
+          actions={
+            <button onClick={openCreateModal} className="btn-primary">
+              <Plus className="h-4 w-4" />
+              New Client
+            </button>
+          }
+        />
       </div>
 
-      {/* Filters bar */}
-      <div className="glass-card p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 border-slate-200">
-        <div className="relative flex-1 max-w-md">
+      <button onClick={openCreateModal} className="md:hidden btn-primary w-full">
+        <Plus className="h-4 w-4" />
+        New Client
+      </button>
+
+      <div className="app-card p-4">
+        <div className="relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <input 
+          <input
             type="text"
-            placeholder="Search by client or company name..."
-            className="w-full form-input pl-10 text-sm"
+            placeholder="Search clients..."
+            className="search-input"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="flex items-center space-x-2 select-none">
-          <input 
+        <label className="flex items-center gap-2 mt-3 cursor-pointer select-none">
+          <input
             type="checkbox"
-            id="archived"
-            className="h-4 w-4 rounded border-slate-300 bg-white text-sky-500 focus:ring-sky-500 cursor-pointer"
+            className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
             checked={includeArchived}
             onChange={(e) => setIncludeArchived(e.target.checked)}
           />
-          <label htmlFor="archived" className="text-sm text-slate-700 font-medium cursor-pointer">
-            Include archived clients
-          </label>
-        </div>
+          <span className="text-sm text-slate-600">Include archived</span>
+        </label>
       </div>
 
       {/* Delete Conflict Toast */}
@@ -209,11 +210,10 @@ export default function Clients() {
         </div>
       )}
 
-      {/* Table Listing */}
-      <div className="glass-card rounded-2xl overflow-visible md:overflow-hidden">
+      <div className="app-card overflow-visible md:overflow-hidden">
         {loading ? (
           <div className="p-12 text-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent mx-auto" />
+            <div className="spinner mx-auto" />
           </div>
         ) : displayedClients.length === 0 ? (
           <div className="p-12 text-center text-slate-500 text-sm">
@@ -317,130 +317,65 @@ export default function Clients() {
         )}
       </div>
 
-      {/* Editor Modal */}
-      {modalOpen && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden">
-            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-200">
-              <h2 className="font-display font-semibold text-lg text-slate-900">
-                {editingClient ? 'Edit Client Profile' : 'Create New Client'}
-              </h2>
-              <button 
-                onClick={() => setModalOpen(false)} 
-                className="text-slate-400 hover:text-slate-900"
-              >
-                <X className="h-5 w-5" />
-              </button>
+      <MobileModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={editingClient ? 'Edit Client' : 'New Client'}
+        footer={
+          <>
+            <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="client-form"
+              disabled={formSubmitting}
+              className="btn-primary"
+            >
+              {formSubmitting ? 'Saving...' : 'Save Client'}
+            </button>
+          </>
+        }
+      >
+        <form id="client-form" onSubmit={handleFormSubmit} className="space-y-4">
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-100 text-red-600 rounded-xl text-xs">
+              {error}
             </div>
+          )}
 
-            <form onSubmit={handleFormSubmit}>
-              <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-                {error && (
-                  <div className="p-3 bg-red-100 border border-red-500/20 text-red-600 rounded-lg text-xs">
-                    {error}
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">Client Name *</label>
-                  <input 
-                    type="text" 
-                    required
-                    placeholder="e.g. Acme Corp Inc"
-                    className="w-full form-input text-sm"
-                    value={formName}
-                    onChange={(e) => setFormName(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">Company Name (Optional)</label>
-                  <input 
-                    type="text" 
-                    placeholder="e.g. Acme Consulting Services"
-                    className="w-full form-input text-sm"
-                    value={formCompany}
-                    onChange={(e) => setFormCompany(e.target.value)}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">Email (Optional)</label>
-                    <input 
-                      type="email" 
-                      placeholder="client@acme.com"
-                      className="w-full form-input text-sm"
-                      value={formEmail}
-                      onChange={(e) => setFormEmail(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">Phone (Optional)</label>
-                    <input 
-                      type="text" 
-                      placeholder="+91 98765 43210"
-                      className="w-full form-input text-sm"
-                      value={formPhone}
-                      onChange={(e) => setFormPhone(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">Billing Address (Optional)</label>
-                  <textarea 
-                    placeholder="Physical address for invoice rendering..."
-                    rows={3}
-                    className="w-full form-input text-sm resize-none"
-                    value={formAddress}
-                    onChange={(e) => setFormAddress(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">India GSTIN / Tax ID (Optional)</label>
-                  <input 
-                    type="text" 
-                    placeholder="e.g. 27AAAAA1111A1Z1"
-                    className="w-full form-input text-sm font-mono uppercase"
-                    value={formGstin}
-                    onChange={(e) => setFormGstin(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">Private Notes (Optional)</label>
-                  <textarea 
-                    placeholder="Hidden notes for internal reference..."
-                    rows={2}
-                    className="w-full form-input text-sm resize-none"
-                    value={formNotes}
-                    onChange={(e) => setFormNotes(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 hover:border-slate-300 bg-white rounded-lg text-sm font-semibold text-slate-700 transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={formSubmitting}
-                  className="px-4 py-2 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 rounded-lg text-sm font-semibold text-white shadow-lg shadow-sky-500/10 cursor-pointer disabled:opacity-50 transition-colors"
-                >
-                  {formSubmitting ? 'Saving...' : 'Save Client'}
-                </button>
-              </div>
-            </form>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Client Name *</label>
+            <input type="text" required placeholder="e.g. Acme Corp" className="form-input text-sm" value={formName} onChange={(e) => setFormName(e.target.value)} />
           </div>
-        </div>
-      )}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Company Name</label>
+            <input type="text" placeholder="Optional" className="form-input text-sm" value={formCompany} onChange={(e) => setFormCompany(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Email</label>
+              <input type="email" placeholder="client@acme.com" className="form-input text-sm" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Phone</label>
+              <input type="text" placeholder="+91 98765 43210" className="form-input text-sm" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Billing Address</label>
+            <textarea placeholder="Physical address..." rows={3} className="form-input text-sm resize-none" value={formAddress} onChange={(e) => setFormAddress(e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">GSTIN / Tax ID</label>
+            <input type="text" placeholder="27AAAAA1111A1Z1" className="form-input text-sm font-mono uppercase" value={formGstin} onChange={(e) => setFormGstin(e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Private Notes</label>
+            <textarea placeholder="Internal notes..." rows={2} className="form-input text-sm resize-none" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} />
+          </div>
+        </form>
+      </MobileModal>
 
       <ConfirmModal
         isOpen={deleteClientId !== null}

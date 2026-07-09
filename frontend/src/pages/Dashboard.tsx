@@ -1,32 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useFilters } from '../lib/FilterContext';
-import { 
-  DollarSign, 
-  FileText, 
-  Clock, 
-  CheckCircle2, 
-  AlertCircle, 
-  FileCheck, 
-  Plus, 
-  ArrowRight,
-  TrendingUp
+import {
+  DollarSign,
+  FileText,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  FileCheck,
+  Plus,
+  ChevronRight,
 } from 'lucide-react';
 import { api, DashboardData } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/utils';
+import PageHeader from '../components/PageHeader';
 
 export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
-  const { selectedFY, selectedClient, clients } = useFilters();
+  const { selectedFY, selectedClient } = useFilters();
   const [initialLoading, setInitialLoading] = useState(true);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  // Fetch stats whenever selected filters change
   useEffect(() => {
     const fetchDashboard = async () => {
-      setLoading(true);
       try {
         const res = await api.dashboard.getStats(
           selectedFY || undefined,
@@ -36,7 +33,6 @@ export default function Dashboard() {
       } catch (err: any) {
         setError(err.message || 'Failed to fetch dashboard data.');
       } finally {
-        setLoading(false);
         setInitialLoading(false);
       }
     };
@@ -46,14 +42,14 @@ export default function Dashboard() {
   if (initialLoading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent" />
+        <div className="spinner" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-6 bg-red-100 border border-red-500/20 rounded-xl text-red-600 text-sm">
+      <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm">
         {error}
       </div>
     );
@@ -63,249 +59,251 @@ export default function Dashboard() {
   const recentInvoices = data?.recentInvoices || [];
   const openPOs = data?.openPOs || [];
 
+  const secondaryStats = [
+    { label: 'Total PO Amount', value: formatCurrency(stats?.totalPOAmount), icon: FileCheck, color: 'text-indigo-500' },
+    { label: 'Total Invoiced', value: formatCurrency(stats?.totalInvoiceAmount), icon: DollarSign, color: 'text-blue-500' },
+    { label: 'Invoice Pending', value: formatCurrency(stats?.invoicePendingAmount), icon: FileText, color: 'text-violet-500' },
+    { label: 'Total Paid', value: formatCurrency(stats?.totalPaidAmount), icon: CheckCircle2, color: 'text-emerald-500' },
+    { label: 'Outstanding', value: formatCurrency(stats?.totalOutstanding), icon: Clock, color: 'text-amber-500' },
+    { label: 'Overdue', value: String(stats?.overdueCount ?? 0), icon: AlertCircle, color: 'text-red-500', danger: (stats?.overdueCount ?? 0) > 0 },
+  ];
+
   return (
-    <div className="space-y-8">
-      {/* Welcome banner / title */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="page-title">Dashboard</h1>
-          <p className="page-subtitle">Overview of your client billings, payments, and Purchase Orders</p>
+    <div className="space-y-5 md:space-y-8">
+      {/* Desktop page header — hidden title on mobile (shown in layout header) */}
+      <div className="hidden md:block">
+        <PageHeader
+          title="Dashboard"
+          subtitle="Overview of your billings, payments, and purchase orders"
+          actions={
+            <>
+              <Link to="/purchase-orders" className="btn-secondary">
+                <Plus className="h-4 w-4" />
+                New PO
+              </Link>
+              <Link to="/invoices/new" className="btn-primary">
+                <Plus className="h-4 w-4" />
+                Create Invoice
+              </Link>
+            </>
+          }
+        />
+      </div>
+
+      {/* Hero portfolio card */}
+      <div className="hero-card">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="hero-card-label">Total Outstanding</p>
+            <p className="hero-card-value">{formatCurrency(stats?.totalOutstanding)}</p>
+          </div>
+          <div>
+            <p className="hero-card-label">Total Collected</p>
+            <p className="hero-card-value">{formatCurrency(stats?.totalPaidAmount)}</p>
+          </div>
         </div>
-        <div className="flex items-center space-x-3">
-          <Link 
-            to="/purchase-orders" 
-            className="flex items-center space-x-1.5 px-4 py-2 border border-slate-200 hover:border-slate-300 bg-white hover:bg-white rounded-lg text-sm font-medium transition-all text-slate-700 cursor-pointer"
-          >
-            <Plus className="h-4 w-4" />
-            <span>New PO</span>
-          </Link>
-          <Link 
-            to="/invoices/new" 
-            className="flex items-center space-x-1.5 px-4 py-2 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 rounded-lg text-sm font-medium text-white shadow-lg shadow-sky-500/10 cursor-pointer transition-all duration-200"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Create Invoice</span>
-          </Link>
+        {(stats?.overdueCount ?? 0) > 0 && (
+          <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2 text-sm">
+            <AlertCircle className="h-4 w-4" />
+            <span>{stats?.overdueCount} overdue invoice{stats?.overdueCount !== 1 ? 's' : ''} need follow-up</span>
+          </div>
+        )}
+      </div>
+
+      {/* Mobile quick actions */}
+      <div className="flex gap-2 md:hidden">
+        <Link to="/invoices/new" className="btn-primary flex-1">
+          <Plus className="h-4 w-4" />
+          Create Invoice
+        </Link>
+        <Link to="/purchase-orders" className="btn-secondary flex-1">
+          <Plus className="h-4 w-4" />
+          New PO
+        </Link>
+      </div>
+
+      {/* Horizontal scroll stats on mobile, grid on desktop */}
+      <div>
+        <h2 className="section-title mb-3 px-0.5">Overview</h2>
+        <div className="stats-scroll md:grid md:grid-cols-3 lg:grid-cols-6 md:gap-3 md:overflow-visible">
+          {secondaryStats.map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <div key={stat.label} className="stat-card md:min-w-0">
+                <div className="flex items-center justify-between">
+                  <span className="stat-card-label">{stat.label}</span>
+                  <Icon className={`h-3.5 w-3.5 ${stat.color}`} />
+                </div>
+                <p className={`stat-card-value ${stat.danger ? 'text-red-500' : ''}`}>
+                  {stat.value}
+                </p>
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* Grid Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* Total PO Amount */}
-        <div className="glass-card p-5 rounded-2xl flex flex-col justify-between border-slate-200">
-          <div className="flex justify-between items-start">
-            <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Total PO Amount</span>
-            <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
-              <FileCheck className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <h3 className="font-display font-bold text-2xl text-slate-900 mt-1">
-              {formatCurrency(stats?.totalPOAmount)}
-            </h3>
-            <p className="text-[10px] text-slate-500 mt-1">Sum of all purchase orders</p>
-          </div>
+      {/* Recent Invoices */}
+      <div className="app-card overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100">
+          <h2 className="section-title">Recent Invoices</h2>
+          <Link to="/invoices" className="btn-ghost text-xs py-1 px-2">
+            View all
+            <ChevronRight className="h-3.5 w-3.5" />
+          </Link>
         </div>
 
-        {/* Total Invoiced */}
-        <div className="glass-card p-5 rounded-2xl flex flex-col justify-between border-slate-200">
-          <div className="flex justify-between items-start">
-            <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Total Invoiced</span>
-            <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
-              <DollarSign className="h-4 w-4" />
+        {recentInvoices.length === 0 ? (
+          <div className="p-8 text-center text-slate-400 text-sm">
+            No invoices yet. Create your first invoice to get started.
+          </div>
+        ) : (
+          <>
+            {/* Mobile list */}
+            <div className="md:hidden mobile-list">
+              {recentInvoices.map((inv) => (
+                <button
+                  key={inv.id}
+                  type="button"
+                  onClick={() => navigate(`/invoices/preview/${inv.id}`)}
+                  className="mobile-list-item w-full text-left"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="mobile-list-item-title font-mono">{inv.invoice_number}</p>
+                    <p className="mobile-list-item-subtitle">
+                      {inv.client_name} · {formatDate(inv.issue_date)}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="mobile-list-item-amount">{formatCurrency(inv.total, inv.currency)}</p>
+                    <span className={`badge badge-${inv.status} mt-1`}>
+                      {inv.status === 'partially_paid' ? 'Part. Paid' : inv.status}
+                    </span>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-slate-300 shrink-0" />
+                </button>
+              ))}
             </div>
-          </div>
-          <div className="mt-4">
-            <h3 className="font-display font-bold text-2xl text-slate-900 mt-1">
-              {formatCurrency(stats?.totalInvoiceAmount)}
-            </h3>
-            <p className="text-[10px] text-slate-500 mt-1">Sum of all invoices (excl. cancelled)</p>
-          </div>
-        </div>
 
-        {/* Invoice Pending */}
-        <div className="glass-card p-5 rounded-2xl flex flex-col justify-between border-slate-200">
-          <div className="flex justify-between items-start">
-            <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Invoice Pending</span>
-            <div className="p-2 bg-violet-100 rounded-lg text-violet-600">
-              <FileText className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <h3 className="font-display font-bold text-2xl text-slate-900 mt-1">
-              {formatCurrency(stats?.invoicePendingAmount)}
-            </h3>
-            <p className="text-[10px] text-slate-500 mt-1">Unbilled purchase order balance</p>
-          </div>
-        </div>
-
-        {/* Total Paid */}
-        <div className="glass-card p-5 rounded-2xl flex flex-col justify-between border-slate-200">
-          <div className="flex justify-between items-start">
-            <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Total Paid</span>
-            <div className="p-2 bg-emerald-100 rounded-lg text-emerald-600">
-              <CheckCircle2 className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <h3 className="font-display font-bold text-2xl text-slate-900 mt-1">
-              {formatCurrency(stats?.totalPaidAmount)}
-            </h3>
-            <p className="text-[10px] text-slate-500 mt-1">Total payments collected</p>
-          </div>
-        </div>
-
-        {/* Total Outstanding */}
-        <div className="glass-card p-5 rounded-2xl flex flex-col justify-between border-slate-200">
-          <div className="flex justify-between items-start">
-            <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Total Outstanding</span>
-            <div className="p-2 bg-amber-100 rounded-lg text-amber-600">
-              <Clock className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <h3 className="font-display font-bold text-2xl text-slate-900 mt-1">
-              {formatCurrency(stats?.totalOutstanding)}
-            </h3>
-            <p className="text-[10px] text-slate-500 mt-1">Unpaid balance of sent invoices</p>
-          </div>
-        </div>
-
-        {/* Overdue Invoices */}
-        <div className="glass-card p-5 rounded-2xl flex flex-col justify-between border-slate-200">
-          <div className="flex justify-between items-start">
-            <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Overdue Invoices</span>
-            <div className="p-2 bg-red-100 rounded-lg text-red-600">
-              <AlertCircle className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <h3 className="font-display font-bold text-2xl text-red-600 mt-1">
-              {stats?.overdueCount}
-            </h3>
-            <p className="text-[10px] text-red-500 mt-1">Needs immediate follow-up</p>
-          </div>
-        </div>
+            {/* Desktop table */}
+            <table className="hidden md:table w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-100 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-50">
+                  <th className="px-5 py-3">Invoice</th>
+                  <th className="px-5 py-3">Client</th>
+                  <th className="px-5 py-3">Date</th>
+                  <th className="px-5 py-3 text-right">Amount</th>
+                  <th className="px-5 py-3 text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {recentInvoices.map((inv) => (
+                  <tr
+                    key={inv.id}
+                    onClick={() => navigate(`/invoices/preview/${inv.id}`)}
+                    className="hover:bg-slate-50 transition-colors cursor-pointer text-sm"
+                  >
+                    <td className="px-5 py-3.5 font-mono font-medium text-slate-700">{inv.invoice_number}</td>
+                    <td className="px-5 py-3.5">
+                      <div className="font-medium text-slate-800">{inv.client_name}</div>
+                      {inv.client_company && (
+                        <div className="text-xs text-slate-400">{inv.client_company}</div>
+                      )}
+                    </td>
+                    <td className="px-5 py-3.5 text-slate-400">{formatDate(inv.issue_date)}</td>
+                    <td className="px-5 py-3.5 text-right font-semibold text-slate-900">
+                      {formatCurrency(inv.total, inv.currency)}
+                    </td>
+                    <td className="px-5 py-3.5 text-center">
+                      <span className={`badge badge-${inv.status}`}>
+                        {inv.status === 'partially_paid' ? 'Part. Paid' : inv.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
       </div>
 
-      {/* Grid Split: Recent Invoices & Open Purchase Orders */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Recent Invoices Widget */}
-        <div className="glass-card rounded-2xl border-slate-200 overflow-hidden flex flex-col">
-          <div className="px-6 py-5 border-b border-slate-200 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <FileText className="h-5 w-5 text-blue-600" />
-              <h2 className="font-display font-bold text-lg text-slate-900">Recent Invoices</h2>
-            </div>
-            <Link 
-              to="/invoices" 
-              className="text-xs text-blue-600 hover:text-blue-500 font-medium flex items-center space-x-1"
-            >
-              <span>View All</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-
-          <div className="flex-1">
-            {recentInvoices.length === 0 ? (
-              <div className="p-8 text-center text-slate-500 text-sm">
-                No invoices found. Click "Create Invoice" to start billing!
-              </div>
-            ) : (
-              <table className="responsive-table w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-200 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-50">
-                    <th className="px-6 py-3">Invoice Number</th>
-                    <th className="px-6 py-3">Client</th>
-                    <th className="px-6 py-3">Issue Date</th>
-                    <th className="px-6 py-3 text-right">Amount</th>
-                    <th className="px-6 py-3 text-center">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {recentInvoices.map((inv) => (
-                    <tr 
-                      key={inv.id} 
-                      onClick={() => navigate(`/invoices/preview/${inv.id}`)}
-                      className="hover:bg-slate-50 transition-all duration-150 cursor-pointer text-sm"
-                    >
-                      <td data-label="Invoice Number" className="px-6 py-4 font-mono font-medium text-slate-700">{inv.invoice_number}</td>
-                      <td data-label="Client" className="px-6 py-4 text-slate-800">
-                        <div className="font-medium">{inv.client_name}</div>
-                        <div className="text-[10px] text-slate-500">{inv.client_company}</div>
-                      </td>
-                      <td data-label="Issue Date" className="px-6 py-4 text-slate-400">{formatDate(inv.issue_date)}</td>
-                      <td data-label="Amount" className="px-6 py-4 text-right font-medium text-slate-900">{formatCurrency(inv.total, inv.currency)}</td>
-                      <td data-label="Status" className="px-6 py-4 text-center">
-                        <span className={`badge badge-${inv.status}`}>
-                          {inv.status === 'partially_paid' ? 'Part. Paid' : inv.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+      {/* Active POs */}
+      <div className="app-card overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100">
+          <h2 className="section-title">Active Purchase Orders</h2>
+          <Link to="/purchase-orders" className="btn-ghost text-xs py-1 px-2">
+            View all
+            <ChevronRight className="h-3.5 w-3.5" />
+          </Link>
         </div>
 
-        {/* Open Purchase Orders Widget */}
-        <div className="glass-card rounded-2xl border-slate-200 overflow-hidden flex flex-col">
-          <div className="px-6 py-5 border-b border-slate-200 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <FileCheck className="h-5 w-5 text-blue-600" />
-              <h2 className="font-display font-bold text-lg text-slate-900">Active Purchase Orders</h2>
+        {openPOs.length === 0 ? (
+          <div className="p-8 text-center text-slate-400 text-sm">
+            No active purchase orders. Record a PO to get started.
+          </div>
+        ) : (
+          <>
+            <div className="md:hidden mobile-list">
+              {openPOs.map((po) => (
+                <button
+                  key={po.id}
+                  type="button"
+                  onClick={() => navigate(`/clients/${po.client_id}`)}
+                  className="mobile-list-item w-full text-left"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="mobile-list-item-title font-mono">{po.po_number}</p>
+                    <p className="mobile-list-item-subtitle">
+                      {po.client_name} · {formatDate(po.po_date)}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="mobile-list-item-amount">
+                      {po.amount ? formatCurrency(po.amount, po.currency) : '-'}
+                    </p>
+                    <span className={`badge badge-${po.status} mt-1`}>
+                      {po.status === 'partially_invoiced' ? 'Part. Invoiced' : po.status}
+                    </span>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-slate-300 shrink-0" />
+                </button>
+              ))}
             </div>
-            <Link 
-              to="/purchase-orders" 
-              className="text-xs text-blue-600 hover:text-blue-500 font-medium flex items-center space-x-1"
-            >
-              <span>View All</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
 
-          <div className="flex-1">
-            {openPOs.length === 0 ? (
-              <div className="p-8 text-center text-slate-500 text-sm">
-                No active Purchase Orders recorded. Click "New PO" to record one!
-              </div>
-            ) : (
-              <table className="responsive-table w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-200 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-50">
-                    <th className="px-6 py-3">PO Number</th>
-                    <th className="px-6 py-3">Client</th>
-                    <th className="px-6 py-3">PO Date</th>
-                    <th className="px-6 py-3 text-right">Amount</th>
-                    <th className="px-6 py-3 text-center">Status</th>
+            <table className="hidden md:table w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-100 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-50">
+                  <th className="px-5 py-3">PO Number</th>
+                  <th className="px-5 py-3">Client</th>
+                  <th className="px-5 py-3">Date</th>
+                  <th className="px-5 py-3 text-right">Amount</th>
+                  <th className="px-5 py-3 text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {openPOs.map((po) => (
+                  <tr
+                    key={po.id}
+                    onClick={() => navigate(`/clients/${po.client_id}`)}
+                    className="hover:bg-slate-50 transition-colors cursor-pointer text-sm"
+                  >
+                    <td className="px-5 py-3.5 font-mono font-medium text-slate-700">{po.po_number}</td>
+                    <td className="px-5 py-3.5 font-medium text-slate-800">{po.client_name}</td>
+                    <td className="px-5 py-3.5 text-slate-400">{formatDate(po.po_date)}</td>
+                    <td className="px-5 py-3.5 text-right font-semibold text-slate-900">
+                      {po.amount ? formatCurrency(po.amount, po.currency) : '-'}
+                    </td>
+                    <td className="px-5 py-3.5 text-center">
+                      <span className={`badge badge-${po.status}`}>
+                        {po.status === 'partially_invoiced' ? 'Part. Invoiced' : po.status}
+                      </span>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {openPOs.map((po) => (
-                    <tr 
-                      key={po.id} 
-                      onClick={() => navigate(`/clients/${po.client_id}`)}
-                      className="hover:bg-slate-50 transition-all duration-150 cursor-pointer text-sm"
-                    >
-                      <td data-label="PO Number" className="px-6 py-4 font-mono font-medium text-slate-700">{po.po_number}</td>
-                      <td data-label="Client" className="px-6 py-4 text-slate-800 font-medium">{po.client_name}</td>
-                      <td data-label="PO Date" className="px-6 py-4 text-slate-400">{formatDate(po.po_date)}</td>
-                      <td data-label="Amount" className="px-6 py-4 text-right font-medium text-slate-900">
-                        {po.amount ? formatCurrency(po.amount, po.currency) : '-'}
-                      </td>
-                      <td data-label="Status" className="px-6 py-4 text-center">
-                        <span className={`badge badge-${po.status}`}>
-                          {po.status === 'partially_invoiced' ? 'Part. Invoiced' : po.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
       </div>
     </div>
   );
