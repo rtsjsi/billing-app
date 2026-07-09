@@ -59,6 +59,12 @@
     min-height: 100%;
   }
 
+  html {
+    touch-action: manipulation;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
   body {
     background: #f5f7fa;
     color: #1a2332;
@@ -76,6 +82,17 @@
   ::-webkit-scrollbar-thumb {
     background: #cbd5e1;
     border-radius: 3px;
+  }
+}
+
+/* Prevent pinch-to-zoom and iOS auto-zoom on form focus */
+@media (max-width: 767px) {
+  .form-input,
+  .search-input,
+  input,
+  select,
+  textarea {
+    font-size: 1rem;
   }
 }
 
