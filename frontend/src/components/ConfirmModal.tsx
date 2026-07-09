@@ -28,122 +28,84 @@ export default function ConfirmModal({
     if (!isOpen) return;
 
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onCancel();
-      }
-    };
-
-    const handleOutsideClick = (e: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
-        onCancel();
-      }
+      if (e.key === 'Escape') onCancel();
     };
 
     document.addEventListener('keydown', handleEscape);
-    document.addEventListener('mousedown', handleOutsideClick);
-    document.body.style.overflow = 'hidden'; // Prevent scrolling
+    document.body.style.overflow = 'hidden';
 
     return () => {
       document.removeEventListener('keydown', handleEscape);
-      document.removeEventListener('mousedown', handleOutsideClick);
       document.body.style.overflow = '';
     };
   }, [isOpen, onCancel]);
 
   if (!isOpen) return null;
 
-  const getIcon = () => {
-    switch (variant) {
-      case 'danger':
-        return <AlertTriangle className="h-6 w-6 text-red-600" />;
-      case 'warning':
-        return <AlertTriangle className="h-6 w-6 text-yellow-600" />;
-      case 'info':
-        return <AlertTriangle className="h-6 w-6 text-blue-600" />;
-      default:
-        return <AlertTriangle className="h-6 w-6 text-red-600" />;
-    }
-  };
+  const iconColor = variant === 'danger' ? 'text-red-500' : variant === 'warning' ? 'text-amber-500' : 'text-brand-600';
+  const iconBg = variant === 'danger' ? 'bg-red-50' : variant === 'warning' ? 'bg-amber-50' : 'bg-brand-50';
+  const confirmClass = variant === 'danger'
+    ? 'bg-red-600 hover:bg-red-700 text-white'
+    : variant === 'warning'
+    ? 'bg-amber-600 hover:bg-amber-700 text-white'
+    : 'btn-primary';
 
-  const getIconBg = () => {
-    switch (variant) {
-      case 'danger':
-        return 'bg-red-100';
-      case 'warning':
-        return 'bg-yellow-100';
-      case 'info':
-        return 'bg-blue-100';
-      default:
-        return 'bg-red-100';
-    }
-  };
-
-  const getConfirmBtnClass = () => {
-    switch (variant) {
-      case 'danger':
-        return 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500';
-      case 'warning':
-        return 'bg-yellow-600 hover:bg-yellow-700 text-white focus:ring-yellow-500';
-      case 'info':
-        return 'bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500';
-      default:
-        return 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500';
-    }
-  };
+  const footer = (
+    <>
+      <button type="button" className="btn-secondary flex-1 sm:flex-none" onClick={onCancel}>
+        {cancelText}
+      </button>
+      <button type="button" className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${confirmClass}`} onClick={onConfirm}>
+        {confirmText}
+      </button>
+    </>
+  );
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-0">
-      <div 
-        className="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] transition-opacity" 
-        aria-hidden="true" 
-      />
-      
-      <div 
+    <div className="fixed inset-0 z-[110] flex items-end md:items-center justify-center">
+      <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px]" onClick={onCancel} aria-hidden="true" />
+
+      {/* Mobile bottom sheet */}
+      <div
         ref={modalRef}
-        className="relative bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all animate-scale-in"
+        className="md:hidden relative w-full bottom-sheet animate-slide-up safe-area-bottom"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="modal-title"
       >
-        <div className="px-6 py-6 sm:flex sm:items-start">
-          <div className={`mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full sm:mx-0 sm:h-10 sm:w-10 ${getIconBg()}`}>
-            {getIcon()}
+        <div className="bottom-sheet-handle" />
+        <div className="px-5 py-5">
+          <div className={`w-12 h-12 rounded-full ${iconBg} flex items-center justify-center mb-4`}>
+            <AlertTriangle className={`h-6 w-6 ${iconColor}`} />
           </div>
-          <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left flex-1">
-            <h3 className="text-lg font-semibold leading-6 text-slate-900" id="modal-title">
-              {title}
-            </h3>
-            <div className="mt-2">
-              <p className="text-sm text-slate-500">
-                {message}
-              </p>
-            </div>
-          </div>
-          <div className="absolute right-4 top-4 sm:hidden">
-            <button
-              type="button"
-              className="text-slate-400 hover:text-slate-500"
-              onClick={onCancel}
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
+          <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+          <p className="text-sm text-slate-500 mt-2">{message}</p>
         </div>
-        <div className="bg-slate-50 px-6 py-4 flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3 sm:space-x-reverse">
-          <button
-            type="button"
-            className="mt-3 sm:mt-0 inline-flex w-full justify-center rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:w-auto transition-colors"
-            onClick={onCancel}
-          >
-            {cancelText}
+        <div className="px-5 py-4 border-t border-slate-100 flex gap-2">
+          {footer}
+        </div>
+      </div>
+
+      {/* Desktop centered modal */}
+      <div
+        ref={modalRef}
+        className="hidden md:block relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-scale-in mx-4"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="px-6 py-6 flex gap-4">
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${iconBg}`}>
+            <AlertTriangle className={`h-5 w-5 ${iconColor}`} />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+            <p className="text-sm text-slate-500 mt-1">{message}</p>
+          </div>
+          <button type="button" className="btn-icon w-9 h-9 shrink-0" onClick={onCancel}>
+            <X className="h-4 w-4" />
           </button>
-          <button
-            type="button"
-            className={`inline-flex w-full justify-center rounded-lg px-4 py-2.5 text-sm font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 sm:w-auto transition-colors ${getConfirmBtnClass()}`}
-            onClick={onConfirm}
-          >
-            {confirmText}
-          </button>
+        </div>
+        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+          {footer}
         </div>
       </div>
     </div>

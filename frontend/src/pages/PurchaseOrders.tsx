@@ -13,6 +13,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import { api, PurchaseOrder, Client, PurchaseOrderItem } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { useFilters } from '../lib/FilterContext';
+import PageHeader from '../components/PageHeader';
 
 function getFYDateRange(fy: string) {
   if (!fy) return { start: undefined, end: undefined };
@@ -189,47 +190,38 @@ export default function PurchaseOrders() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="page-title">Purchase Orders</h1>
-          <p className="page-subtitle">Record client PO contracts and map them to invoice line items</p>
-        </div>
-        <button
-          onClick={openCreateModal}
-          className="flex items-center justify-center space-x-1.5 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 px-4 py-2.5 rounded-lg text-sm font-semibold text-white shadow-lg shadow-sky-500/10 cursor-pointer transition-all duration-200"
-        >
-          <Plus className="h-4.5 w-4.5" />
-          <span>New PO</span>
-        </button>
+    <div className="space-y-5">
+      <div className="hidden md:block">
+        <PageHeader
+          title="Purchase Orders"
+          subtitle="Record client PO contracts and map them to invoices"
+          actions={
+            <button onClick={openCreateModal} className="btn-primary">
+              <Plus className="h-4 w-4" />
+              New PO
+            </button>
+          }
+        />
       </div>
 
-      {/* Filter Bar */}
-      <div className="glass-card p-4 rounded-xl flex flex-col md:flex-row items-stretch md:items-center gap-4">
-        {/* Client filter */}
-        <div className="flex-1">
-          <label className="block text-xs text-slate-600 font-medium mb-1.5">Filter by Client</label>
-          <select
-            className="w-full form-input py-1.5 text-xs"
-            value={filterClientId}
-            onChange={(e) => setFilterClientId(e.target.value)}
-          >
+      <button onClick={openCreateModal} className="md:hidden btn-primary w-full">
+        <Plus className="h-4 w-4" />
+        New PO
+      </button>
+
+      <div className="app-card p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 mb-1.5">Client</label>
+          <select className="form-input text-sm py-2 min-h-0" value={filterClientId} onChange={(e) => setFilterClientId(e.target.value)}>
             <option value="">All Clients</option>
             {clients.map(c => (
-              <option key={c.id} value={c.id}>{c.name} {c.company_name ? `(${c.company_name})` : ''}</option>
+              <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
         </div>
-
-        {/* Status filter */}
-        <div className="w-full md:w-48">
-          <label className="block text-xs text-slate-600 font-medium mb-1.5">Filter by Status</label>
-          <select
-            className="w-full form-input py-1.5 text-xs"
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-          >
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 mb-1.5">Status</label>
+          <select className="form-input text-sm py-2 min-h-0" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
             <option value="">All Statuses</option>
             <option value="open">Open</option>
             <option value="partially_invoiced">Partially Invoiced</option>
@@ -239,11 +231,10 @@ export default function PurchaseOrders() {
         </div>
       </div>
 
-      {/* PO Listing Table */}
-      <div className="glass-card rounded-2xl overflow-visible md:overflow-hidden">
+      <div className="app-card overflow-visible md:overflow-hidden">
         {loading ? (
           <div className="p-12 text-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent mx-auto" />
+            <div className="spinner mx-auto" />
           </div>
         ) : pos.length === 0 ? (
           <div className="p-12 text-center text-slate-500 text-sm">

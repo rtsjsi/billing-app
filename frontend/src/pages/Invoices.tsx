@@ -20,6 +20,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import { api, Invoice, Client, InvoiceItem, BusinessSettings } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { useFilters } from '../lib/FilterContext';
+import PageHeader from '../components/PageHeader';
 
 function getFYDateRange(fy: string) {
   if (!fy) return { start: undefined, end: undefined };
@@ -123,42 +124,44 @@ export default function Invoices() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="page-title">Invoices</h1>
-          <p className="page-subtitle">Generate invoices, record collections, and export offsite CSV backups</p>
-        </div>
-        <div className="flex items-center space-x-3">
-          {/* Data Export Trigger Button */}
-          <button
-            onClick={() => triggerExport('invoices')}
-            className="flex items-center space-x-1.5 px-4 py-2.5 border border-slate-200 hover:border-slate-300 bg-white hover:bg-white rounded-lg text-sm font-semibold text-slate-700 transition-colors cursor-pointer"
-            title="Download all Invoices as CSV backup"
-          >
-            <Download className="h-4.5 w-4.5" />
-            <span className="hidden sm:inline">Export CSV</span>
-          </button>
-          <Link
-            to="/invoices/new"
-            className="flex items-center space-x-1.5 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 px-4 py-2.5 rounded-lg text-sm font-semibold text-white shadow-lg shadow-sky-500/10 cursor-pointer transition-all duration-200"
-          >
-            <Plus className="h-4.5 w-4.5" />
-            <span>Create Invoice</span>
-          </Link>
-        </div>
+    <div className="space-y-5">
+      <div className="hidden md:block">
+        <PageHeader
+          title="Invoices"
+          subtitle="Generate invoices, record collections, and export CSV backups"
+          actions={
+            <>
+              <button
+                onClick={() => triggerExport('invoices')}
+                className="btn-secondary"
+                title="Download all Invoices as CSV backup"
+              >
+                <Download className="h-4 w-4" />
+                <span className="hidden sm:inline">Export CSV</span>
+              </button>
+              <Link to="/invoices/new" className="btn-primary">
+                <Plus className="h-4 w-4" />
+                Create Invoice
+              </Link>
+            </>
+          }
+        />
       </div>
 
-      {/* Filter Toggles & Actions */}
-      <div className="glass-card rounded-xl border-slate-200 p-4 space-y-4">
-        <div className="flex items-center justify-between">
+      {/* Mobile FAB-style create button */}
+      <Link to="/invoices/new" className="md:hidden btn-primary w-full">
+        <Plus className="h-4 w-4" />
+        Create Invoice
+      </Link>
+
+      <div className="app-card p-4 space-y-3">
+        <div className="flex items-center justify-between gap-2">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center space-x-2 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-white px-3 py-1.5 rounded-lg border border-slate-200 transition-colors cursor-pointer"
+            className={`filter-chip ${showFilters ? 'filter-chip-active' : ''}`}
           >
             <SlidersHorizontal className="h-3.5 w-3.5" />
-            <span>{showFilters ? 'Hide Advanced Filters' : 'Show Advanced Filters'}</span>
+            {showFilters ? 'Hide Filters' : 'Filters'}
           </button>
           
           {(filterStatus || filterClientId || filterPoId || filterStartDate || filterEndDate) && (
@@ -244,11 +247,10 @@ export default function Invoices() {
         )}
       </div>
 
-      {/* Invoice Ledger Table */}
-      <div className="glass-card rounded-2xl overflow-visible md:overflow-hidden">
+      <div className="app-card overflow-visible md:overflow-hidden">
         {loading ? (
           <div className="p-12 text-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent mx-auto" />
+            <div className="spinner mx-auto" />
           </div>
         ) : invoices.length === 0 ? (
           <div className="p-12 text-center text-slate-500 text-sm">

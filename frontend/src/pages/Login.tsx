@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Zap, ShieldAlert, ArrowRight, Lock } from 'lucide-react';
 import { api } from '../lib/api';
 
@@ -16,7 +16,6 @@ export default function Login({ onLoginSuccess }: LoginProps) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if system has any users; if not, go to setup
     const checkSetup = async () => {
       try {
         const { needsSetup } = await api.auth.checkSetupStatus();
@@ -43,10 +42,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
 
     setLoading(true);
     try {
-      // Use login method pointing to /api/auth/login
       await api.auth.login({ username, password });
-      
-      // Load user profile
       const userRes = await api.auth.me();
       if (userRes.authenticated && userRes.username && userRes.businessName && userRes.currency) {
         onLoginSuccess({
@@ -56,8 +52,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         });
         navigate('/');
       } else {
-        console.error('Auth me failed:', userRes);
-        setError(`Authentication succeeded but failed to load user profile settings. ${userRes.debug_error ? 'Details: ' + userRes.debug_error : ''}`);
+        setError('Authentication succeeded but failed to load profile.');
       }
     } catch (err: any) {
       setError(err.message || 'Invalid username or password.');
@@ -68,89 +63,79 @@ export default function Login({ onLoginSuccess }: LoginProps) {
 
   if (checking) {
     return (
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent" />
+      <div className="min-h-screen bg-[#f5f7fa] flex items-center justify-center">
+        <div className="spinner" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background glowing blobs */}
-      <div className="absolute top-[-25%] left-[-15%] w-[60%] h-[60%] bg-sky-500/5 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-[-25%] right-[-15%] w-[60%] h-[60%] bg-indigo-500/5 rounded-full blur-[140px] pointer-events-none" />
-
-      <div className="w-full max-w-md bg-white/60 backdrop-blur-xl border border-slate-200 rounded-2xl p-8 shadow-2xl relative z-10">
-        <div className="flex flex-col items-center text-center mb-8">
-          <div className="p-3 bg-blue-100 rounded-2xl border border-sky-500/20 mb-4">
-            <Zap className="h-8 w-8 text-blue-600 fill-sky-400/20" />
+    <div className="min-h-screen bg-[#f5f7fa] flex flex-col safe-area-top safe-area-bottom">
+      <div className="flex-1 flex flex-col justify-center px-5 py-8 max-w-md mx-auto w-full">
+        <div className="text-center mb-8">
+          <div className="inline-flex p-3 bg-brand-50 rounded-2xl mb-4">
+            <Zap className="h-8 w-8 text-brand-600" />
           </div>
-          <h1 className="font-display font-extrabold text-2xl text-slate-900 tracking-tight">
-            Sign In to BillingApp
+          <h1 className="font-display font-bold text-2xl text-slate-900 tracking-tight">
+            Welcome back
           </h1>
-          <p className="text-slate-400 text-sm mt-1.5">
-            Enter your credentials to manage your business
+          <p className="text-slate-500 text-sm mt-1.5">
+            Sign in to manage your billing
           </p>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-100 border border-red-500/20 rounded-xl flex items-start space-x-3 text-red-600 text-sm">
-            <ShieldAlert className="h-5 w-5 shrink-0 text-red-600" />
+          <div className="mb-5 p-3.5 bg-red-50 border border-red-100 rounded-xl flex items-start gap-2.5 text-red-600 text-sm">
+            <ShieldAlert className="h-5 w-5 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">Username</label>
-            <input 
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Username</label>
+            <input
               type="text"
               required
               placeholder="e.g. admin"
-              className="w-full form-input text-sm"
+              className="form-input"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              autoComplete="username"
             />
           </div>
 
           <div>
-            <div className="flex justify-between items-center mb-1.5">
-              <label className="block text-xs text-slate-400 font-medium uppercase tracking-wider">Password</label>
-            </div>
-            <input 
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Password</label>
+            <input
               type="password"
               required
-              placeholder="••••••••"
-              className="w-full form-input text-sm"
+              placeholder="Enter your password"
+              className="form-input"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
             />
           </div>
 
-          <div className="pt-2">
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 text-white font-semibold py-2.5 rounded-lg flex items-center justify-center space-x-2 shadow-lg shadow-sky-500/10 cursor-pointer disabled:opacity-50 transition-all text-sm duration-200"
-            >
-              {loading ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  <span>Signing In...</span>
-                </>
-              ) : (
-                <>
-                  <span>Sign In</span>
-                  <ArrowRight className="h-4 w-4" />
-                </>
-              )}
-            </button>
-          </div>
+          <button type="submit" disabled={loading} className="btn-primary w-full mt-2">
+            {loading ? (
+              <>
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                Signing in...
+              </>
+            ) : (
+              <>
+                Sign In
+                <ArrowRight className="h-4 w-4" />
+              </>
+            )}
+          </button>
         </form>
 
-        <div className="mt-8 pt-6 border-t border-slate-200/40 text-center flex items-center justify-center space-x-2 text-xs text-slate-500">
+        <div className="mt-8 flex items-center justify-center gap-2 text-xs text-slate-400">
           <Lock className="h-3.5 w-3.5" />
-          <span>Secured with HttpOnly Cookies</span>
+          <span>Secured with HttpOnly cookies</span>
         </div>
       </div>
     </div>

@@ -327,28 +327,28 @@ export default function InvoiceEditor() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent" />
+        <div className="spinner" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Title & Back Navigation */}
-      <div className="space-y-1.5">
-        <Link 
+    <div className="space-y-5">
+      {/* Back + desktop title */}
+      <div className="space-y-1">
+        <Link
           to="/invoices"
-          className="flex items-center space-x-1.5 text-xs text-slate-400 hover:text-slate-900 transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 transition-colors"
         >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          <span>Back to Invoices Ledger</span>
+          <ArrowLeft className="h-4 w-4" />
+          <span>Back to Invoices</span>
         </Link>
-        <h1 className="font-display font-bold text-3xl text-slate-900">
-          {isEdit ? 'Edit Invoice' : 'Create Invoice'}
-        </h1>
-        <p className="text-slate-400 text-sm mt-0.5">
-          {isEdit ? 'Modify details of existing billing invoice' : 'Fill details below to generate a new billing invoice'}
-        </p>
+        <div className="hidden md:block pt-1">
+          <h1 className="page-title">{isEdit ? 'Edit Invoice' : 'Create Invoice'}</h1>
+          <p className="page-subtitle">
+            {isEdit ? 'Modify billing details' : 'Fill in details to generate a new invoice'}
+          </p>
+        </div>
       </div>
 
       {error && (
@@ -449,39 +449,101 @@ export default function InvoiceEditor() {
           </div>
         </div>
 
-        {/* Line Items Table */}
-        <div className="space-y-4">
-          <h3 className="font-display font-semibold text-lg text-slate-900 border-b border-slate-200 pb-2">
-            Line Items
-          </h3>
+        {/* Line Items */}
+        <div className="space-y-3">
+          <h3 className="section-title">Line Items</h3>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[600px]">
+          {/* Mobile: card layout */}
+          <div className="md:hidden space-y-3">
+            {items.map((item, index) => (
+              <div key={index} className="line-item-card space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-400">Item {index + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeLineItem(index)}
+                    disabled={items.length <= 1}
+                    className="text-slate-400 hover:text-red-500 p-1 disabled:opacity-30"
+                    title="Remove"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Description *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Consulting Services"
+                    className="form-input text-sm"
+                    value={item.description}
+                    onChange={(e) => handleItemFieldChange(index, 'description', e.target.value)}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Qty</label>
+                    <input
+                      type="number"
+                      required
+                      step="any"
+                      placeholder="1"
+                      className="form-input text-sm"
+                      value={item.quantity === 0 ? '' : item.quantity}
+                      onChange={(e) => handleItemFieldChange(index, 'quantity', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Unit Price</label>
+                    <input
+                      type="number"
+                      required
+                      step="0.01"
+                      placeholder="0.00"
+                      className="form-input text-sm font-mono"
+                      value={item.unit_price === 0 ? '' : item.unit_price}
+                      onChange={(e) => handleItemFieldChange(index, 'unit_price', e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-between items-center pt-1 border-t border-slate-200">
+                  <span className="text-xs text-slate-400">Amount</span>
+                  <span className="font-mono font-semibold text-slate-900">
+                    {item.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: table layout */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-200 pb-2">
+                <tr className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-200">
                   <th className="py-2 pr-4 w-3/5">Item Description *</th>
-                  <th className="py-2 px-4 w-1/12 text-right">Quantity</th>
-                  <th className="py-2 px-4 w-1/6 text-right">Unit Price</th>
-                  <th className="py-2 pl-4 w-1/6 text-right">Amount</th>
+                  <th className="py-2 px-4 text-right">Qty</th>
+                  <th className="py-2 px-4 text-right">Unit Price</th>
+                  <th className="py-2 pl-4 text-right">Amount</th>
                   <th className="py-2 w-10"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {items.map((item, index) => (
-                  <tr key={index} className="align-top py-2">
+                  <tr key={index} className="align-top">
                     <td className="py-3 pr-4">
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         required
-                        placeholder="e.g. Consulting Services - Q2 Milestones"
+                        placeholder="e.g. Consulting Services"
                         className="w-full form-input text-sm"
                         value={item.description}
                         onChange={(e) => handleItemFieldChange(index, 'description', e.target.value)}
                       />
                     </td>
                     <td className="py-3 px-4">
-                      <input 
-                        type="number" 
+                      <input
+                        type="number"
                         required
                         step="any"
                         placeholder="1"
@@ -491,8 +553,8 @@ export default function InvoiceEditor() {
                       />
                     </td>
                     <td className="py-3 px-4">
-                      <input 
-                        type="number" 
+                      <input
+                        type="number"
                         required
                         step="0.01"
                         placeholder="0.00"
@@ -509,8 +571,8 @@ export default function InvoiceEditor() {
                         type="button"
                         onClick={() => removeLineItem(index)}
                         disabled={items.length <= 1}
-                        className="text-slate-500 hover:text-red-600 p-1 rounded disabled:opacity-30 disabled:hover:text-slate-500 cursor-pointer"
-                        title="Remove Line Item"
+                        className="text-slate-400 hover:text-red-500 p-1 disabled:opacity-30"
+                        title="Remove"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -524,10 +586,10 @@ export default function InvoiceEditor() {
           <button
             type="button"
             onClick={addLineItem}
-            className="flex items-center space-x-1.5 px-3.5 py-2 border border-dashed border-slate-200 hover:border-slate-300 bg-slate-50 hover:bg-white/60 text-slate-700 hover:text-slate-900 rounded-lg text-xs font-semibold cursor-pointer transition-colors"
+            className="btn-secondary w-full md:w-auto border-dashed"
           >
             <Plus className="h-4 w-4" />
-            <span>Add Row</span>
+            Add Line Item
           </button>
         </div>
 
@@ -602,8 +664,8 @@ export default function InvoiceEditor() {
 
             {/* Grand Total */}
             <div className="border-t border-slate-200 pt-4 flex justify-between items-center">
-              <span className="font-display font-semibold text-slate-900">Grand Total:</span>
-              <span className="font-display font-extrabold text-2xl text-blue-600 bg-sky-500/5 border border-sky-500/10 px-3 py-1 rounded">
+              <span className="font-display font-semibold text-slate-900">Grand Total</span>
+              <span className="font-display font-bold text-xl text-brand-600 bg-brand-50 px-3 py-1.5 rounded-xl">
                 {currency} {total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </span>
             </div>
@@ -611,20 +673,16 @@ export default function InvoiceEditor() {
         </div>
 
         {/* Form Action Controls */}
-        <div className="pt-6 border-t border-slate-200 flex items-center justify-between">
-          <Link
-            to="/invoices"
-            className="px-5 py-2.5 border border-slate-200 hover:border-slate-300 bg-white rounded-lg text-sm font-semibold text-slate-400 hover:text-slate-900 transition-colors cursor-pointer"
-          >
+        <div className="pt-5 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <Link to="/invoices" className="btn-secondary text-center">
             Discard
           </Link>
-          
-          <div className="flex items-center space-x-3">
+          <div className="flex flex-col sm:flex-row gap-2">
             <button
               type="button"
               disabled={submitting}
               onClick={() => handleSubmit('draft')}
-              className="px-5 py-2.5 border border-slate-200 hover:border-slate-750 bg-white hover:bg-slate-50 rounded-lg text-sm font-semibold text-slate-800 transition-colors cursor-pointer"
+              className="btn-secondary"
             >
               {submitting ? 'Saving...' : 'Save as Draft'}
             </button>
@@ -632,9 +690,9 @@ export default function InvoiceEditor() {
               type="button"
               disabled={submitting}
               onClick={() => handleSubmit('sent')}
-              className="bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 text-white font-semibold py-2.5 px-5 rounded-lg flex items-center space-x-2 shadow-lg shadow-sky-500/10 cursor-pointer disabled:opacity-50 transition-all text-sm duration-200"
+              className="btn-primary"
             >
-              <Save className="h-4.5 w-4.5" />
+              <Save className="h-4 w-4" />
               <span>{isEdit ? 'Update & Finalize' : 'Create & Mark Sent'}</span>
             </button>
           </div>
