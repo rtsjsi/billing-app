@@ -11,6 +11,7 @@ import {
   ChevronDown,
   SlidersHorizontal,
   X,
+  ArrowLeft,
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useFilters } from '../lib/FilterContext';
@@ -35,6 +36,14 @@ function getPageTitle(pathname: string): string {
   if (pathname === '/clients') return 'Clients';
   if (pathname === '/settings') return 'Settings';
   return 'BillingApp';
+}
+
+function getBackPath(pathname: string): string | null {
+  if (/^\/invoices\/preview\/\d+/.test(pathname)) return '/invoices';
+  if (/^\/invoices\/edit\/\d+/.test(pathname)) return '/invoices';
+  if (pathname.startsWith('/invoices/new')) return '/invoices';
+  if (/^\/clients\/\d+/.test(pathname)) return '/clients';
+  return null;
 }
 
 export default function Layout({ children, user, onLogout }: LayoutProps) {
@@ -70,12 +79,6 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
 
-  const isPrint = location.pathname.includes('/invoices/preview/');
-
-  if (isPrint) {
-    return <div className="min-h-screen bg-white text-black p-0 print:p-0">{children}</div>;
-  }
-
   const isActivePath = (path: string) => {
     if (path === '/') return location.pathname === '/';
     return location.pathname.startsWith(path);
@@ -87,11 +90,12 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
 
   const activeFilterCount = (selectedFY ? 1 : 0) + (selectedClient ? 1 : 0);
   const pageTitle = getPageTitle(location.pathname);
+  const backPath = getBackPath(location.pathname);
 
   return (
     <div className="min-h-screen bg-[#f5f7fa] text-slate-900 flex flex-col md:flex-row">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-60 bg-white border-r border-slate-100 flex-col justify-between h-screen sticky top-0">
+      <aside className="no-print hidden md:flex w-60 bg-white border-r border-slate-100 flex-col justify-between h-screen sticky top-0">
         <div>
           <div className="px-5 py-4 flex items-center gap-2.5">
             <div className="p-1.5 bg-brand-50 rounded-xl">
@@ -147,13 +151,24 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
         {/* Mobile unified header */}
         <header className="md:hidden no-print sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-100 safe-area-top">
           <div className="flex items-center justify-between px-4 py-3">
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 flex items-center gap-2">
+              {backPath && (
+                <button
+                  onClick={() => navigate(backPath)}
+                  className="shrink-0 flex items-center justify-center w-9 h-9 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                  aria-label="Go back"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </button>
+              )}
+              <div className="min-w-0">
               <h1 className="font-display font-bold text-lg text-slate-900 tracking-tight truncate">
                 {pageTitle}
               </h1>
               {user?.businessName && pageTitle === 'Dashboard' && (
                 <p className="text-xs text-slate-400 truncate mt-0.5">{user.businessName}</p>
               )}
+              </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               {showFilters && (
@@ -299,7 +314,7 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
       />
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 bottom-nav safe-area-bottom">
+      <nav className="no-print md:hidden fixed bottom-0 inset-x-0 z-50 bottom-nav safe-area-bottom">
         <div className="flex items-stretch">
           {bottomNavItems.map((item) => {
             const Icon = item.icon;

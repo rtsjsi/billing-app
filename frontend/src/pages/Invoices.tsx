@@ -13,10 +13,12 @@ import {
   X,
   SlidersHorizontal,
   Eye,
-  Edit2
+  Edit2,
+  DollarSign
 } from 'lucide-react';
-import ActionMenu from '../components/ActionMenu';
+import ActionMenu, { ActionMenuItem } from '../components/ActionMenu';
 import ConfirmModal from '../components/ConfirmModal';
+import RecordPaymentModal from '../components/RecordPaymentModal';
 import { api, Invoice, Client, InvoiceItem, BusinessSettings } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { useFilters } from '../lib/FilterContext';
@@ -44,6 +46,7 @@ export default function Invoices() {
   const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
   const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<number | null>(null);
   const [deleteInvoiceId, setDeleteInvoiceId] = useState<number | null>(null);
+  const [paymentInvoice, setPaymentInvoice] = useState<Invoice | null>(null);
 
   const handleDownloadPDF = (e: React.MouseEvent, inv: Invoice) => {
     e.stopPropagation();
@@ -121,6 +124,47 @@ export default function Invoices() {
   const triggerExport = (entity: 'clients' | 'invoices' | 'purchase-orders') => {
     const url = api.settings.getExportUrl(entity);
     window.open(url, '_blank');
+  };
+
+  const getInvoiceActionItems = (inv: Invoice): ActionMenuItem[] => {
+    const isOutstanding = inv.status !== 'paid' && inv.status !== 'cancelled';
+    const items: ActionMenuItem[] = [
+      {
+        label: 'View Preview',
+        icon: <Eye className="h-4 w-4" />,
+        onClick: () => navigate(`/invoices/preview/${inv.id}`),
+      },
+      {
+        label: 'Edit Invoice',
+        icon: <Edit2 className="h-4 w-4" />,
+        onClick: () => navigate(`/invoices/edit/${inv.id}`),
+      },
+    ];
+
+    if (isOutstanding) {
+      items.push({
+        label: 'Record Payment',
+        icon: <DollarSign className="h-4 w-4" />,
+        onClick: () => setPaymentInvoice(inv),
+      });
+    }
+
+    items.push(
+      {
+        label: downloadingInvoiceId === inv.id ? 'Generating...' : 'Download PDF',
+        icon: <Download className="h-4 w-4" />,
+        disabled: downloadingInvoiceId === inv.id,
+        onClick: () => { window.location.href = api.invoices.getPDFUrl(inv.id); },
+      },
+      {
+        label: 'Delete Invoice',
+        icon: <Trash2 className="h-4 w-4" />,
+        variant: 'danger',
+        onClick: () => handleDelete(inv.id),
+      }
+    );
+
+    return items;
   };
 
   return (
@@ -316,30 +360,7 @@ export default function Invoices() {
                           }}
                           onClose={() => setActiveDropdownId(null)}
                           title={inv.invoice_number}
-                          items={[
-                            {
-                              label: 'View Preview',
-                              icon: <Eye className="h-4 w-4" />,
-                              onClick: () => navigate(`/invoices/preview/${inv.id}`),
-                            },
-                            {
-                              label: 'Edit Invoice',
-                              icon: <Edit2 className="h-4 w-4" />,
-                              onClick: () => navigate(`/invoices/edit/${inv.id}`),
-                            },
-                            {
-                              label: downloadingInvoiceId === inv.id ? 'Generating...' : 'Download PDF',
-                              icon: <Download className="h-4 w-4" />,
-                              disabled: downloadingInvoiceId === inv.id,
-                              onClick: () => { window.location.href = api.invoices.getPDFUrl(inv.id); },
-                            },
-                            {
-                              label: 'Delete Invoice',
-                              icon: <Trash2 className="h-4 w-4" />,
-                              variant: 'danger',
-                              onClick: () => handleDelete(inv.id),
-                            },
-                          ]}
+                          items={getInvoiceActionItems(inv)}
                         />
                       </td>
                     </tr>
@@ -373,6 +394,13 @@ export default function Invoices() {
           </div>
         )}
       </div>
+
+      <RecordPaymentModal
+        isOpen={paymentInvoice !== null}
+        invoice={paymentInvoice}
+        onClose={() => setPaymentInvoice(null)}
+        onSuccess={fetchInvoices}
+      />
 
       <ConfirmModal
         isOpen={deleteInvoiceId !== null}

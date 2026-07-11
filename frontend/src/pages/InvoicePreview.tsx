@@ -8,7 +8,6 @@ import {
   DollarSign, 
   Copy, 
   FileEdit, 
-  X,
   CreditCard,
   Building,
   Check,
@@ -20,6 +19,7 @@ import {
 import { api, Invoice, InvoiceItem, Payment, BusinessSettings } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/utils';
 import ConfirmModal from '../components/ConfirmModal';
+import RecordPaymentModal from '../components/RecordPaymentModal';
 
 export default function InvoicePreview() {
   const { id } = useParams<{ id: string }>();
@@ -36,12 +36,6 @@ export default function InvoicePreview() {
   
   // Payment Modal
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [payAmount, setPayAmount] = useState('');
-  const [payDate, setPayDate] = useState('');
-  const [payMethod, setPayMethod] = useState<'bank_transfer' | 'upi' | 'cash' | 'cheque' | 'other'>('bank_transfer');
-  const [payRef, setPayRef] = useState('');
-  const [payNotes, setPayNotes] = useState('');
-  const [paySubmitting, setPaySubmitting] = useState(false);
   const [deletePaymentId, setDeletePaymentId] = useState<number | null>(null);
 
   const invoiceRef = useRef<HTMLDivElement>(null);
@@ -55,11 +49,6 @@ export default function InvoicePreview() {
       setInvoice(invRes.invoice);
       setItems(invRes.items);
       setPayments(invRes.payments);
-      
-      // Pre-fill payment modal amount with remaining outstanding balance
-      const remaining = invRes.invoice.total - invRes.invoice.amount_paid;
-      setPayAmount(remaining > 0 ? remaining.toFixed(2) : '0.00');
-      setPayDate(new Date().toISOString().split('T')[0]);
     } catch (err: any) {
       setError(err.message || 'Failed to load invoice details.');
     } finally {
@@ -90,35 +79,6 @@ export default function InvoicePreview() {
     }
   };
 
-  const handleRecordPayment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const parsedAmount = parseFloat(payAmount) || 0;
-    if (parsedAmount <= 0) {
-      alert('Please enter a positive payment amount.');
-      return;
-    }
-
-    setPaySubmitting(true);
-    try {
-      await api.payments.record({
-        invoice_id: invoiceId,
-        amount: parsedAmount,
-        payment_date: payDate,
-        method: payMethod,
-        reference: payRef || null,
-        notes: payNotes || null
-      });
-      setPaymentModalOpen(false);
-      setPayRef('');
-      setPayNotes('');
-      fetchData();
-    } catch (err: any) {
-      alert(err.message || 'Failed to record payment.');
-    } finally {
-      setPaySubmitting(false);
-    }
-  };
-
   const handleDeletePayment = (paymentId: number) => {
     setDeletePaymentId(paymentId);
   };
@@ -145,11 +105,11 @@ export default function InvoicePreview() {
   if (error || !invoice || !settings) {
     return (
       <div className="space-y-4">
-        <button onClick={() => navigate('/invoices')} className="flex items-center space-x-1 text-slate-400 hover:text-slate-900">
+        <button onClick={() => navigate('/invoices')} className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 transition-colors">
           <ArrowLeft className="h-4 w-4" />
           <span>Back to Invoices Ledger</span>
         </button>
-        <div className="p-6 bg-red-100 border border-red-500/20 rounded-xl text-red-600">
+        <div className="p-6 bg-red-100 border border-red-500/20 rounded-xl text-red-600 text-sm">
           {error || 'Invoice not found.'}
         </div>
       </div>
@@ -157,60 +117,30 @@ export default function InvoicePreview() {
   }
 
   const isOutstanding = invoice.status !== 'paid' && invoice.status !== 'cancelled';
-  const remainingDue = invoice.total - invoice.amount_paid;
 
   return (
-    <div className="space-y-6">
-      {/* Control panel (Hidden on Print) */}
-      <div className="no-print space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <Link 
-            to="/invoices" 
-            className="flex items-center space-x-2 px-4 py-2.5 border border-slate-300 hover:border-slate-400 bg-slate-50 hover:bg-slate-700 rounded-lg text-sm font-semibold text-slate-800 transition-colors cursor-pointer shadow-sm shadow-slate-900/20"
+    <div className="space-y-5">
+      {/* Header & actions (hidden on print) */}
+      <div className="no-print space-y-5">
+        <div className="space-y-1">
+          <Link
+            to="/invoices"
+            className="hidden md:inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             <span>Back to Invoices Ledger</span>
           </Link>
-          <div className="flex flex-wrap items-center gap-2">
-            {invoice.status === 'draft' && (
-              <button 
-                onClick={() => handleUpdateStatus('sent')}
-                className="bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold py-1.5 px-3 rounded flex items-center space-x-1 cursor-pointer"
-              >
-                <Check className="h-3.5 w-3.5" />
-                <span>Mark Sent</span>
-              </button>
-            )}
-            {isOutstanding && (
-              <button 
-                onClick={() => setPaymentModalOpen(true)}
-                className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-xs font-semibold py-1.5 px-3 rounded flex items-center space-x-1 cursor-pointer shadow-md shadow-emerald-500/10"
-              >
-                <DollarSign className="h-3.5 w-3.5" />
-                <span>Record Payment</span>
-              </button>
-            )}
-            <Link 
-              to={`/invoices/edit/${invoice.id}`}
-              className="bg-slate-50 hover:bg-slate-700 border border-slate-750 text-slate-800 text-xs font-semibold py-1.5 px-3 rounded flex items-center space-x-1"
-            >
-              <FileEdit className="h-3.5 w-3.5" />
-              <span>Edit</span>
-            </Link>
-            {invoice.status !== 'cancelled' && (
-              <button 
-                onClick={() => handleUpdateStatus('cancelled')}
-                className="bg-red-100 hover:bg-red-500/20 border border-red-550/20 text-red-600 text-xs font-semibold py-1.5 px-3 rounded cursor-pointer"
-              >
-                <span>Cancel Invoice</span>
-              </button>
-            )}
+          <div className="hidden md:block pt-1">
+            <h1 className="page-title">{invoice.invoice_number}</h1>
+            <p className="page-subtitle">
+              {invoice.client_name}
+              {invoice.due_date ? ` · Due ${formatDate(invoice.due_date)}` : ''}
+            </p>
           </div>
         </div>
 
-        {/* Big Action Buttons */}
-        <div className="glass-card p-4 rounded-xl flex flex-wrap gap-4 items-center justify-between border-slate-200">
-          <div className="flex items-center space-x-2.5">
+        <div className="glass-card rounded-2xl border-slate-200 p-4 flex flex-col sm:flex-row sm:flex-wrap gap-4 sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2.5 flex-wrap">
             <span className="text-slate-400 text-sm">Status:</span>
             <span className={`badge badge-${invoice.status}`}>{invoice.status}</span>
             {invoice.status === 'partially_paid' && (
@@ -219,13 +149,46 @@ export default function InvoicePreview() {
               </span>
             )}
           </div>
-          
-          <div className="flex items-center space-x-3">
-            <button 
-              onClick={handleDownloadPDF}
-              className="flex items-center space-x-2 px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-sm font-semibold rounded-lg text-slate-900 cursor-pointer transition-colors shadow-lg shadow-sky-500/20"
+
+          <div className="flex flex-wrap items-center gap-2">
+            {invoice.status === 'draft' && (
+              <button
+                onClick={() => handleUpdateStatus('sent')}
+                className="btn-secondary min-h-0 py-2 px-3 text-xs"
+              >
+                <Check className="h-3.5 w-3.5" />
+                <span>Mark Sent</span>
+              </button>
+            )}
+            {isOutstanding && (
+              <button
+                onClick={() => setPaymentModalOpen(true)}
+                className="btn-primary min-h-0 py-2 px-3 text-xs"
+              >
+                <DollarSign className="h-3.5 w-3.5" />
+                <span>Record Payment</span>
+              </button>
+            )}
+            <Link
+              to={`/invoices/edit/${invoice.id}`}
+              className="btn-secondary min-h-0 py-2 px-3 text-xs"
             >
-              <Download className="h-4 w-4" />
+              <FileEdit className="h-3.5 w-3.5" />
+              <span>Edit</span>
+            </Link>
+            {invoice.status !== 'cancelled' && (
+              <button
+                onClick={() => handleUpdateStatus('cancelled')}
+                className="inline-flex items-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 transition-colors cursor-pointer"
+              >
+                <span>Cancel Invoice</span>
+              </button>
+            )}
+            <button
+              onClick={handleDownloadPDF}
+              className="btn-secondary min-h-0 py-2 px-3 text-xs"
+            >
+              <Download className="h-3.5 w-3.5" />
               <span>Download PDF</span>
             </button>
           </div>
@@ -446,108 +409,12 @@ export default function InvoicePreview() {
         </div>
       )}
 
-      {/* Record Payment Modal */}
-      {paymentModalOpen && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden">
-            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-200">
-              <h2 className="font-display font-semibold text-lg text-slate-900 flex items-center space-x-2">
-                <DollarSign className="h-5 w-5 text-emerald-600" />
-                <span>Record Invoice Payment</span>
-              </h2>
-              <button onClick={() => setPaymentModalOpen(false)} className="text-slate-400 hover:text-slate-900">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleRecordPayment}>
-              <div className="p-6 space-y-4">
-                <div className="p-3 bg-emerald-100 border border-emerald-500/20 text-emerald-600 rounded-lg text-xs flex items-center space-x-2">
-                  <Check className="h-4 w-4" />
-                  <span>Remaining Outstanding Balance: <b>{invoice.currency} {remainingDue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</b></span>
-                </div>
-
-                <div>
-                  <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">Payment Amount ({invoice.currency}) *</label>
-                  <input 
-                    type="number" 
-                    step="0.01"
-                    required
-                    className="w-full form-input text-sm font-mono text-emerald-600"
-                    value={payAmount}
-                    onChange={(e) => setPayAmount(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">Payment Date *</label>
-                  <input 
-                    type="date"
-                    required
-                    className="w-full form-input text-sm"
-                    value={payDate}
-                    onChange={(e) => setPayDate(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">Payment Method *</label>
-                  <select
-                    className="w-full form-input text-sm"
-                    value={payMethod}
-                    onChange={(e) => setPayMethod(e.target.value as any)}
-                  >
-                    <option value="bank_transfer">Bank Transfer</option>
-                    <option value="upi">UPI (GPay/PhonePe/Paytm)</option>
-                    <option value="cash">Cash</option>
-                    <option value="cheque">Cheque</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">Transaction Reference ID (Optional)</label>
-                  <input 
-                    type="text" 
-                    placeholder="e.g. UTR / IMPS / Txn ID"
-                    className="w-full form-input text-sm font-mono"
-                    value={payRef}
-                    onChange={(e) => setPayRef(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">Private Notes (Optional)</label>
-                  <input 
-                    type="text" 
-                    placeholder="e.g. Cleared next day"
-                    className="w-full form-input text-sm"
-                    value={payNotes}
-                    onChange={(e) => setPayNotes(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => setPaymentModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 hover:border-slate-300 bg-white rounded-lg text-sm font-semibold text-slate-700 transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={paySubmitting}
-                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 rounded-lg text-sm font-semibold text-white cursor-pointer shadow-lg shadow-emerald-500/10"
-                >
-                  {paySubmitting ? 'Recording...' : 'Record Payment'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <RecordPaymentModal
+        isOpen={paymentModalOpen}
+        invoice={invoice}
+        onClose={() => setPaymentModalOpen(false)}
+        onSuccess={fetchData}
+      />
 
       <ConfirmModal
         isOpen={deletePaymentId !== null}
