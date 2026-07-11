@@ -161,8 +161,8 @@ export default function InvoicePreview() {
 
   return (
     <div className="space-y-6">
-      {/* Control panel (Hidden on Print) */}
-      <div className="no-print space-y-4">
+      {/* Control panel (Hidden on Print) — sticky so back/actions stay reachable while scrolling */}
+      <div className="no-print sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-100 safe-area-top px-4 sm:px-6 py-3 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <Link 
             to="/invoices" 
@@ -233,7 +233,7 @@ export default function InvoicePreview() {
       </div>
 
       {/* RENDER INVOICE (This block is styled clean white during prints) */}
-      <div className="flex justify-center">
+      <div className="flex justify-center px-4 sm:px-6">
         <div 
           ref={invoiceRef}
           id="invoice-preview-container"
@@ -403,7 +403,7 @@ export default function InvoicePreview() {
 
       {/* Payments History log (Hidden on print) */}
       {payments.length > 0 && (
-        <div className="no-print glass-card rounded-2xl border-slate-200 p-6 space-y-4">
+        <div className="no-print glass-card rounded-2xl border-slate-200 p-6 space-y-4 mx-4 sm:mx-6">
           <h2 className="font-display font-semibold text-lg text-slate-900 flex items-center space-x-2">
             <CreditCard className="h-5 w-5 text-blue-600" />
             <span>Payments History Log ({payments.length})</span>
