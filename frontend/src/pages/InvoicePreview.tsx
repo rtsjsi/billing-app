@@ -145,11 +145,11 @@ export default function InvoicePreview() {
   if (error || !invoice || !settings) {
     return (
       <div className="space-y-4">
-        <button onClick={() => navigate('/invoices')} className="flex items-center space-x-1 text-slate-400 hover:text-slate-900">
+        <button onClick={() => navigate('/invoices')} className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 transition-colors">
           <ArrowLeft className="h-4 w-4" />
           <span>Back to Invoices Ledger</span>
         </button>
-        <div className="p-6 bg-red-100 border border-red-500/20 rounded-xl text-red-600">
+        <div className="p-6 bg-red-100 border border-red-500/20 rounded-xl text-red-600 text-sm">
           {error || 'Invoice not found.'}
         </div>
       </div>
@@ -160,57 +160,28 @@ export default function InvoicePreview() {
   const remainingDue = invoice.total - invoice.amount_paid;
 
   return (
-    <div className="space-y-6">
-      {/* Control panel (Hidden on Print) — sticky so back/actions stay reachable while scrolling */}
-      <div className="no-print sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-100 safe-area-top px-4 sm:px-6 py-3 space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <Link 
-            to="/invoices" 
-            className="flex items-center space-x-2 px-4 py-2.5 border border-slate-300 hover:border-slate-400 bg-slate-50 hover:bg-slate-700 rounded-lg text-sm font-semibold text-slate-800 transition-colors cursor-pointer shadow-sm shadow-slate-900/20"
+    <div className="space-y-5">
+      {/* Header & actions (hidden on print) */}
+      <div className="no-print space-y-5">
+        <div className="space-y-1">
+          <Link
+            to="/invoices"
+            className="hidden md:inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             <span>Back to Invoices Ledger</span>
           </Link>
-          <div className="flex flex-wrap items-center gap-2">
-            {invoice.status === 'draft' && (
-              <button 
-                onClick={() => handleUpdateStatus('sent')}
-                className="bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold py-1.5 px-3 rounded flex items-center space-x-1 cursor-pointer"
-              >
-                <Check className="h-3.5 w-3.5" />
-                <span>Mark Sent</span>
-              </button>
-            )}
-            {isOutstanding && (
-              <button 
-                onClick={() => setPaymentModalOpen(true)}
-                className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-xs font-semibold py-1.5 px-3 rounded flex items-center space-x-1 cursor-pointer shadow-md shadow-emerald-500/10"
-              >
-                <DollarSign className="h-3.5 w-3.5" />
-                <span>Record Payment</span>
-              </button>
-            )}
-            <Link 
-              to={`/invoices/edit/${invoice.id}`}
-              className="bg-slate-50 hover:bg-slate-700 border border-slate-750 text-slate-800 text-xs font-semibold py-1.5 px-3 rounded flex items-center space-x-1"
-            >
-              <FileEdit className="h-3.5 w-3.5" />
-              <span>Edit</span>
-            </Link>
-            {invoice.status !== 'cancelled' && (
-              <button 
-                onClick={() => handleUpdateStatus('cancelled')}
-                className="bg-red-100 hover:bg-red-500/20 border border-red-550/20 text-red-600 text-xs font-semibold py-1.5 px-3 rounded cursor-pointer"
-              >
-                <span>Cancel Invoice</span>
-              </button>
-            )}
+          <div className="hidden md:block pt-1">
+            <h1 className="page-title">{invoice.invoice_number}</h1>
+            <p className="page-subtitle">
+              {invoice.client_name}
+              {invoice.due_date ? ` · Due ${formatDate(invoice.due_date)}` : ''}
+            </p>
           </div>
         </div>
 
-        {/* Big Action Buttons */}
-        <div className="glass-card p-4 rounded-xl flex flex-wrap gap-4 items-center justify-between border-slate-200">
-          <div className="flex items-center space-x-2.5">
+        <div className="glass-card rounded-2xl border-slate-200 p-4 flex flex-col sm:flex-row sm:flex-wrap gap-4 sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2.5 flex-wrap">
             <span className="text-slate-400 text-sm">Status:</span>
             <span className={`badge badge-${invoice.status}`}>{invoice.status}</span>
             {invoice.status === 'partially_paid' && (
@@ -219,13 +190,46 @@ export default function InvoicePreview() {
               </span>
             )}
           </div>
-          
-          <div className="flex items-center space-x-3">
-            <button 
-              onClick={handleDownloadPDF}
-              className="flex items-center space-x-2 px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-sm font-semibold rounded-lg text-slate-900 cursor-pointer transition-colors shadow-lg shadow-sky-500/20"
+
+          <div className="flex flex-wrap items-center gap-2">
+            {invoice.status === 'draft' && (
+              <button
+                onClick={() => handleUpdateStatus('sent')}
+                className="btn-secondary min-h-0 py-2 px-3 text-xs"
+              >
+                <Check className="h-3.5 w-3.5" />
+                <span>Mark Sent</span>
+              </button>
+            )}
+            {isOutstanding && (
+              <button
+                onClick={() => setPaymentModalOpen(true)}
+                className="btn-primary min-h-0 py-2 px-3 text-xs"
+              >
+                <DollarSign className="h-3.5 w-3.5" />
+                <span>Record Payment</span>
+              </button>
+            )}
+            <Link
+              to={`/invoices/edit/${invoice.id}`}
+              className="btn-secondary min-h-0 py-2 px-3 text-xs"
             >
-              <Download className="h-4 w-4" />
+              <FileEdit className="h-3.5 w-3.5" />
+              <span>Edit</span>
+            </Link>
+            {invoice.status !== 'cancelled' && (
+              <button
+                onClick={() => handleUpdateStatus('cancelled')}
+                className="inline-flex items-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 transition-colors cursor-pointer"
+              >
+                <span>Cancel Invoice</span>
+              </button>
+            )}
+            <button
+              onClick={handleDownloadPDF}
+              className="btn-secondary min-h-0 py-2 px-3 text-xs"
+            >
+              <Download className="h-3.5 w-3.5" />
               <span>Download PDF</span>
             </button>
           </div>
@@ -233,7 +237,7 @@ export default function InvoicePreview() {
       </div>
 
       {/* RENDER INVOICE (This block is styled clean white during prints) */}
-      <div className="flex justify-center px-4 sm:px-6">
+      <div className="flex justify-center">
         <div 
           ref={invoiceRef}
           id="invoice-preview-container"
@@ -403,7 +407,7 @@ export default function InvoicePreview() {
 
       {/* Payments History log (Hidden on print) */}
       {payments.length > 0 && (
-        <div className="no-print glass-card rounded-2xl border-slate-200 p-6 space-y-4 mx-4 sm:mx-6">
+        <div className="no-print glass-card rounded-2xl border-slate-200 p-6 space-y-4">
           <h2 className="font-display font-semibold text-lg text-slate-900 flex items-center space-x-2">
             <CreditCard className="h-5 w-5 text-blue-600" />
             <span>Payments History Log ({payments.length})</span>
