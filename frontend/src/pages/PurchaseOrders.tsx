@@ -231,7 +231,7 @@ export default function PurchaseOrders() {
         </div>
       </div>
 
-      <div className="app-card overflow-visible md:overflow-hidden">
+      <div className="app-card overflow-hidden">
         {loading ? (
           <div className="p-12 text-center">
             <div className="spinner mx-auto" />
@@ -242,14 +242,66 @@ export default function PurchaseOrders() {
           </div>
         ) : (
           <div className="min-h-[200px]">
-            <table className="responsive-table w-full text-left border-collapse">
+            <div className="md:hidden mobile-list">
+              {pos.map((po) => (
+                <div key={po.id} className="mobile-list-item">
+                  <div className="flex-1 min-w-0">
+                    <p className="mobile-list-item-title font-mono truncate">{po.po_number}</p>
+                    <p className="mobile-list-item-subtitle truncate">
+                      {po.client_name} · {formatDate(po.po_date)}
+                    </p>
+                    {po.description && (
+                      <p className="text-xs text-slate-400 mt-0.5 truncate">{po.description}</p>
+                    )}
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="mobile-list-item-amount">
+                      {po.amount ? formatCurrency(po.amount, po.currency) : '-'}
+                    </p>
+                    <span className={`badge badge-${po.status} mt-1`}>
+                      {po.status === 'partially_invoiced' ? 'Part. Invoiced' : po.status}
+                    </span>
+                  </div>
+                  <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <ActionMenu
+                      isOpen={activeDropdownId === po.id}
+                      onToggle={(e) => {
+                        e.stopPropagation();
+                        setActiveDropdownId(activeDropdownId === po.id ? null : po.id);
+                      }}
+                      onClose={() => setActiveDropdownId(null)}
+                      title={po.po_number}
+                      items={[
+                        {
+                          label: 'Edit PO',
+                          icon: <Edit2 className="h-4 w-4" />,
+                          onClick: () => openEditModal(po),
+                        },
+                        {
+                          label: 'Related Invoices',
+                          icon: <FileCheck className="h-4 w-4" />,
+                          onClick: () => navigate(`/invoices?po_id=${po.id}`),
+                        },
+                        {
+                          label: 'Delete PO',
+                          icon: <Trash2 className="h-4 w-4" />,
+                          variant: 'danger',
+                          onClick: () => handleDeletePO(po.id),
+                        },
+                      ]}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <table className="hidden md:table w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 text-xs text-slate-400 font-semibold uppercase tracking-wider bg-slate-50">
                   <th className="px-6 py-3.5">PO details</th>
                   <th className="px-6 py-3.5">Client</th>
                   <th className="px-6 py-3.5">PO Date</th>
                   <th className="px-6 py-3.5 text-right">Amount</th>
-
                   <th className="px-6 py-3.5 text-center">Status</th>
                   <th className="px-6 py-3.5 text-right">Actions</th>
                 </tr>
@@ -257,24 +309,23 @@ export default function PurchaseOrders() {
               <tbody className="divide-y divide-slate-200 text-sm">
                 {pos.map((po) => (
                   <tr key={po.id} className="hover:bg-slate-50 transition-colors">
-                    <td data-label="PO Details" className="px-6 py-4">
+                    <td className="px-6 py-4">
                       <div className="font-mono font-semibold text-slate-800">{po.po_number}</div>
                       {po.description && (
                         <div className="text-slate-400 text-xs mt-0.5 truncate max-w-xs">{po.description}</div>
                       )}
                     </td>
-                    <td data-label="Client" className="px-6 py-4 text-slate-800 font-medium">{po.client_name}</td>
-                    <td data-label="PO Date" className="px-6 py-4 text-slate-400">{formatDate(po.po_date)}</td>
-                    <td data-label="Amount" className="px-6 py-4 text-right font-medium text-slate-800">
+                    <td className="px-6 py-4 text-slate-800 font-medium">{po.client_name}</td>
+                    <td className="px-6 py-4 text-slate-400">{formatDate(po.po_date)}</td>
+                    <td className="px-6 py-4 text-right font-medium text-slate-800">
                       {po.amount ? formatCurrency(po.amount, po.currency) : '-'}
                     </td>
-
-                    <td data-label="Status" className="px-6 py-4 text-center">
+                    <td className="px-6 py-4 text-center">
                       <span className={`badge badge-${po.status}`}>
                         {po.status === 'partially_invoiced' ? 'Part. Invoiced' : po.status}
                       </span>
                     </td>
-                    <td data-label="Actions" className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                       <ActionMenu
                         isOpen={activeDropdownId === po.id}
                         onToggle={(e) => {
