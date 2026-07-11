@@ -422,12 +422,18 @@
   font-weight: 600;
   font-size: 0.9375rem;
   color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mobile-list-item-subtitle {
   font-size: 0.75rem;
   color: #94a3b8;
   margin-top: 0.125rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mobile-list-item-amount {
