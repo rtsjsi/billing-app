@@ -62,8 +62,9 @@ export default function ActionMenu({ isOpen, onToggle, onClose, items, title = '
 
   const handleItemClick = (item: ActionMenuItem) => {
     if (item.disabled) return;
-    onClose();
+    // Run action first — closing first can drop the click on mobile sheets.
     item.onClick();
+    onClose();
   };
 
   return (
@@ -72,7 +73,8 @@ export default function ActionMenu({ isOpen, onToggle, onClose, items, title = '
         type="button"
         onClick={onToggle}
         className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 rounded-xl transition-colors cursor-pointer min-w-[2.5rem] min-h-[2.5rem]"
-        title="Actions"
+        title={title}
+        aria-label={title}
         aria-expanded={isOpen}
         aria-haspopup="menu"
       >

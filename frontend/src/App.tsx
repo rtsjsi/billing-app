@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { api } from './lib/api';
 import { FilterProvider } from './lib/FilterContext';
+import { ToastProvider } from './components/Toast';
 
 // Layout & Pages
 import Layout from './components/Layout';
@@ -105,39 +106,41 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Public Routes */}
-        <Route 
-          path="/login" 
-          element={
-            <PublicRoute>
-              <Login onLoginSuccess={handleLoginSuccess} />
-            </PublicRoute>
-          } 
-        />
-        <Route 
-          path="/setup" 
-          element={
-            <PublicRoute>
-              <Setup onSetupComplete={handleLoginSuccess} />
-            </PublicRoute>
-          } 
-        />
+      <ToastProvider>
+        <Routes>
+          {/* Public Routes */}
+          <Route 
+            path="/login" 
+            element={
+              <PublicRoute>
+                <Login onLoginSuccess={handleLoginSuccess} />
+              </PublicRoute>
+            } 
+          />
+          <Route 
+            path="/setup" 
+            element={
+              <PublicRoute>
+                <Setup onSetupComplete={handleLoginSuccess} />
+              </PublicRoute>
+            } 
+          />
 
-        {/* Protected Core Layout routes */}
-        <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
-        <Route path="/clients/:id" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
-        <Route path="/purchase-orders" element={<ProtectedRoute><PurchaseOrders /></ProtectedRoute>} />
-        <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
-        <Route path="/invoices/new" element={<ProtectedRoute><InvoiceEditor /></ProtectedRoute>} />
-        <Route path="/invoices/edit/:id" element={<ProtectedRoute><InvoiceEditor /></ProtectedRoute>} />
-        <Route path="/invoices/preview/:id" element={<ProtectedRoute><InvoicePreview /></ProtectedRoute>} />
-        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+          {/* Protected Core Layout routes */}
+          <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
+          <Route path="/clients/:id" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
+          <Route path="/purchase-orders" element={<ProtectedRoute><PurchaseOrders /></ProtectedRoute>} />
+          <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
+          <Route path="/invoices/new" element={<ProtectedRoute><InvoiceEditor /></ProtectedRoute>} />
+          <Route path="/invoices/edit/:id" element={<ProtectedRoute><InvoiceEditor /></ProtectedRoute>} />
+          <Route path="/invoices/preview/:id" element={<ProtectedRoute><InvoicePreview /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
 
-        {/* Fallback Catch-All */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          {/* Fallback Catch-All */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </ToastProvider>
     </BrowserRouter>
   );
 }

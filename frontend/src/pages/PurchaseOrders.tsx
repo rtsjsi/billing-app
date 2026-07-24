@@ -10,10 +10,12 @@ import {
 } from 'lucide-react';
 import ActionMenu from '../components/ActionMenu';
 import ConfirmModal from '../components/ConfirmModal';
-import { api, PurchaseOrder, Client, PurchaseOrderItem } from '../lib/api';
+import { api, PurchaseOrder, PurchaseOrderItem } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { useFilters } from '../lib/FilterContext';
 import PageHeader from '../components/PageHeader';
+import { useToast } from '../components/Toast';
+import Spinner from '../components/Spinner';
 
 function getFYDateRange(fy: string) {
   if (!fy) return { start: undefined, end: undefined };
@@ -30,6 +32,7 @@ function getFYDateRange(fy: string) {
 export default function PurchaseOrders() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const toast = useToast();
   const initialClientId = searchParams.get('client_id');
 
   const [pos, setPOs] = useState<PurchaseOrder[]>([]);
@@ -43,6 +46,7 @@ export default function PurchaseOrders() {
 
   // Form states
   const [modalOpen, setModalOpen] = useState(false);
+  const [modalLoading, setModalLoading] = useState(false);
   const [deletePOId, setDeletePOId] = useState<number | null>(null);
   const [editingPO, setEditingPO] = useState<PurchaseOrder | null>(null);
   const [formClientId, setFormClientId] = useState('');
@@ -55,6 +59,27 @@ export default function PurchaseOrders() {
   const [formItems, setFormItems] = useState<PurchaseOrderItem[]>([]);
 
   const [formSubmitting, setFormSubmitting] = useState(false);
+
+  const blankItem = (): PurchaseOrderItem => ({
+    description: '',
+    quantity: 1,
+    unit_price: 0,
+    amount: 0,
+    sort_order: 0,
+  });
+
+  const normalizeItems = (items: PurchaseOrderItem[]): PurchaseOrderItem[] =>
+    items.map((item, index) => {
+      const quantity = Number(item.quantity) || 0;
+      const unit_price = Number(item.unit_price) || 0;
+      return {
+        description: item.description || '',
+        quantity,
+        unit_price,
+        amount: Number(item.amount) || quantity * unit_price,
+        sort_order: item.sort_order ?? index,
+      };
+    });
 
   const fetchPOs = async () => {
     setLoading(true);
@@ -93,8 +118,8 @@ export default function PurchaseOrders() {
     setFormAmount('');
     setFormCurrency('INR');
     setFormStatus('open');
-    setFormItems([{ description: '', quantity: 1, unit_price: 0, amount: 0, sort_order: 0 }]);
-
+    setFormItems([blankItem()]);
+    setModalLoading(false);
     setError('');
     setModalOpen(true);
   };
@@ -107,21 +132,24 @@ export default function PurchaseOrders() {
     setFormDescription(po.description || '');
     setFormCurrency(po.currency);
     setFormStatus(po.status);
-    setFormItems([{ description: 'Loading...', quantity: 1, unit_price: 0, amount: 0, sort_order: 0 }]);
-
+    setFormItems([]);
+    setModalLoading(true);
     setError('');
     setModalOpen(true);
 
     try {
       const details = await api.pos.get(po.id);
       if (details.items && details.items.length > 0) {
-        setFormItems(details.items);
+        setFormItems(normalizeItems(details.items));
       } else {
-        setFormItems([{ description: '', quantity: 1, unit_price: 0, amount: 0, sort_order: 0 }]);
+        setFormItems([blankItem()]);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setFormItems([{ description: '', quantity: 1, unit_price: 0, amount: 0, sort_order: 0 }]);
+      toast.error(err.message || 'Failed to load Purchase Order details.');
+      setFormItems([blankItem()]);
+    } finally {
+      setModalLoading(false);
     }
   };
 
@@ -148,27 +176,37 @@ export default function PurchaseOrders() {
 
     const payload = {
       client_id: parseInt(formClientId, 10),
-      po_number: formPoNumber,
+      po_number: formPoNumber.trim(),
       po_date: formPoDate || null,
       description: formDescription || null,
-      amount: formItems.reduce((sum, item) => sum + item.amount, 0),
+      amount: formItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0),
       currency: formCurrency,
       status: formStatus,
       attachment_key: null,
-      notes: '', // Placeholder or not needed
-      items: formItems.map((item, index) => ({ ...item, sort_order: index }))
+      notes: null,
+      items: formItems.map((item, index) => ({
+        description: item.description.trim(),
+        quantity: Number(item.quantity) || 0,
+        unit_price: Number(item.unit_price) || 0,
+        amount: Number(item.amount) || 0,
+        sort_order: index,
+      })),
     };
 
     try {
       if (editingPO) {
         await api.pos.update(editingPO.id, payload);
+        toast.success('Purchase Order updated');
       } else {
         await api.pos.create(payload as any);
+        toast.success('Purchase Order created');
       }
       setModalOpen(false);
+      setModalLoading(false);
       fetchPOs();
     } catch (err: any) {
       setError(err.message || 'Failed to save Purchase Order.');
+      toast.error(err.message || 'Failed to save Purchase Order.');
     } finally {
       setFormSubmitting(false);
     }
@@ -183,9 +221,10 @@ export default function PurchaseOrders() {
     try {
       await api.pos.delete(deletePOId);
       setDeletePOId(null);
+      toast.success('Purchase Order deleted');
       fetchPOs();
     } catch (err: any) {
-      alert(err.message || 'Failed to delete Purchase Order.');
+      toast.error(err.message || 'Failed to delete Purchase Order.');
     }
   };
 
@@ -455,14 +494,20 @@ export default function PurchaseOrders() {
                     <h3 className="text-sm font-semibold text-slate-700">Line Items *</h3>
                     <button
                       type="button"
-                      onClick={() => setFormItems([...formItems, { description: '', quantity: 1, unit_price: 0, amount: 0, sort_order: formItems.length }])}
-                      className="text-xs flex items-center space-x-1 text-blue-600 hover:text-blue-500 transition-colors"
+                      disabled={modalLoading}
+                      onClick={() => setFormItems([...formItems, { ...blankItem(), sort_order: formItems.length }])}
+                      className="text-xs flex items-center space-x-1 text-blue-600 hover:text-blue-500 transition-colors disabled:opacity-50"
                     >
                       <Plus className="h-3.5 w-3.5" />
                       <span>Add Item</span>
                     </button>
                   </div>
 
+                  {modalLoading ? (
+                    <div className="py-8 flex justify-center">
+                      <Spinner label="Loading items..." />
+                    </div>
+                  ) : (
                   <div className="space-y-3">
                     {formItems.map((item, index) => (
                       <div key={index} className="flex flex-wrap sm:flex-nowrap items-start gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
@@ -475,7 +520,7 @@ export default function PurchaseOrders() {
                             value={item.description}
                             onChange={(e) => {
                               const newItems = [...formItems];
-                              newItems[index].description = e.target.value;
+                              newItems[index] = { ...newItems[index], description: e.target.value };
                               setFormItems(newItems);
                             }}
                           />
@@ -488,11 +533,16 @@ export default function PurchaseOrders() {
                             step="0.01"
                             placeholder="Qty"
                             className="w-full form-input text-xs"
-                            value={item.quantity === 0 ? '' : item.quantity}
+                            value={item.quantity}
                             onChange={(e) => {
                               const newItems = [...formItems];
-                              newItems[index].quantity = parseFloat(e.target.value) || 0;
-                              newItems[index].amount = newItems[index].quantity * newItems[index].unit_price;
+                              const quantity = parseFloat(e.target.value) || 0;
+                              const unit_price = newItems[index].unit_price;
+                              newItems[index] = {
+                                ...newItems[index],
+                                quantity,
+                                amount: quantity * unit_price,
+                              };
                               setFormItems(newItems);
                             }}
                           />
@@ -505,11 +555,16 @@ export default function PurchaseOrders() {
                             step="0.01"
                             placeholder="Price"
                             className="w-full form-input text-xs"
-                            value={item.unit_price === 0 ? '' : item.unit_price}
+                            value={item.unit_price}
                             onChange={(e) => {
                               const newItems = [...formItems];
-                              newItems[index].unit_price = parseFloat(e.target.value) || 0;
-                              newItems[index].amount = newItems[index].quantity * newItems[index].unit_price;
+                              const unit_price = parseFloat(e.target.value) || 0;
+                              const quantity = newItems[index].quantity;
+                              newItems[index] = {
+                                ...newItems[index],
+                                unit_price,
+                                amount: quantity * unit_price,
+                              };
                               setFormItems(newItems);
                             }}
                           />
@@ -537,6 +592,7 @@ export default function PurchaseOrders() {
                       </div>
                     )}
                   </div>
+                  )}
                   
                   <div className="flex justify-end mt-4 pt-4 border-t border-slate-200">
                     <div className="text-right">
@@ -577,7 +633,7 @@ export default function PurchaseOrders() {
                 </button>
                 <button
                   type="submit"
-                  disabled={formSubmitting}
+                  disabled={formSubmitting || modalLoading}
                   className="px-4 py-2 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 rounded-lg text-sm font-semibold text-white shadow-lg shadow-sky-500/10 cursor-pointer disabled:opacity-50 transition-colors"
                 >
                   {formSubmitting ? 'Saving...' : 'Save PO'}

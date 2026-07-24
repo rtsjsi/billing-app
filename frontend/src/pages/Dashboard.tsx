@@ -158,72 +158,30 @@ export default function Dashboard() {
             No invoices yet. Create your first invoice to get started.
           </div>
         ) : (
-          <>
-            {/* Mobile list */}
-            <div className="md:hidden mobile-list">
-              {recentInvoices.map((inv) => (
-                <button
-                  key={inv.id}
-                  type="button"
-                  onClick={() => navigate(`/invoices/preview/${inv.id}`)}
-                  className="mobile-list-item w-full text-left"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="mobile-list-item-title font-mono">{inv.invoice_number}</p>
-                    <p className="mobile-list-item-subtitle">
-                      {inv.client_name} · {formatDate(inv.issue_date)}
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="mobile-list-item-amount">{formatCurrency(inv.total, inv.currency)}</p>
-                    <span className={`badge badge-${inv.status} mt-1`}>
-                      {inv.status === 'partially_paid' ? 'Part. Paid' : inv.status}
-                    </span>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-slate-300 shrink-0" />
-                </button>
-              ))}
-            </div>
-
-            {/* Desktop table */}
-            <table className="hidden md:table w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-100 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-50">
-                  <th className="px-5 py-3">Invoice</th>
-                  <th className="px-5 py-3">Client</th>
-                  <th className="px-5 py-3">Date</th>
-                  <th className="px-5 py-3 text-right">Amount</th>
-                  <th className="px-5 py-3 text-center">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {recentInvoices.map((inv) => (
-                  <tr
-                    key={inv.id}
-                    onClick={() => navigate(`/invoices/preview/${inv.id}`)}
-                    className="hover:bg-slate-50 transition-colors cursor-pointer text-sm"
-                  >
-                    <td className="px-5 py-3.5 font-mono font-medium text-slate-700">{inv.invoice_number}</td>
-                    <td className="px-5 py-3.5">
-                      <div className="font-medium text-slate-800">{inv.client_name}</div>
-                      {inv.client_company && (
-                        <div className="text-xs text-slate-400">{inv.client_company}</div>
-                      )}
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-400">{formatDate(inv.issue_date)}</td>
-                    <td className="px-5 py-3.5 text-right font-semibold text-slate-900">
-                      {formatCurrency(inv.total, inv.currency)}
-                    </td>
-                    <td className="px-5 py-3.5 text-center">
-                      <span className={`badge badge-${inv.status}`}>
-                        {inv.status === 'partially_paid' ? 'Part. Paid' : inv.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </>
+          <div className="mobile-list">
+            {recentInvoices.map((inv) => (
+              <button
+                key={inv.id}
+                type="button"
+                onClick={() => navigate(`/invoices/preview/${inv.id}`)}
+                className="mobile-list-item w-full text-left"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="mobile-list-item-title font-mono">{inv.invoice_number}</p>
+                  <p className="mobile-list-item-subtitle">
+                    {inv.client_name} · {formatDate(inv.issue_date)}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="mobile-list-item-amount">{formatCurrency(inv.total, inv.currency)}</p>
+                  <span className={`badge badge-${inv.status} mt-1`}>
+                    {inv.status === 'partially_paid' ? 'Part. Paid' : inv.status}
+                  </span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-slate-300 shrink-0 hidden md:block" />
+              </button>
+            ))}
+          </div>
         )}
       </div>
 
@@ -242,67 +200,32 @@ export default function Dashboard() {
             No active purchase orders. Record a PO to get started.
           </div>
         ) : (
-          <>
-            <div className="md:hidden mobile-list">
-              {openPOs.map((po) => (
-                <button
-                  key={po.id}
-                  type="button"
-                  onClick={() => navigate(`/clients/${po.client_id}`)}
-                  className="mobile-list-item w-full text-left"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="mobile-list-item-title font-mono">{po.po_number}</p>
-                    <p className="mobile-list-item-subtitle">
-                      {po.client_name} · {formatDate(po.po_date)}
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="mobile-list-item-amount">
-                      {po.amount ? formatCurrency(po.amount, po.currency) : '-'}
-                    </p>
-                    <span className={`badge badge-${po.status} mt-1`}>
-                      {po.status === 'partially_invoiced' ? 'Part. Invoiced' : po.status}
-                    </span>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-slate-300 shrink-0" />
-                </button>
-              ))}
-            </div>
-
-            <table className="hidden md:table w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-100 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-50">
-                  <th className="px-5 py-3">PO Number</th>
-                  <th className="px-5 py-3">Client</th>
-                  <th className="px-5 py-3">Date</th>
-                  <th className="px-5 py-3 text-right">Amount</th>
-                  <th className="px-5 py-3 text-center">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {openPOs.map((po) => (
-                  <tr
-                    key={po.id}
-                    onClick={() => navigate(`/clients/${po.client_id}`)}
-                    className="hover:bg-slate-50 transition-colors cursor-pointer text-sm"
-                  >
-                    <td className="px-5 py-3.5 font-mono font-medium text-slate-700">{po.po_number}</td>
-                    <td className="px-5 py-3.5 font-medium text-slate-800">{po.client_name}</td>
-                    <td className="px-5 py-3.5 text-slate-400">{formatDate(po.po_date)}</td>
-                    <td className="px-5 py-3.5 text-right font-semibold text-slate-900">
-                      {po.amount ? formatCurrency(po.amount, po.currency) : '-'}
-                    </td>
-                    <td className="px-5 py-3.5 text-center">
-                      <span className={`badge badge-${po.status}`}>
-                        {po.status === 'partially_invoiced' ? 'Part. Invoiced' : po.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </>
+          <div className="mobile-list">
+            {openPOs.map((po) => (
+              <button
+                key={po.id}
+                type="button"
+                onClick={() => navigate(`/clients/${po.client_id}`)}
+                className="mobile-list-item w-full text-left"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="mobile-list-item-title font-mono">{po.po_number}</p>
+                  <p className="mobile-list-item-subtitle">
+                    {po.client_name} · {formatDate(po.po_date)}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="mobile-list-item-amount">
+                    {po.amount ? formatCurrency(po.amount, po.currency) : '-'}
+                  </p>
+                  <span className={`badge badge-${po.status} mt-1`}>
+                    {po.status === 'partially_invoiced' ? 'Part. Invoiced' : po.status}
+                  </span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-slate-300 shrink-0 hidden md:block" />
+              </button>
+            ))}
+          </div>
         )}
       </div>
     </div>

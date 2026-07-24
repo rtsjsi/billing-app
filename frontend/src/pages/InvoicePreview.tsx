@@ -20,10 +20,12 @@ import { api, Invoice, InvoiceItem, Payment, BusinessSettings } from '../lib/api
 import { formatCurrency, formatDate } from '../lib/utils';
 import ConfirmModal from '../components/ConfirmModal';
 import RecordPaymentModal from '../components/RecordPaymentModal';
+import { useToast } from '../components/Toast';
 
 export default function InvoicePreview() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const toast = useToast();
   const invoiceId = id ? parseInt(id, 10) : NaN;
 
   const [invoice, setInvoice] = useState<Invoice | null>(null);
@@ -73,9 +75,10 @@ export default function InvoicePreview() {
   const handleUpdateStatus = async (status: string) => {
     try {
       await api.invoices.updateStatus(invoiceId, status);
+      toast.success('Invoice status updated');
       fetchData();
     } catch (err: any) {
-      alert(err.message || 'Failed to update status.');
+      toast.error(err.message || 'Failed to update status.');
     }
   };
 
@@ -88,9 +91,10 @@ export default function InvoicePreview() {
     try {
       await api.payments.delete(deletePaymentId);
       setDeletePaymentId(null);
+      toast.success('Payment deleted');
       fetchData();
     } catch (err: any) {
-      alert(err.message || 'Failed to delete payment.');
+      toast.error(err.message || 'Failed to delete payment.');
     }
   };
 
@@ -236,10 +240,18 @@ export default function InvoicePreview() {
               <p className="font-bold text-slate-900 text-base">{invoice.client_name}</p>
               {invoice.client_company && <p className="text-slate-700 font-medium mt-0.5">{invoice.client_company}</p>}
               
-              {/* Fetching details logic or display details */}
-              <p className="text-slate-500 text-xs mt-2 whitespace-pre-line leading-relaxed">
-                Billing address: {invoice.client_id ? 'Address details loaded in ledger' : '-'}
-              </p>
+              {/* Client billing details */}
+              {invoice.client_billing_address && (
+                <p className="text-slate-500 text-xs mt-2 whitespace-pre-line leading-relaxed">
+                  {invoice.client_billing_address}
+                </p>
+              )}
+              {invoice.client_gstin && (
+                <p className="text-slate-600 text-xs mt-1.5">
+                  <span className="font-semibold text-slate-700">GSTIN:</span>{' '}
+                  <span className="font-mono">{invoice.client_gstin}</span>
+                </p>
+              )}
             </div>
 
             <div className="space-y-4">
