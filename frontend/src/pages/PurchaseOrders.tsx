@@ -109,6 +109,16 @@ export default function PurchaseOrders() {
     fetchPOs();
   }, [selectedClient, selectedFY, filterStatus, filterClientId]);
 
+  // Lock body scroll while the edit/create modal is open
+  useEffect(() => {
+    if (!modalOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [modalOpen]);
+
   const openCreateModal = () => {
     setEditingPO(null);
     setFormClientId(clients[0]?.id.toString() || '');
@@ -125,24 +135,37 @@ export default function PurchaseOrders() {
   };
 
   const openEditModal = async (po: PurchaseOrder) => {
+    // Snapshot fields up front in case the list re-renders while loading
+    const poId = po.id;
     setEditingPO(po);
-    setFormClientId(po.client_id.toString());
+    setFormClientId(String(po.client_id));
     setFormPoNumber(po.po_number);
     setFormPoDate(po.po_date || '');
     setFormDescription(po.description || '');
-    setFormCurrency(po.currency);
+    setFormCurrency(po.currency || 'INR');
     setFormStatus(po.status);
     setFormItems([]);
     setModalLoading(true);
     setError('');
     setModalOpen(true);
+    setActiveDropdownId(null);
 
     try {
-      const details = await api.pos.get(po.id);
-      if (details.items && details.items.length > 0) {
-        setFormItems(normalizeItems(details.items));
+      const details = await api.pos.get(poId);
+      const items = details.items ?? [];
+      if (items.length > 0) {
+        setFormItems(normalizeItems(items));
       } else {
-        setFormItems([blankItem()]);
+        // Legacy POs without line items — seed one row from header amount
+        setFormItems([
+          {
+            description: po.description || po.po_number || 'Purchase Order',
+            quantity: 1,
+            unit_price: Number(po.amount) || 0,
+            amount: Number(po.amount) || 0,
+            sort_order: 0,
+          },
+        ]);
       }
     } catch (err: any) {
       console.error(err);
@@ -270,7 +293,7 @@ export default function PurchaseOrders() {
         </div>
       </div>
 
-      <div className="app-card overflow-hidden">
+      <div className="app-card overflow-visible">
         {loading ? (
           <div className="p-12 text-center">
             <div className="spinner mx-auto" />
@@ -403,22 +426,27 @@ export default function PurchaseOrders() {
 
       {/* Editor Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-4xl bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden">
-            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-200">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[210] flex items-center justify-center p-4">
+          <div className="w-full max-w-4xl bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-200 shrink-0">
               <h2 className="font-display font-semibold text-lg text-slate-900">
                 {editingPO ? 'Edit Purchase Order' : 'Record Purchase Order'}
               </h2>
               <button 
-                onClick={() => setModalOpen(false)} 
-                className="text-slate-400 hover:text-slate-900"
+                type="button"
+                onClick={() => {
+                  setModalOpen(false);
+                  setModalLoading(false);
+                }} 
+                className="text-slate-400 hover:text-slate-900 p-1 rounded-lg hover:bg-slate-100"
+                aria-label="Close"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <form onSubmit={handleFormSubmit}>
-              <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+            <form onSubmit={handleFormSubmit} className="flex flex-col min-h-0 flex-1">
+              <div className="p-6 space-y-4 overflow-y-auto flex-1">
                 {error && (
                   <div className="p-3 bg-red-100 border border-red-500/20 text-red-600 rounded-lg text-xs flex items-start space-x-2">
                     <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
@@ -623,10 +651,13 @@ export default function PurchaseOrders() {
 
               </div>
 
-              <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end space-x-3">
+              <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end space-x-3 shrink-0">
                 <button
                   type="button"
-                  onClick={() => setModalOpen(false)}
+                  onClick={() => {
+                    setModalOpen(false);
+                    setModalLoading(false);
+                  }}
                   className="px-4 py-2 border border-slate-200 hover:border-slate-300 bg-white rounded-lg text-sm font-semibold text-slate-700 transition-colors cursor-pointer"
                 >
                   Cancel
