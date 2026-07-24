@@ -16,6 +16,7 @@ import {
 import { api, Client, Invoice, PurchaseOrder } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { useFilters } from '../lib/FilterContext';
+import Spinner from '../components/Spinner';
 
 function getFYDateRange(fy: string) {
   if (!fy) return { start: undefined, end: undefined };
@@ -40,6 +41,7 @@ export default function ClientDetail() {
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { selectedFY } = useFilters();
 
   useEffect(() => {
     if (isNaN(clientId)) {
@@ -67,7 +69,7 @@ export default function ClientDetail() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent" />
+        <Spinner label="Loading client…" />
       </div>
     );
   }
@@ -90,7 +92,6 @@ export default function ClientDetail() {
   }
 
   // Calculate client specific aggregates (ignore cancelled invoices)
-  const { selectedFY } = useFilters();
   const fyRange = getFYDateRange(selectedFY);
 
   const filteredInvoices = selectedFY && fyRange.start && fyRange.end
@@ -192,7 +193,7 @@ export default function ClientDetail() {
             {client.notes && (
               <div className="pt-2 border-t border-slate-200">
                 <p className="text-[10px] text-slate-500 uppercase tracking-wider">Private Notes</p>
-                <p className="text-slate-400 text-xs mt-1 bg-slate-50 p-2.5 rounded border border-slate-850">{client.notes}</p>
+                <p className="text-slate-400 text-xs mt-1 bg-slate-50 p-2.5 rounded border border-slate-200">{client.notes}</p>
               </div>
             )}
           </div>

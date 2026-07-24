@@ -13,18 +13,18 @@ const app = new Hono<{ Bindings: { DB: D1Database }, Variables: { jwtPayload: { 
 
 const poItemSchema = z.object({
   description: z.string().min(1, 'Description is required'),
-  quantity: z.number().min(0.01, 'Quantity must be > 0'),
-  unit_price: z.number().min(0, 'Unit price cannot be negative'),
-  amount: z.number().min(0),
-  sort_order: z.number().default(0)
+  quantity: z.coerce.number().min(0.01, 'Quantity must be > 0'),
+  unit_price: z.coerce.number().min(0, 'Unit price cannot be negative'),
+  amount: z.coerce.number().min(0),
+  sort_order: z.coerce.number().default(0)
 });
 
 const poSchema = z.object({
-  client_id: z.number().int('Invalid client ID'),
+  client_id: z.coerce.number().int('Invalid client ID'),
   po_number: z.string().min(1, 'PO number is required'),
   po_date: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
-  amount: z.number().min(0).nullable().optional(),
+  amount: z.coerce.number().min(0).nullable().optional(),
   currency: z.string().default('INR'),
   status: z.enum(['open', 'partially_invoiced', 'fulfilled', 'cancelled']).default('open'),
   attachment_key: z.string().nullable().optional(),

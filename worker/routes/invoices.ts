@@ -181,6 +181,17 @@ app.get('/:id/pdf', async (c) => {
       y -= 12;
       drawText(invoice.client_company, 50, y, font, 9);
     }
+    if (invoice.client_billing_address) {
+      const addressLines = invoice.client_billing_address.split('\n').filter(Boolean);
+      for (const line of addressLines) {
+        y -= 12;
+        drawText(line, 50, y, font, 8, rgb(0.4, 0.4, 0.4));
+      }
+    }
+    if (invoice.client_gstin) {
+      y -= 12;
+      drawText(`GSTIN: ${invoice.client_gstin}`, 50, y, font, 8, rgb(0.3, 0.3, 0.3));
+    }
 
     y -= 30;
 

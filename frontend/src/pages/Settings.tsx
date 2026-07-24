@@ -9,8 +9,12 @@ import {
   AlertCircle 
 } from 'lucide-react';
 import { api, BusinessSettings } from '../lib/api';
+import PageHeader from '../components/PageHeader';
+import Spinner from '../components/Spinner';
+import { useToast } from '../components/Toast';
 
 export default function Settings() {
+  const toast = useToast();
   const [settings, setSettings] = useState<BusinessSettings | null>(null);
   
   // Profile Form States
@@ -131,9 +135,11 @@ export default function Settings() {
         default_terms: defaultTerms || null
       });
       setSettingsSuccess('Business profile and settings updated successfully!');
+      toast.success('Settings saved');
       fetchSettings();
     } catch (err: any) {
       setSettingsError(err.message || 'Failed to update settings profile.');
+      toast.error(err.message || 'Failed to update settings');
     } finally {
       setSettingsSaving(false);
     }
@@ -163,11 +169,13 @@ export default function Settings() {
         newPassword
       });
       setPasswordSuccess('Login password updated successfully!');
+      toast.success('Password updated');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (err: any) {
       setPasswordError(err.message || 'Failed to change login password.');
+      toast.error(err.message || 'Failed to change password');
     } finally {
       setPasswordSaving(false);
     }
@@ -181,18 +189,17 @@ export default function Settings() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent" />
+        <Spinner label="Loading settings…" />
       </div>
     );
   }
 
   return (
     <div className="space-y-8">
-      {/* Title */}
-      <div>
-        <h1 className="font-display font-bold text-3xl text-slate-900">Settings</h1>
-        <p className="text-slate-400 text-sm mt-1">Configure business letterheads, billing sequences, and export database files</p>
-      </div>
+      <PageHeader
+        title="Settings"
+        subtitle="Configure business letterheads, billing sequences, and export database files"
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
@@ -223,8 +230,9 @@ export default function Settings() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs text-slate-400 font-semibold mb-1.5 uppercase tracking-wider">Business / Trade Name *</label>
+                  <label htmlFor="settings-business-name" className="block text-xs text-slate-400 font-semibold mb-1.5 uppercase tracking-wider">Business / Trade Name *</label>
                   <input 
+                    id="settings-business-name"
                     type="text" 
                     required 
                     placeholder="e.g. Acme Studio"
@@ -464,9 +472,9 @@ export default function Settings() {
               <button
                 type="submit"
                 disabled={settingsSaving}
-                className="bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 text-white font-semibold py-2.5 px-6 rounded-lg flex items-center space-x-2 shadow-lg shadow-sky-500/10 cursor-pointer disabled:opacity-50 transition-colors"
+                className="btn-primary py-2.5 px-6"
               >
-                <Save className="h-4.5 w-4.5" />
+                <Save className="h-4 w-4" />
                 <span>{settingsSaving ? 'Saving Configurations...' : 'Save Settings'}</span>
               </button>
             </div>
@@ -480,7 +488,7 @@ export default function Settings() {
           {/* Change password */}
           <div className="glass-card p-6 rounded-2xl border-slate-200 space-y-5">
             <h2 className="font-display font-semibold text-base text-slate-900 flex items-center space-x-2">
-              <Key className="h-4.5 w-4.5 text-blue-600" />
+              <Key className="h-4 w-4 text-blue-600" />
               <span>Change Login Password</span>
             </h2>
 
@@ -498,8 +506,9 @@ export default function Settings() {
 
             <form onSubmit={handlePasswordSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs text-slate-400 font-medium mb-1.5">Current Password</label>
+                <label htmlFor="settings-current-password" className="block text-xs text-slate-400 font-medium mb-1.5">Current Password</label>
                 <input 
+                  id="settings-current-password"
                   type="password" 
                   required
                   placeholder="••••••••"
@@ -509,8 +518,9 @@ export default function Settings() {
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 font-medium mb-1.5">New Password</label>
+                <label htmlFor="settings-new-password" className="block text-xs text-slate-400 font-medium mb-1.5">New Password</label>
                 <input 
+                  id="settings-new-password"
                   type="password" 
                   required
                   placeholder="Min 6 characters"
@@ -520,8 +530,9 @@ export default function Settings() {
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 font-medium mb-1.5">Confirm New Password</label>
+                <label htmlFor="settings-confirm-password" className="block text-xs text-slate-400 font-medium mb-1.5">Confirm New Password</label>
                 <input 
+                  id="settings-confirm-password"
                   type="password" 
                   required
                   placeholder="Confirm password"
@@ -533,7 +544,7 @@ export default function Settings() {
               <button
                 type="submit"
                 disabled={passwordSaving}
-                className="w-full py-2 bg-slate-50 hover:bg-slate-750 border border-slate-750 text-slate-800 text-xs font-semibold rounded cursor-pointer transition-colors"
+                className="btn-secondary w-full py-2 text-xs"
               >
                 {passwordSaving ? 'Updating...' : 'Change Password'}
               </button>
@@ -543,7 +554,7 @@ export default function Settings() {
           {/* Backup exports box */}
           <div className="glass-card p-6 rounded-2xl border-slate-200 space-y-5">
             <h2 className="font-display font-semibold text-base text-slate-900 flex items-center space-x-2">
-              <Database className="h-4.5 w-4.5 text-indigo-600" />
+              <Database className="h-4 w-4 text-indigo-600" />
               <span>Offsite Data Backups</span>
             </h2>
             <p className="text-slate-400 text-xs leading-relaxed">

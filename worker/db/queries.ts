@@ -80,6 +80,8 @@ export interface Invoice {
   client_id: number;
   client_name?: string;
   client_company?: string;
+  client_billing_address?: string | null;
+  client_gstin?: string | null;
   po_id: number | null;
   po_number?: string;
   issue_date: string;
@@ -400,7 +402,18 @@ export async function createPO(db: D1Database, userId: number, po: Omit<Purchase
 
 export async function updatePO(db: D1Database, userId: number, id: number, po: Partial<Omit<PurchaseOrder, 'id' | 'user_id' | 'created_at' | 'updated_at'>>, items?: any[]): Promise<void> {
   const now = new Date().toISOString();
-  const keys = Object.keys(po).filter(k => k !== 'items');
+  const allowedKeys = new Set([
+    'client_id',
+    'po_number',
+    'po_date',
+    'description',
+    'amount',
+    'currency',
+    'status',
+    'attachment_key',
+    'notes',
+  ]);
+  const keys = Object.keys(po).filter((k) => allowedKeys.has(k));
   const stmts = [];
 
   if (keys.length > 0) {
@@ -453,6 +466,8 @@ const INVOICE_SELECT_FIELDS = `
   i.*, 
   c.name as client_name, 
   c.company_name as client_company,
+  c.billing_address as client_billing_address,
+  c.gstin as client_gstin,
   po.po_number as po_number,
   CASE 
     WHEN i.status NOT IN ('paid', 'cancelled') AND i.due_date < DATE('now') AND i.amount_paid < i.total THEN 'overdue' 

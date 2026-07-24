@@ -62,6 +62,8 @@ export interface Invoice {
   client_id: number;
   client_name?: string;
   client_company?: string;
+  client_billing_address?: string | null;
+  client_gstin?: string | null;
   po_id: number | null;
   po_number?: string;
   issue_date: string;

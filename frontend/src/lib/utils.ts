@@ -43,3 +43,25 @@ export function formatDate(dateString: string | null | undefined): string {
     return dateString;
   }
 }
+
+/** Debounce a callback; returns a cancellable debounced function. */
+export function debounce<T extends (...args: any[]) => void>(fn: T, delayMs: number) {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
+  const debounced = (...args: Parameters<T>) => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      timer = null;
+      fn(...args);
+    }, delayMs);
+  };
+
+  debounced.cancel = () => {
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+  };
+
+  return debounced;
+}
