@@ -64,6 +64,7 @@ export default function InvoiceEditorModal({
   const [inlinePhone, setInlinePhone] = useState('');
   const [inlineAddress, setInlineAddress] = useState('');
   const [inlineGstin, setInlineGstin] = useState('');
+  const [inlineTdsPercent, setInlineTdsPercent] = useState('0');
   const [inlineError, setInlineError] = useState('');
 
   // Modal states
@@ -323,6 +324,12 @@ export default function InvoiceEditorModal({
     }
 
     setInlineError('');
+    const tds = parseFloat(inlineTdsPercent);
+    if (Number.isNaN(tds) || tds < 0 || tds > 100) {
+      setInlineError('TDS % must be between 0 and 100.');
+      return;
+    }
+
     const payload = {
       name: inlineName,
       company_name: inlineCompany || null,
@@ -330,7 +337,8 @@ export default function InvoiceEditorModal({
       phone: inlinePhone || null,
       billing_address: inlineAddress || null,
       gstin: inlineGstin || null,
-      notes: null
+      notes: null,
+      tds_percent: tds,
     };
 
     try {
@@ -346,6 +354,7 @@ export default function InvoiceEditorModal({
       setInlinePhone('');
       setInlineAddress('');
       setInlineGstin('');
+      setInlineTdsPercent('0');
     } catch (err: any) {
       setInlineError(err.message || 'Failed to create client.');
     }
@@ -713,15 +722,30 @@ export default function InvoiceEditorModal({
                     onChange={(e) => setInlineAddress(e.target.value)}
                   />
                 </div>
-                <div>
-                  <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">India GSTIN / Tax ID</label>
-                  <input
-                    type="text"
-                    placeholder="27AAAAA1111A1Z1"
-                    className="w-full form-input text-sm font-mono uppercase"
-                    value={inlineGstin}
-                    onChange={(e) => setInlineGstin(e.target.value)}
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">India GSTIN / Tax ID</label>
+                    <input
+                      type="text"
+                      placeholder="27AAAAA1111A1Z1"
+                      className="w-full form-input text-sm font-mono uppercase"
+                      value={inlineGstin}
+                      onChange={(e) => setInlineGstin(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">TDS %</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step="0.01"
+                      placeholder="e.g. 10"
+                      className="w-full form-input text-sm font-mono"
+                      value={inlineTdsPercent}
+                      onChange={(e) => setInlineTdsPercent(e.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
               <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end space-x-3">

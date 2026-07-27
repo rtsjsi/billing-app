@@ -191,6 +191,13 @@ export default function ClientDetail() {
               </div>
             )}
 
+            <div className="pt-2 border-t border-slate-200">
+              <p className="text-[10px] text-slate-500 uppercase tracking-wider">TDS Rate</p>
+              <p className="font-mono text-sm text-slate-800 mt-0.5">
+                {(client.tds_percent ?? 0) > 0 ? `${client.tds_percent}%` : 'None'}
+              </p>
+            </div>
+
             {client.notes && (
               <div className="pt-2 border-t border-slate-200">
                 <p className="text-[10px] text-slate-500 uppercase tracking-wider">Private Notes</p>

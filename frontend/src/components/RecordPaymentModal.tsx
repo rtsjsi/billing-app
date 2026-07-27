@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { DollarSign, X, Check } from 'lucide-react';
 import { api, Invoice } from '../lib/api';
 
@@ -9,6 +9,16 @@ interface RecordPaymentModalProps {
   onSuccess: () => void;
 }
 
+type AmountMode = 'net' | 'gross';
+
+function roundMoney(n: number) {
+  return Math.round(n * 100) / 100;
+}
+
+function formatMoney(currency: string, n: number) {
+  return `${currency} ${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 export default function RecordPaymentModal({ isOpen, invoice, onClose, onSuccess }: RecordPaymentModalProps) {
   const [payAmount, setPayAmount] = useState('');
   const [payDate, setPayDate] = useState('');
@@ -16,39 +26,84 @@ export default function RecordPaymentModal({ isOpen, invoice, onClose, onSuccess
   const [payRef, setPayRef] = useState('');
   const [payNotes, setPayNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [tdsPercent, setTdsPercent] = useState(0);
+  const [amountMode, setAmountMode] = useState<AmountMode>('net');
 
   useEffect(() => {
     if (!isOpen || !invoice) return;
 
+    let cancelled = false;
+
     const remaining = invoice.total - invoice.amount_paid;
-    setPayAmount(remaining > 0 ? remaining.toFixed(2) : '0.00');
     setPayDate(new Date().toISOString().split('T')[0]);
     setPayMethod('bank_transfer');
     setPayRef('');
     setPayNotes('');
+    setAmountMode('net');
+    setTdsPercent(0);
+    setPayAmount(remaining > 0 ? remaining.toFixed(2) : '0.00');
+
+    (async () => {
+      try {
+        const detail = await api.clients.get(invoice.client_id);
+        if (cancelled) return;
+        const rate = detail.client.tds_percent ?? 0;
+        setTdsPercent(rate);
+        if (rate > 0 && remaining > 0) {
+          setAmountMode('net');
+          setPayAmount(roundMoney(remaining * (1 - rate / 100)).toFixed(2));
+        }
+      } catch {
+        // Client TDS is optional helper; payment still works without it.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen, invoice]);
+
+  const remainingDue = invoice ? invoice.total - invoice.amount_paid : 0;
+  const entered = parseFloat(payAmount) || 0;
+
+  const breakdown = useMemo(() => {
+    if (tdsPercent <= 0 || entered <= 0) {
+      return { bank: entered, tds: 0, credit: entered };
+    }
+    if (amountMode === 'net') {
+      const credit = roundMoney(entered / (1 - tdsPercent / 100));
+      const tds = roundMoney(credit - entered);
+      return { bank: roundMoney(entered), tds, credit };
+    }
+    const tds = roundMoney(entered * (tdsPercent / 100));
+    const bank = roundMoney(entered - tds);
+    return { bank, tds, credit: roundMoney(entered) };
+  }, [amountMode, entered, tdsPercent]);
 
   if (!isOpen || !invoice) return null;
 
-  const remainingDue = invoice.total - invoice.amount_paid;
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const parsedAmount = parseFloat(payAmount) || 0;
-    if (parsedAmount <= 0) {
+    if (breakdown.credit <= 0) {
       alert('Please enter a positive payment amount.');
       return;
     }
+
+    const tdsNote =
+      tdsPercent > 0 && breakdown.tds > 0
+        ? `Bank ${formatMoney(invoice.currency, breakdown.bank)}; TDS ${breakdown.tds.toFixed(2)} @ ${tdsPercent}%`
+        : '';
+    const notes = [payNotes.trim(), tdsNote].filter(Boolean).join(' | ') || null;
 
     setSubmitting(true);
     try {
       await api.payments.record({
         invoice_id: invoice.id,
-        amount: parsedAmount,
+        amount: breakdown.credit,
         payment_date: payDate,
         method: payMethod,
         reference: payRef || null,
-        notes: payNotes || null,
+        notes,
       });
       onClose();
       onSuccess();
@@ -75,18 +130,65 @@ export default function RecordPaymentModal({ isOpen, invoice, onClose, onSuccess
         <form onSubmit={handleSubmit}>
           <div className="p-6 space-y-4">
             <div className="p-3 bg-emerald-100 border border-emerald-500/20 text-emerald-600 rounded-lg text-xs flex items-center space-x-2">
-              <Check className="h-4 w-4" />
+              <Check className="h-4 w-4 shrink-0" />
               <span>
                 Remaining Outstanding Balance:{' '}
-                <b>
-                  {invoice.currency} {remainingDue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </b>
+                <b>{formatMoney(invoice.currency, remainingDue)}</b>
               </span>
             </div>
 
+            {tdsPercent > 0 && (
+              <div className="space-y-3">
+                <div className="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                  Client TDS rate: <b className="font-mono">{tdsPercent}%</b>
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">
+                    Amount entered is
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAmountMode('net');
+                        if (remainingDue > 0) {
+                          setPayAmount(roundMoney(remainingDue * (1 - tdsPercent / 100)).toFixed(2));
+                        }
+                      }}
+                      className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-colors ${
+                        amountMode === 'net'
+                          ? 'bg-emerald-50 border-emerald-400 text-emerald-700'
+                          : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                      }`}
+                    >
+                      Net received (bank)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAmountMode('gross');
+                        if (remainingDue > 0) {
+                          setPayAmount(remainingDue.toFixed(2));
+                        }
+                      }}
+                      className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-colors ${
+                        amountMode === 'gross'
+                          ? 'bg-emerald-50 border-emerald-400 text-emerald-700'
+                          : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                      }`}
+                    >
+                      Gross (invoice credit)
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">
-                Payment Amount ({invoice.currency}) *
+                {tdsPercent > 0 && amountMode === 'net'
+                  ? `Net received in bank (${invoice.currency}) *`
+                  : `Payment Amount (${invoice.currency}) *`}
               </label>
               <input
                 type="number"
@@ -97,6 +199,23 @@ export default function RecordPaymentModal({ isOpen, invoice, onClose, onSuccess
                 onChange={(e) => setPayAmount(e.target.value)}
               />
             </div>
+
+            {tdsPercent > 0 && entered > 0 && (
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-600 space-y-1">
+                <div className="flex justify-between gap-3">
+                  <span>Bank received</span>
+                  <span className="font-mono">{formatMoney(invoice.currency, breakdown.bank)}</span>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <span>TDS @ {tdsPercent}%</span>
+                  <span className="font-mono">{formatMoney(invoice.currency, breakdown.tds)}</span>
+                </div>
+                <div className="flex justify-between gap-3 pt-1 border-t border-slate-200 font-semibold text-slate-800">
+                  <span>Invoice credit</span>
+                  <span className="font-mono">{formatMoney(invoice.currency, breakdown.credit)}</span>
+                </div>
+              </div>
+            )}
 
             <div>
               <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">

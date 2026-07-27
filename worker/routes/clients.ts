@@ -20,7 +20,8 @@ const clientSchema = z.object({
   phone: z.string().nullable().optional(),
   billing_address: z.string().nullable().optional(),
   gstin: z.string().nullable().optional(),
-  notes: z.string().nullable().optional()
+  notes: z.string().nullable().optional(),
+  tds_percent: z.number().min(0).max(100).optional(),
 });
 
 // List clients
@@ -77,7 +78,8 @@ app.post('/', async (c) => {
       phone: parsed.data.phone ?? null,
       billing_address: parsed.data.billing_address ?? null,
       gstin: parsed.data.gstin ?? null,
-      notes: parsed.data.notes ?? null
+      notes: parsed.data.notes ?? null,
+      tds_percent: parsed.data.tds_percent ?? 0,
     });
     const newClient = await getClientById(c.env.DB, userId, clientId);
     return c.json({ message: 'Client created successfully', client: newClient }, 201);

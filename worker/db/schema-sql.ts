@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS clients (
   billing_address TEXT,
   gstin TEXT,
   notes TEXT,
+  tds_percent REAL NOT NULL DEFAULT 0,
   is_archived INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL

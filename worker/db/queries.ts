@@ -50,6 +50,7 @@ export interface Client {
   billing_address: string | null;
   gstin: string | null;
   notes: string | null;
+  tds_percent: number;
   is_archived: number;
   created_at: string;
   updated_at: string;
@@ -263,8 +264,8 @@ export async function createClient(db: D1Database, userId: number, client: Omit<
   const now = new Date().toISOString();
   const result = await db
     .prepare(
-      `INSERT INTO clients (user_id, name, company_name, email, phone, billing_address, gstin, notes, is_archived, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`
+      `INSERT INTO clients (user_id, name, company_name, email, phone, billing_address, gstin, notes, tds_percent, is_archived, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`
     )
     .bind(
       userId,
@@ -275,6 +276,7 @@ export async function createClient(db: D1Database, userId: number, client: Omit<
       client.billing_address || null,
       client.gstin || null,
       client.notes || null,
+      client.tds_percent ?? 0,
       now,
       now
     )

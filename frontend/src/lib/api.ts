@@ -13,6 +13,7 @@ export interface Client {
   billing_address: string | null;
   gstin: string | null;
   notes: string | null;
+  tds_percent: number;
   is_archived: number;
   created_at: string;
   updated_at: string;

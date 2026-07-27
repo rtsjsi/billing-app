@@ -45,6 +45,7 @@ export default function Clients() {
   const [formPhone, setFormPhone] = useState('');
   const [formAddress, setFormAddress] = useState('');
   const [formGstin, setFormGstin] = useState('');
+  const [formTdsPercent, setFormTdsPercent] = useState('0');
   const [formNotes, setFormNotes] = useState('');
   const [formSubmitting, setFormSubmitting] = useState(false);
 
@@ -71,6 +72,7 @@ export default function Clients() {
     setFormPhone('');
     setFormAddress('');
     setFormGstin('');
+    setFormTdsPercent('0');
     setFormNotes('');
     setError('');
     setModalOpen(true);
@@ -84,6 +86,7 @@ export default function Clients() {
     setFormPhone(client.phone || '');
     setFormAddress(client.billing_address || '');
     setFormGstin(client.gstin || '');
+    setFormTdsPercent(String(client.tds_percent ?? 0));
     setFormNotes(client.notes || '');
     setError('');
     setModalOpen(true);
@@ -99,6 +102,12 @@ export default function Clients() {
     setFormSubmitting(true);
     setError('');
     
+    const tds = parseFloat(formTdsPercent);
+    if (Number.isNaN(tds) || tds < 0 || tds > 100) {
+      setError('TDS % must be between 0 and 100.');
+      return;
+    }
+
     const payload = {
       name: formName,
       company_name: formCompany || null,
@@ -106,7 +115,8 @@ export default function Clients() {
       phone: formPhone || null,
       billing_address: formAddress || null,
       gstin: formGstin || null,
-      notes: formNotes || null
+      notes: formNotes || null,
+      tds_percent: tds,
     };
 
     try {
@@ -257,14 +267,17 @@ export default function Clients() {
                         </div>
                       )}
                     </td>
-                    <td data-label="Tax Details" className="px-6 py-4">
+                    <td data-label="Tax Details" className="px-6 py-4 space-y-1">
                       {client.gstin ? (
-                        <span className="font-mono text-xs bg-slate-50 px-2 py-1 rounded text-slate-700 border border-slate-300">
+                        <div className="font-mono text-xs bg-slate-50 px-2 py-1 rounded text-slate-700 border border-slate-300 inline-block">
                           GSTIN: {client.gstin}
-                        </span>
+                        </div>
                       ) : (
-                        <span className="text-slate-500 text-xs">-</span>
+                        <div className="text-slate-500 text-xs">No GSTIN</div>
                       )}
+                      <div className="text-xs text-slate-600">
+                        TDS: {(client.tds_percent ?? 0) > 0 ? `${client.tds_percent}%` : '—'}
+                      </div>
                     </td>
                     <td data-label="Status" className="px-6 py-4">
                       {client.is_archived === 1 ? (
@@ -366,9 +379,25 @@ export default function Clients() {
             <label className="block text-xs font-semibold text-slate-500 mb-1.5">Billing Address</label>
             <textarea placeholder="Physical address..." rows={3} className="form-input text-sm resize-none" value={formAddress} onChange={(e) => setFormAddress(e.target.value)} />
           </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">GSTIN / Tax ID</label>
-            <input type="text" placeholder="27AAAAA1111A1Z1" className="form-input text-sm font-mono uppercase" value={formGstin} onChange={(e) => setFormGstin(e.target.value)} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1.5">GSTIN / Tax ID</label>
+              <input type="text" placeholder="27AAAAA1111A1Z1" className="form-input text-sm font-mono uppercase" value={formGstin} onChange={(e) => setFormGstin(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1.5">TDS %</label>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step="0.01"
+                placeholder="e.g. 10"
+                className="form-input text-sm font-mono"
+                value={formTdsPercent}
+                onChange={(e) => setFormTdsPercent(e.target.value)}
+              />
+              <p className="mt-1 text-[11px] text-slate-400">Deducted by client on payment (e.g. 10 for 10%)</p>
+            </div>
           </div>
           <div>
             <label className="block text-xs font-semibold text-slate-500 mb-1.5">Private Notes</label>
