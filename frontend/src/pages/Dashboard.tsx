@@ -9,12 +9,17 @@ import {
   FileText,
   Plus,
   Wallet,
+  X,
 } from 'lucide-react';
 import { api, DashboardData } from '../lib/api';
 import { formatCurrency } from '../lib/utils';
+import { useFilters } from '../lib/FilterContext';
 import PageHeader from '../components/PageHeader';
 
 export default function Dashboard() {
+  const { availableYears, clients } = useFilters();
+  const [filterFY, setFilterFY] = useState('');
+  const [filterClientId, setFilterClientId] = useState('');
   const [data, setData] = useState<DashboardData | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState('');
@@ -22,8 +27,12 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const res = await api.dashboard.getStats();
+        const res = await api.dashboard.getStats(
+          filterFY || undefined,
+          filterClientId || undefined
+        );
         setData(res);
+        setError('');
       } catch (err: any) {
         setError(err.message || 'Failed to fetch dashboard data.');
       } finally {
@@ -31,7 +40,7 @@ export default function Dashboard() {
       }
     };
     fetchDashboard();
-  }, []);
+  }, [filterFY, filterClientId]);
 
   if (initialLoading) {
     return (
@@ -41,7 +50,7 @@ export default function Dashboard() {
     );
   }
 
-  if (error) {
+  if (error && !data) {
     return (
       <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm">
         {error}
@@ -56,6 +65,7 @@ export default function Dashboard() {
   const confirmedPO = stats?.totalPOAmount ?? 0;
   const invoiced = stats?.totalInvoiceAmount ?? 0;
   const pending = stats?.invoicePendingAmount ?? 0;
+  const hasFilters = Boolean(filterFY || filterClientId);
 
   const pipeline = [
     {
@@ -119,6 +129,54 @@ export default function Dashboard() {
           New PO
         </Link>
       </div>
+
+      <div className="app-card p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 mb-1.5">Financial Year</label>
+          <select
+            className="form-input text-sm py-2 min-h-0"
+            value={filterFY}
+            onChange={(e) => setFilterFY(e.target.value)}
+          >
+            <option value="">All Years</option>
+            {availableYears.map((fy) => (
+              <option key={fy} value={fy}>FY {fy}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 mb-1.5">Client</label>
+          <div className="flex gap-2">
+            <select
+              className="form-input text-sm py-2 min-h-0"
+              value={filterClientId}
+              onChange={(e) => setFilterClientId(e.target.value)}
+            >
+              <option value="">All Clients</option>
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            {hasFilters && (
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterFY('');
+                  setFilterClientId('');
+                }}
+                className="shrink-0 px-2 text-xs text-red-600 hover:text-red-700 font-semibold"
+                title="Clear filters"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm">{error}</div>
+      )}
 
       {overdueCount > 0 && (
         <Link
