@@ -310,6 +310,7 @@ export default function ClientDetail() {
                 <thead>
                   <tr className="border-b border-slate-200 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-50">
                     <th className="px-6 py-3">PO Number</th>
+                    <th className="px-6 py-3">Description</th>
                     <th className="px-6 py-3">PO Date</th>
                     <th className="px-6 py-3 text-right">PO Amount</th>
                     <th className="px-6 py-3 text-right">Outstanding</th>
@@ -320,6 +321,13 @@ export default function ClientDetail() {
                   {filteredPOs.map((po) => (
                     <tr key={po.id} className="hover:bg-slate-50/10 transition-all">
                       <td data-label="PO Number" className="px-6 py-4 font-mono font-medium text-slate-700">{po.po_number}</td>
+                      <td data-label="Description" className="px-6 py-4 text-slate-600 max-w-xs">
+                        {po.description ? (
+                          <span className="line-clamp-2">{po.description}</span>
+                        ) : (
+                          <span className="text-slate-400">-</span>
+                        )}
+                      </td>
                       <td data-label="PO Date" className="px-6 py-4 text-slate-400">{formatDate(po.po_date)}</td>
                       <td data-label="PO Amount" className="px-6 py-4 text-right font-medium text-slate-900">
                         {po.amount != null ? formatCurrency(po.amount, po.currency) : '-'}
