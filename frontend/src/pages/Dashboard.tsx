@@ -221,7 +221,7 @@ export default function Dashboard() {
                   <p className="text-[11px] text-slate-500 mt-0.5">
                     Outstanding:{' '}
                     <span className="font-medium text-amber-600">
-                      {formatCurrency(getPOOutstanding(po.amount, po.invoiced_amount), po.currency)}
+                      {formatCurrency(getPOOutstanding(po.confirmed_amount ?? po.amount, po.invoiced_amount), po.currency)}
                     </span>
                   </p>
                   <span className={`badge badge-${po.status} mt-1`}>

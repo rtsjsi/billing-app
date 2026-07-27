@@ -16,7 +16,11 @@ const poItemSchema = z.object({
   quantity: z.coerce.number().min(0.01, 'Quantity must be > 0'),
   unit_price: z.coerce.number().min(0, 'Unit price cannot be negative'),
   amount: z.coerce.number().min(0),
-  sort_order: z.coerce.number().default(0)
+  sort_order: z.coerce.number().default(0),
+  work_confirmed: z
+    .union([z.boolean(), z.number(), z.string()])
+    .optional()
+    .transform((v) => (v === true || v === 1 || v === '1' || v === 'true' ? 1 : 0)),
 });
 
 const poSchema = z.object({

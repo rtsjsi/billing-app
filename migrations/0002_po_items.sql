@@ -5,6 +5,7 @@ CREATE TABLE purchase_order_items (
   quantity REAL NOT NULL DEFAULT 1,
   unit_price REAL NOT NULL DEFAULT 0,
   amount REAL NOT NULL DEFAULT 0,
-  sort_order INTEGER NOT NULL DEFAULT 0
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  work_confirmed INTEGER NOT NULL DEFAULT 1
 );
 CREATE INDEX idx_items_po ON purchase_order_items(po_id);

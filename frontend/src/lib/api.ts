@@ -26,6 +26,8 @@ export interface PurchaseOrderItem {
   unit_price: number;
   amount: number;
   sort_order: number;
+  /** When true, line counts toward dashboard / outstanding calcs. */
+  work_confirmed?: boolean | number;
 }
 
 export interface PurchaseOrder {
@@ -43,6 +45,8 @@ export interface PurchaseOrder {
   created_at: string;
   updated_at: string;
   invoiced_amount?: number;
+  /** Sum of line amounts where work_confirmed = 1 */
+  confirmed_amount?: number;
   items?: PurchaseOrderItem[];
 }
 

@@ -66,6 +66,7 @@ export default function PurchaseOrders() {
     unit_price: 0,
     amount: 0,
     sort_order: 0,
+    work_confirmed: false,
   });
 
   const normalizeItems = (items: PurchaseOrderItem[]): PurchaseOrderItem[] =>
@@ -78,6 +79,7 @@ export default function PurchaseOrders() {
         unit_price,
         amount: Number(item.amount) || quantity * unit_price,
         sort_order: item.sort_order ?? index,
+        work_confirmed: Boolean(Number(item.work_confirmed ?? 0)),
       };
     });
 
@@ -164,6 +166,7 @@ export default function PurchaseOrders() {
             unit_price: Number(po.amount) || 0,
             amount: Number(po.amount) || 0,
             sort_order: 0,
+            work_confirmed: true,
           },
         ]);
       }
@@ -213,6 +216,7 @@ export default function PurchaseOrders() {
         unit_price: Number(item.unit_price) || 0,
         amount: Number(item.amount) || 0,
         sort_order: index,
+        work_confirmed: Boolean(item.work_confirmed),
       })),
     };
 
@@ -335,7 +339,7 @@ export default function PurchaseOrders() {
                       {po.amount != null ? formatCurrency(po.amount, po.currency) : '-'}
                     </td>
                     <td data-label="Outstanding" className="px-6 py-4 text-right font-medium text-amber-600">
-                      {formatCurrency(getPOOutstanding(po.amount, po.invoiced_amount), po.currency)}
+                      {formatCurrency(getPOOutstanding(po.confirmed_amount ?? po.amount, po.invoiced_amount), po.currency)}
                     </td>
                     <td data-label="Status" className="px-6 py-4 text-center">
                       <span className={`badge badge-${po.status}`}>
@@ -493,80 +497,96 @@ export default function PurchaseOrders() {
                   ) : (
                   <div className="space-y-3">
                     {formItems.map((item, index) => (
-                      <div key={index} className="flex flex-wrap sm:flex-nowrap items-start gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
-                        <div className="w-full sm:flex-1">
-                          <input
-                            type="text"
-                            required
-                            placeholder="Description"
-                            className="w-full form-input text-xs"
-                            value={item.description}
-                            onChange={(e) => {
-                              const newItems = [...formItems];
-                              newItems[index] = { ...newItems[index], description: e.target.value };
-                              setFormItems(newItems);
-                            }}
-                          />
-                        </div>
-                        <div className="w-24 shrink-0">
-                          <input
-                            type="number"
-                            required
-                            min="0.01"
-                            step="0.01"
-                            placeholder="Qty"
-                            className="w-full form-input text-xs"
-                            value={item.quantity}
-                            onChange={(e) => {
-                              const newItems = [...formItems];
-                              const quantity = parseFloat(e.target.value) || 0;
-                              const unit_price = newItems[index].unit_price;
-                              newItems[index] = {
-                                ...newItems[index],
-                                quantity,
-                                amount: quantity * unit_price,
-                              };
-                              setFormItems(newItems);
-                            }}
-                          />
-                        </div>
-                        <div className="w-32 shrink-0">
-                          <input
-                            type="number"
-                            required
-                            min="0"
-                            step="0.01"
-                            placeholder="Price"
-                            className="w-full form-input text-xs"
-                            value={item.unit_price}
-                            onChange={(e) => {
-                              const newItems = [...formItems];
-                              const unit_price = parseFloat(e.target.value) || 0;
-                              const quantity = newItems[index].quantity;
-                              newItems[index] = {
-                                ...newItems[index],
-                                unit_price,
-                                amount: quantity * unit_price,
-                              };
-                              setFormItems(newItems);
-                            }}
-                          />
-                        </div>
-                        <div className="w-32 shrink-0">
-                          <div className="w-full form-input text-xs bg-white text-slate-400 flex items-center">
-                            {formatCurrency(item.amount, formCurrency)}
+                      <div key={index} className="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-2">
+                        <div className="flex flex-wrap sm:flex-nowrap items-start gap-3">
+                          <div className="w-full sm:flex-1">
+                            <input
+                              type="text"
+                              required
+                              placeholder="Description"
+                              className="w-full form-input text-xs"
+                              value={item.description}
+                              onChange={(e) => {
+                                const newItems = [...formItems];
+                                newItems[index] = { ...newItems[index], description: e.target.value };
+                                setFormItems(newItems);
+                              }}
+                            />
                           </div>
+                          <div className="w-24 shrink-0">
+                            <input
+                              type="number"
+                              required
+                              min="0.01"
+                              step="0.01"
+                              placeholder="Qty"
+                              className="w-full form-input text-xs"
+                              value={item.quantity}
+                              onChange={(e) => {
+                                const newItems = [...formItems];
+                                const quantity = parseFloat(e.target.value) || 0;
+                                const unit_price = newItems[index].unit_price;
+                                newItems[index] = {
+                                  ...newItems[index],
+                                  quantity,
+                                  amount: quantity * unit_price,
+                                };
+                                setFormItems(newItems);
+                              }}
+                            />
+                          </div>
+                          <div className="w-32 shrink-0">
+                            <input
+                              type="number"
+                              required
+                              min="0"
+                              step="0.01"
+                              placeholder="Price"
+                              className="w-full form-input text-xs"
+                              value={item.unit_price}
+                              onChange={(e) => {
+                                const newItems = [...formItems];
+                                const unit_price = parseFloat(e.target.value) || 0;
+                                const quantity = newItems[index].quantity;
+                                newItems[index] = {
+                                  ...newItems[index],
+                                  unit_price,
+                                  amount: quantity * unit_price,
+                                };
+                                setFormItems(newItems);
+                              }}
+                            />
+                          </div>
+                          <div className="w-32 shrink-0">
+                            <div className="w-full form-input text-xs bg-white text-slate-400 flex items-center">
+                              {formatCurrency(item.amount, formCurrency)}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newItems = formItems.filter((_, i) => i !== index);
+                              setFormItems(newItems);
+                            }}
+                            className="shrink-0 p-2 text-slate-500 hover:text-red-600 hover:bg-red-100 rounded-lg transition-colors mt-0.5 sm:mt-0"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newItems = formItems.filter((_, i) => i !== index);
-                            setFormItems(newItems);
-                          }}
-                          className="shrink-0 p-2 text-slate-500 hover:text-red-600 hover:bg-red-100 rounded-lg transition-colors mt-0.5 sm:mt-0"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        <label className="inline-flex items-center gap-2 text-xs text-slate-600 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                            checked={Boolean(item.work_confirmed)}
+                            onChange={(e) => {
+                              const newItems = [...formItems];
+                              newItems[index] = { ...newItems[index], work_confirmed: e.target.checked };
+                              setFormItems(newItems);
+                            }}
+                          />
+                          <span>Work confirmed</span>
+                          <span className="text-slate-400">(counts toward dashboard totals)</span>
+                        </label>
                       </div>
                     ))}
                     {formItems.length === 0 && (
@@ -585,13 +605,26 @@ export default function PurchaseOrders() {
                           {formatCurrency(formItems.reduce((sum, item) => sum + item.amount, 0), formCurrency)}
                         </div>
                       </div>
+                      <div>
+                        <div className="text-xs text-slate-500 mb-1 uppercase tracking-wider font-semibold">Confirmed</div>
+                        <div className="text-lg font-mono font-semibold text-emerald-600">
+                          {formatCurrency(
+                            formItems
+                              .filter((item) => item.work_confirmed)
+                              .reduce((sum, item) => sum + item.amount, 0),
+                            formCurrency
+                          )}
+                        </div>
+                      </div>
                       {editingPO && (
                         <div>
                           <div className="text-xs text-slate-500 mb-1 uppercase tracking-wider font-semibold">Outstanding</div>
                           <div className="text-lg font-mono font-semibold text-amber-600">
                             {formatCurrency(
                               getPOOutstanding(
-                                formItems.reduce((sum, item) => sum + item.amount, 0),
+                                formItems
+                                  .filter((item) => item.work_confirmed)
+                                  .reduce((sum, item) => sum + item.amount, 0),
                                 editingPO.invoiced_amount
                               ),
                               formCurrency

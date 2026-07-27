@@ -148,17 +148,28 @@ export default function InvoiceEditor() {
       try {
         const fullPo = await api.pos.get(parseInt(selectedPoId, 10));
         if (fullPo.items && fullPo.items.length > 0) {
-          setItems(fullPo.items.map(item => ({
-            description: item.description,
-            quantity: item.quantity,
-            unit_price: item.unit_price,
-            amount: item.amount
-          })));
+          const confirmedItems = fullPo.items.filter((item) => Boolean(Number(item.work_confirmed)));
+          if (confirmedItems.length > 0) {
+            setItems(confirmedItems.map(item => ({
+              description: item.description,
+              quantity: item.quantity,
+              unit_price: item.unit_price,
+              amount: item.amount
+            })));
+          } else {
+            setItems([{
+              description: fullPo.description || `Invoice against ${fullPo.po_number}`,
+              quantity: 1,
+              unit_price: 0,
+              amount: 0
+            }]);
+          }
         } else {
           // fallback if old PO with no items
           const po = clientPOs.find(p => p.id.toString() === selectedPoId);
           if (po) {
-            const remaining = po.amount ? Math.max(0, po.amount - (po.invoiced_amount || 0)) : 0;
+            const base = po.confirmed_amount ?? po.amount;
+            const remaining = base ? Math.max(0, base - (po.invoiced_amount || 0)) : 0;
             setItems([{
               description: po.description || `Invoice against ${po.po_number}`,
               quantity: 1,

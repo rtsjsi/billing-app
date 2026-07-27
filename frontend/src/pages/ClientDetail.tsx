@@ -333,7 +333,7 @@ export default function ClientDetail() {
                         {po.amount != null ? formatCurrency(po.amount, po.currency) : '-'}
                       </td>
                       <td data-label="Outstanding" className="px-6 py-4 text-right font-medium text-amber-600">
-                        {formatCurrency(getPOOutstanding(po.amount, po.invoiced_amount), po.currency)}
+                        {formatCurrency(getPOOutstanding(po.confirmed_amount ?? po.amount, po.invoiced_amount), po.currency)}
                       </td>
                       <td data-label="Status" className="px-6 py-4 text-center">
                         <span className={`badge badge-${po.status}`}>

@@ -71,6 +71,7 @@ export interface PurchaseOrder {
   created_at: string;
   updated_at: string;
   invoiced_amount?: number;
+  confirmed_amount?: number;
 }
 
 export interface Invoice {
@@ -314,7 +315,8 @@ export async function deleteClient(db: D1Database, userId: number, id: number): 
 export async function listPOs(db: D1Database, userId: number, clientId?: number, status?: string): Promise<PurchaseOrder[]> {
   let query = `
     SELECT po.*, c.name as client_name,
-           (SELECT COALESCE(SUM(total), 0) FROM invoices WHERE po_id = po.id AND status != 'cancelled') as invoiced_amount
+           (SELECT COALESCE(SUM(total), 0) FROM invoices WHERE po_id = po.id AND status != 'cancelled') as invoiced_amount,
+           (SELECT COALESCE(SUM(amount), 0) FROM purchase_order_items WHERE po_id = po.id AND work_confirmed = 1) as confirmed_amount
     FROM purchase_orders po
     JOIN clients c ON po.client_id = c.id
     WHERE po.user_id = ?
@@ -338,7 +340,8 @@ export async function listPOs(db: D1Database, userId: number, clientId?: number,
 export async function getPOById(db: D1Database, userId: number, id: number): Promise<PurchaseOrder | null> {
   return await db.prepare(`
     SELECT po.*, c.name as client_name,
-           (SELECT COALESCE(SUM(total), 0) FROM invoices WHERE po_id = po.id AND status != 'cancelled') as invoiced_amount
+           (SELECT COALESCE(SUM(total), 0) FROM invoices WHERE po_id = po.id AND status != 'cancelled') as invoiced_amount,
+           (SELECT COALESCE(SUM(amount), 0) FROM purchase_order_items WHERE po_id = po.id AND work_confirmed = 1) as confirmed_amount
     FROM purchase_orders po
     JOIN clients c ON po.client_id = c.id
     WHERE po.user_id = ? AND po.id = ?
@@ -383,15 +386,16 @@ export async function createPO(db: D1Database, userId: number, po: Omit<Purchase
   if (items && items.length > 0) {
     const itemStmts = items.map((item, index) => {
       return db.prepare(`
-        INSERT INTO purchase_order_items (po_id, description, quantity, unit_price, amount, sort_order)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO purchase_order_items (po_id, description, quantity, unit_price, amount, sort_order, work_confirmed)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `).bind(
         poId,
         item.description,
         item.quantity,
         item.unit_price,
         item.amount,
-        item.sort_order ?? index
+        item.sort_order ?? index,
+        item.work_confirmed ? 1 : 0
       );
     });
     await db.batch(itemStmts);
@@ -427,15 +431,16 @@ export async function updatePO(db: D1Database, userId: number, id: number, po: P
     stmts.push(db.prepare('DELETE FROM purchase_order_items WHERE po_id = ?').bind(id));
     items.forEach((item, index) => {
       stmts.push(db.prepare(`
-        INSERT INTO purchase_order_items (po_id, description, quantity, unit_price, amount, sort_order)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO purchase_order_items (po_id, description, quantity, unit_price, amount, sort_order, work_confirmed)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `).bind(
         id,
         item.description,
         item.quantity,
         item.unit_price,
         item.amount,
-        item.sort_order ?? index
+        item.sort_order ?? index,
+        item.work_confirmed ? 1 : 0
       ));
     });
   }
@@ -859,9 +864,9 @@ export async function updatePOStatusFromInvoices(db: D1Database, userId: number,
   if (!po || po.status === 'cancelled') return;
 
   const invoicedAmount = await getPOInvoicedAmount(db, userId, poId);
-  const poAmount = po.amount || 0;
+  const poAmount = po.confirmed_amount ?? po.amount ?? 0;
 
-  // Fully invoiced → closed; otherwise remain open (no partial status)
+  // Fully invoiced against confirmed work → closed; otherwise remain open
   let newStatus: PurchaseOrder['status'] = 'open';
   if (invoicedAmount >= poAmount && poAmount > 0) {
     newStatus = 'closed';
@@ -962,20 +967,25 @@ export async function getDashboardStats(
     .bind(...invoiceParams)
     .first<{ count: number | null }>();
 
-  // Build PO WHERE filters
-  let poWhere = "status != 'cancelled' AND user_id = ?";
+  // Build PO WHERE filters (applied on purchase_orders alias `po`)
+  let poWhere = "po.status != 'cancelled' AND po.user_id = ?";
   const poParams: any[] = [userId];
   if (clientId) {
-    poWhere += " AND client_id = ?";
+    poWhere += " AND po.client_id = ?";
     poParams.push(clientId);
   }
   if (fyStart && fyEnd) {
-    poWhere += " AND po_date >= ? AND po_date <= ?";
+    poWhere += " AND po.po_date >= ? AND po.po_date <= ?";
     poParams.push(fyStart, fyEnd);
   }
 
-  // 5. Total PO Amount
-  const poSql = "SELECT SUM(amount) as total_po FROM purchase_orders WHERE " + poWhere;
+  // 5. Total PO Amount — only work-confirmed line items
+  const poSql = `
+    SELECT COALESCE(SUM(poi.amount), 0) as total_po
+    FROM purchase_order_items poi
+    JOIN purchase_orders po ON poi.po_id = po.id
+    WHERE poi.work_confirmed = 1 AND ${poWhere}
+  `;
   const totalPORes = await db
     .prepare(poSql)
     .bind(...poParams)
@@ -1049,7 +1059,8 @@ export async function getRecentActivity(
   const { results: openPOs } = await db
     .prepare(`
       SELECT po.*, c.name as client_name,
-             (SELECT COALESCE(SUM(total), 0) FROM invoices WHERE po_id = po.id AND status != 'cancelled') as invoiced_amount
+             (SELECT COALESCE(SUM(total), 0) FROM invoices WHERE po_id = po.id AND status != 'cancelled') as invoiced_amount,
+             (SELECT COALESCE(SUM(amount), 0) FROM purchase_order_items WHERE po_id = po.id AND work_confirmed = 1) as confirmed_amount
       FROM purchase_orders po
       JOIN clients c ON po.client_id = c.id
       ${poWhere}
