@@ -104,7 +104,7 @@ export default function Dashboard() {
                 <Plus className="h-4 w-4" />
                 New PO
               </Link>
-              <Link to="/invoices/new" className="btn-primary">
+              <Link to="/invoices?new=1" className="btn-primary">
                 <Plus className="h-4 w-4" />
                 Create Invoice
               </Link>
@@ -115,7 +115,7 @@ export default function Dashboard() {
 
       {/* Mobile quick actions */}
       <div className="flex gap-2 md:hidden">
-        <Link to="/invoices/new" className="btn-primary flex-1">
+        <Link to="/invoices?new=1" className="btn-primary flex-1">
           <Plus className="h-4 w-4" />
           Create Invoice
         </Link>

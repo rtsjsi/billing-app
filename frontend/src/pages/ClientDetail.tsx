@@ -143,7 +143,7 @@ export default function ClientDetail() {
             <span>Add PO</span>
           </Link>
           <Link
-            to={`/invoices/new?client_id=${client.id}`}
+            to={`/invoices?new=1&client_id=${client.id}`}
             className="flex items-center space-x-1.5 px-4 py-2 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 rounded-lg text-sm font-medium text-white shadow-lg shadow-sky-500/10 transition-all cursor-pointer"
           >
             <Plus className="h-4 w-4" />

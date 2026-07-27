@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   Plus, 
   Download, 
@@ -14,12 +14,13 @@ import {
 import ActionMenu, { ActionMenuItem } from '../components/ActionMenu';
 import ConfirmModal from '../components/ConfirmModal';
 import RecordPaymentModal from '../components/RecordPaymentModal';
-import { api, Invoice, Client, InvoiceItem, BusinessSettings } from '../lib/api';
+import { api, Invoice } from '../lib/api';
 import { formatDate } from '../lib/utils';
 import { useFilters } from '../lib/FilterContext';
 import PageHeader from '../components/PageHeader';
 import InvoiceAmounts from '../components/InvoiceAmounts';
 import { useToast } from '../components/Toast';
+import InvoiceEditorModal from './InvoiceEditor';
 
 function getFYDateRange(fy: string) {
   if (!fy) return { start: undefined, end: undefined };
@@ -45,6 +46,11 @@ export default function Invoices() {
   const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<number | null>(null);
   const [deleteInvoiceId, setDeleteInvoiceId] = useState<number | null>(null);
   const [paymentInvoice, setPaymentInvoice] = useState<Invoice | null>(null);
+
+  // Invoice editor modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingInvoiceId, setEditingInvoiceId] = useState<number | null>(null);
+  const [modalClientId, setModalClientId] = useState<string>('');
 
   // Filters
   const [filterStatus, setFilterStatus] = useState('');
@@ -89,6 +95,27 @@ export default function Invoices() {
     fetchInvoices();
   }, [filterStatus, filterClientId, filterPoId, filterStartDate, filterEndDate, page, selectedFY, selectedClient]);
 
+  // Open modal when URL contains ?new=1 or ?edit=<id>
+  useEffect(() => {
+    const newInvoice = searchParams.get('new');
+    const editId = searchParams.get('edit');
+    const clientIdParam = searchParams.get('client_id');
+
+    if (newInvoice === '1') {
+      setModalClientId(clientIdParam || '');
+      setEditingInvoiceId(null);
+      setModalOpen(true);
+      navigate('/invoices', { replace: true });
+    } else if (editId) {
+      const numId = parseInt(editId, 10);
+      if (!isNaN(numId)) {
+        setEditingInvoiceId(numId);
+        setModalOpen(true);
+        navigate('/invoices', { replace: true });
+      }
+    }
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleClearFilters = () => {
     setFilterStatus('');
     setFilterClientId('');
@@ -130,7 +157,10 @@ export default function Invoices() {
       {
         label: 'Edit Invoice',
         icon: <Edit2 className="h-4 w-4" />,
-        onClick: () => navigate(`/invoices/edit/${inv.id}`),
+        onClick: () => {
+          setEditingInvoiceId(inv.id);
+          setModalOpen(true);
+        },
       },
     ];
 
@@ -176,19 +206,25 @@ export default function Invoices() {
                 <Download className="h-4 w-4" />
                 <span className="hidden sm:inline">Export CSV</span>
               </button>
-              <Link to="/invoices/new" className="btn-primary">
+              <button
+                onClick={() => { setEditingInvoiceId(null); setModalClientId(''); setModalOpen(true); }}
+                className="btn-primary"
+              >
                 <Plus className="h-4 w-4" />
                 Create Invoice
-              </Link>
+              </button>
             </>
           }
         />
       </div>
 
-      <Link to="/invoices/new" className="md:hidden btn-primary w-full">
+      <button
+        onClick={() => { setEditingInvoiceId(null); setModalClientId(''); setModalOpen(true); }}
+        className="md:hidden btn-primary w-full"
+      >
         <Plus className="h-4 w-4" />
         Create Invoice
-      </Link>
+      </button>
 
       <div className="app-card p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         <div>
@@ -383,6 +419,14 @@ export default function Invoices() {
         confirmText="Delete"
         onConfirm={performDelete}
         onCancel={() => setDeleteInvoiceId(null)}
+      />
+
+      <InvoiceEditorModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        editingInvoiceId={editingInvoiceId}
+        initialClientId={modalClientId || null}
+        onSaved={fetchInvoices}
       />
     </div>
   );

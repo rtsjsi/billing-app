@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { api } from './lib/api';
 import { FilterProvider } from './lib/FilterContext';
 import { ToastProvider } from './components/Toast';
@@ -11,11 +11,21 @@ import Clients from './pages/Clients';
 import ClientDetail from './pages/ClientDetail';
 import PurchaseOrders from './pages/PurchaseOrders';
 import Invoices from './pages/Invoices';
-import InvoiceEditor from './pages/InvoiceEditor';
 import InvoicePreview from './pages/InvoicePreview';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import Setup from './pages/Setup';
+
+function InvoiceNewRedirect() {
+  const [searchParams] = useSearchParams();
+  const existing = searchParams.toString();
+  return <Navigate to={`/invoices?new=1${existing ? `&${existing}` : ''}`} replace />;
+}
+
+function InvoiceEditRedirect() {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={`/invoices?edit=${id}`} replace />;
+}
 
 interface UserSession {
   username: string;
@@ -138,8 +148,8 @@ export default function App() {
             <Route path="/clients/:id" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
             <Route path="/purchase-orders" element={<ProtectedRoute><PurchaseOrders /></ProtectedRoute>} />
             <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
-            <Route path="/invoices/new" element={<ProtectedRoute><InvoiceEditor /></ProtectedRoute>} />
-            <Route path="/invoices/edit/:id" element={<ProtectedRoute><InvoiceEditor /></ProtectedRoute>} />
+            <Route path="/invoices/new" element={<InvoiceNewRedirect />} />
+            <Route path="/invoices/edit/:id" element={<InvoiceEditRedirect />} />
             <Route path="/invoices/preview/:id" element={<ProtectedRoute><InvoicePreview /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
 

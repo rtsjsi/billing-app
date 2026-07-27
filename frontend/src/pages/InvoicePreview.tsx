@@ -174,7 +174,7 @@ export default function InvoicePreview() {
               </button>
             )}
             <Link
-              to={`/invoices/edit/${invoice.id}`}
+              to={`/invoices?edit=${invoice.id}`}
               className="btn-secondary min-h-0 py-2 px-3 text-xs"
             >
               <FileEdit className="h-3.5 w-3.5" />
