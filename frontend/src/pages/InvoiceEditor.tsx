@@ -5,7 +5,6 @@ import {
   Trash2,
   AlertCircle,
   Save,
-  UserPlus,
   X
 } from 'lucide-react';
 import { api, Client, PurchaseOrder, BusinessSettings } from '../lib/api';
@@ -56,17 +55,6 @@ export default function InvoiceEditorModal({
     { description: '', quantity: 1, unit_price: 0, amount: 0 }
   ]);
 
-  // Inline client creation
-  const [inlineClientOpen, setInlineClientOpen] = useState(false);
-  const [inlineName, setInlineName] = useState('');
-  const [inlineCompany, setInlineCompany] = useState('');
-  const [inlineEmail, setInlineEmail] = useState('');
-  const [inlinePhone, setInlinePhone] = useState('');
-  const [inlineAddress, setInlineAddress] = useState('');
-  const [inlineGstin, setInlineGstin] = useState('');
-  const [inlineTdsPercent, setInlineTdsPercent] = useState('0');
-  const [inlineError, setInlineError] = useState('');
-
   // Modal states
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -94,7 +82,6 @@ export default function InvoiceEditorModal({
     const initializeModal = async () => {
       setLoading(true);
       setError('');
-      setInlineClientOpen(false);
 
       try {
         const [settingsRes, clientsRes] = await Promise.all([
@@ -316,50 +303,6 @@ export default function InvoiceEditorModal({
     }
   };
 
-  const handleCreateInlineClient = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inlineName.trim()) {
-      setInlineError('Client name is required.');
-      return;
-    }
-
-    setInlineError('');
-    const tds = parseFloat(inlineTdsPercent);
-    if (Number.isNaN(tds) || tds < 0 || tds > 100) {
-      setInlineError('TDS % must be between 0 and 100.');
-      return;
-    }
-
-    const payload = {
-      name: inlineName,
-      company_name: inlineCompany || null,
-      email: inlineEmail || null,
-      phone: inlinePhone || null,
-      billing_address: inlineAddress || null,
-      gstin: inlineGstin || null,
-      notes: null,
-      tds_percent: tds,
-    };
-
-    try {
-      const res = await api.clients.create(payload);
-      const updatedClients = await api.clients.list('', false);
-      setClients(updatedClients);
-      setClientId(res.client.id.toString());
-      setInlineClientOpen(false);
-
-      setInlineName('');
-      setInlineCompany('');
-      setInlineEmail('');
-      setInlinePhone('');
-      setInlineAddress('');
-      setInlineGstin('');
-      setInlineTdsPercent('0');
-    } catch (err: any) {
-      setInlineError(err.message || 'Failed to create client.');
-    }
-  };
-
   if (!isOpen) return null;
 
   return (
@@ -403,17 +346,7 @@ export default function InvoiceEditorModal({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
                 <div className="lg:col-span-4">
-                  <div className="flex justify-between items-center">
-                    <label className="block text-[10px] text-slate-400 font-medium uppercase tracking-wider">Client *</label>
-                    <button
-                      type="button"
-                      onClick={() => setInlineClientOpen(true)}
-                      className="text-[10px] text-blue-600 hover:text-blue-500 font-medium flex items-center gap-1"
-                    >
-                      <UserPlus className="h-3 w-3" />
-                      New
-                    </button>
-                  </div>
+                  <label className="block text-[10px] text-slate-400 font-medium uppercase tracking-wider">Client *</label>
                   <select
                     required
                     className="w-full form-input"
@@ -649,124 +582,6 @@ export default function InvoiceEditorModal({
           </div>
         </div>
       </div>
-
-      {/* Inline Client Creator — raised above outer modal */}
-      {inlineClientOpen && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[220] flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden">
-            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-200">
-              <h2 className="font-display font-semibold text-slate-900 flex items-center space-x-1.5">
-                <UserPlus className="h-5 w-5 text-blue-600" />
-                <span>Quick Client Creation</span>
-              </h2>
-              <button onClick={() => setInlineClientOpen(false)} className="text-slate-400 hover:text-slate-900">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateInlineClient}>
-              <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
-                {inlineError && (
-                  <div className="p-3 bg-red-100 border border-red-500/20 text-red-600 rounded-lg text-xs">
-                    {inlineError}
-                  </div>
-                )}
-                <div>
-                  <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">Client Name *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Tesla India"
-                    className="w-full form-input text-sm"
-                    value={inlineName}
-                    onChange={(e) => setInlineName(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">Company Name</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Tesla Motors Ltd"
-                    className="w-full form-input text-sm"
-                    value={inlineCompany}
-                    onChange={(e) => setInlineCompany(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">Email</label>
-                  <input
-                    type="email"
-                    placeholder="finance@tesla.com"
-                    className="w-full form-input text-sm"
-                    value={inlineEmail}
-                    onChange={(e) => setInlineEmail(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">Phone</label>
-                  <input
-                    type="text"
-                    placeholder="+91 99999 88888"
-                    className="w-full form-input text-sm"
-                    value={inlinePhone}
-                    onChange={(e) => setInlinePhone(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">Billing Address</label>
-                  <textarea
-                    placeholder="Client's invoice address..."
-                    rows={2}
-                    className="w-full form-input text-xs resize-none"
-                    value={inlineAddress}
-                    onChange={(e) => setInlineAddress(e.target.value)}
-                  />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">India GSTIN / Tax ID</label>
-                    <input
-                      type="text"
-                      placeholder="27AAAAA1111A1Z1"
-                      className="w-full form-input text-sm font-mono uppercase"
-                      value={inlineGstin}
-                      onChange={(e) => setInlineGstin(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">TDS %</label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={100}
-                      step="0.01"
-                      placeholder="e.g. 10"
-                      className="w-full form-input text-sm font-mono"
-                      value={inlineTdsPercent}
-                      onChange={(e) => setInlineTdsPercent(e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => setInlineClientOpen(false)}
-                  className="px-4 py-2 border border-slate-200 hover:border-slate-300 bg-white rounded-lg text-sm font-semibold text-slate-700 transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 rounded-lg text-sm font-semibold text-white cursor-pointer shadow-lg shadow-sky-500/10"
-                >
-                  Create Client
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
