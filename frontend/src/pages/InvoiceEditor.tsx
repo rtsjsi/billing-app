@@ -344,9 +344,9 @@ export default function InvoiceEditor() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3 form-dense">
       {/* Back + desktop title */}
-      <div className="space-y-1">
+      <div className="space-y-0.5">
         <Link
           to="/invoices"
           className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 transition-colors"
@@ -354,31 +354,31 @@ export default function InvoiceEditor() {
           <ArrowLeft className="h-4 w-4" />
           <span>Back to Invoices</span>
         </Link>
-        <div className="hidden md:block pt-1">
+        <div className="hidden md:block pt-0.5">
           <h1 className="page-title">{isEdit ? 'Edit Invoice' : 'Create Invoice'}</h1>
-          <p className="page-subtitle">
+          <p className="page-subtitle mt-0">
             {isEdit ? 'Modify billing details' : 'Fill in details to generate a new invoice'}
           </p>
         </div>
       </div>
 
       {error && (
-        <div className="p-4 bg-red-100 border border-red-500/20 rounded-xl flex items-start space-x-3 text-red-600 text-sm">
+        <div className="p-3 bg-red-100 border border-red-500/20 rounded-xl flex items-start space-x-3 text-red-600 text-sm">
           <AlertCircle className="h-5 w-5 shrink-0 text-red-600 mt-0.5" />
           <span>{error}</span>
         </div>
       )}
 
       {/* Main Form Box */}
-      <div className="glass-card rounded-2xl border-slate-200 p-6 md:p-8 space-y-8">
+      <div className="glass-card rounded-2xl border-slate-200 p-4 md:p-5 space-y-4">
         
         {/* Core fields (Client, PO, dates) */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
           
           {/* Client picker & Shortcut */}
-          <div className="md:col-span-2">
-            <div className="flex justify-between items-center mb-1.5">
-              <label className="block text-xs text-slate-400 font-semibold uppercase tracking-wider">Client *</label>
+          <div className="sm:col-span-2 lg:col-span-2">
+            <div className="flex justify-between items-center mb-0.5">
+              <label className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Client *</label>
               <button
                 type="button"
                 onClick={() => setInlineClientOpen(true)}
@@ -390,7 +390,7 @@ export default function InvoiceEditor() {
             </div>
             <select
               required
-              className="w-full form-input text-sm"
+              className="w-full form-input"
               value={clientId}
               onChange={(e) => setClientId(e.target.value)}
             >
@@ -402,10 +402,10 @@ export default function InvoiceEditor() {
           </div>
 
           {/* PO Picker */}
-          <div>
-            <label className="block text-xs text-slate-400 font-semibold uppercase tracking-wider mb-1.5">Link PO (Optional)</label>
+          <div className="lg:col-span-2">
+            <label className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Link PO (Optional)</label>
             <select
-              className="w-full form-input text-sm"
+              className="w-full form-input"
               value={poId}
               onChange={(e) => handlePoChange(e.target.value)}
               disabled={!clientId}
@@ -416,15 +416,15 @@ export default function InvoiceEditor() {
               ))}
             </select>
             {!clientId && (
-              <span className="text-[10px] text-slate-500 mt-1 block">Pick client first to load POs</span>
+              <span className="text-[10px] text-slate-500 mt-0.5 block">Pick client first to load POs</span>
             )}
           </div>
 
           {/* Currency selection */}
           <div>
-            <label className="block text-xs text-slate-400 font-semibold uppercase tracking-wider mb-1.5">Currency</label>
+            <label className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Currency</label>
             <select
-              className="w-full form-input text-sm"
+              className="w-full form-input"
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
             >
@@ -438,22 +438,22 @@ export default function InvoiceEditor() {
 
           {/* Dates */}
           <div>
-            <label className="block text-xs text-slate-400 font-semibold uppercase tracking-wider mb-1.5">Issue Date *</label>
+            <label className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Issue Date *</label>
             <input 
               type="date"
               required
-              className="w-full form-input text-sm"
+              className="w-full form-input"
               value={issueDate}
               onChange={(e) => handleIssueDateChange(e.target.value)}
             />
           </div>
 
           <div>
-            <label className="block text-xs text-slate-400 font-semibold uppercase tracking-wider mb-1.5">Due Date *</label>
+            <label className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Due Date *</label>
             <input 
               type="date"
               required
-              className="w-full form-input text-sm"
+              className="w-full form-input"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
             />
@@ -461,13 +461,13 @@ export default function InvoiceEditor() {
         </div>
 
         {/* Line Items */}
-        <div className="space-y-3">
-          <h3 className="section-title">Line Items</h3>
+        <div className="space-y-2">
+          <h3 className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Line Items</h3>
 
           {/* Mobile: card layout */}
-          <div className="md:hidden space-y-3">
+          <div className="md:hidden space-y-2">
             {items.map((item, index) => (
-              <div key={index} className="line-item-card space-y-3">
+              <div key={index} className="line-item-card space-y-2 !p-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-400">Item {index + 1}</span>
                   <button
@@ -532,52 +532,52 @@ export default function InvoiceEditor() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-200">
-                  <th className="py-2 pr-4 w-3/5">Item Description *</th>
-                  <th className="py-2 px-4 text-right">Qty</th>
-                  <th className="py-2 px-4 text-right">Unit Price</th>
-                  <th className="py-2 pl-4 text-right">Amount</th>
-                  <th className="py-2 w-10"></th>
+                  <th className="py-1.5 pr-3 w-3/5">Item Description *</th>
+                  <th className="py-1.5 px-3 text-right">Qty</th>
+                  <th className="py-1.5 px-3 text-right">Unit Price</th>
+                  <th className="py-1.5 pl-3 text-right">Amount</th>
+                  <th className="py-1.5 w-8"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {items.map((item, index) => (
-                  <tr key={index} className="align-top">
-                    <td className="py-3 pr-4">
+                  <tr key={index} className="align-middle">
+                    <td className="py-1.5 pr-3">
                       <input
                         type="text"
                         required
                         placeholder="e.g. Consulting Services"
-                        className="w-full form-input text-sm"
+                        className="w-full form-input"
                         value={item.description}
                         onChange={(e) => handleItemFieldChange(index, 'description', e.target.value)}
                       />
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-1.5 px-3">
                       <input
                         type="number"
                         required
                         step="any"
                         placeholder="1"
-                        className="w-full form-input text-sm text-right"
+                        className="w-full form-input text-right"
                         value={item.quantity === 0 ? '' : item.quantity}
                         onChange={(e) => handleItemFieldChange(index, 'quantity', e.target.value)}
                       />
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-1.5 px-3">
                       <input
                         type="number"
                         required
                         step="0.01"
                         placeholder="0.00"
-                        className="w-full form-input text-sm text-right font-mono"
+                        className="w-full form-input text-right font-mono"
                         value={item.unit_price === 0 ? '' : item.unit_price}
                         onChange={(e) => handleItemFieldChange(index, 'unit_price', e.target.value)}
                       />
                     </td>
-                    <td className="py-3 pl-4 text-right align-middle font-mono font-medium text-slate-900 text-sm">
+                    <td className="py-1.5 pl-3 text-right align-middle font-mono font-medium text-slate-900 text-sm">
                       {item.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    <td className="py-3 text-right align-middle">
+                    <td className="py-1.5 text-right align-middle">
                       <button
                         type="button"
                         onClick={() => removeLineItem(index)}
@@ -597,19 +597,19 @@ export default function InvoiceEditor() {
           <button
             type="button"
             onClick={addLineItem}
-            className="btn-secondary w-full md:w-auto border-dashed"
+            className="btn-secondary w-full md:w-auto border-dashed !min-h-9 py-1.5 text-xs"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-3.5 w-3.5" />
             Add Line Item
           </button>
         </div>
 
         {/* Aggregates Calculations & Terms */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-slate-200">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-slate-200">
           {/* Notes / Terms */}
-          <div className="space-y-4">
+          <div className="space-y-2.5">
             <div>
-              <label className="block text-xs text-slate-400 font-semibold uppercase tracking-wider mb-1.5">Payment Terms</label>
+              <label className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Payment Terms</label>
               <textarea
                 placeholder="Details of payment terms..."
                 rows={2}
@@ -619,10 +619,10 @@ export default function InvoiceEditor() {
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 font-semibold uppercase tracking-wider mb-1.5">Notes to Client</label>
+              <label className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Notes to Client</label>
               <textarea
                 placeholder="Bank coordinates or UPI details..."
-                rows={3}
+                rows={2}
                 className="w-full form-input text-xs resize-none"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
@@ -631,7 +631,7 @@ export default function InvoiceEditor() {
           </div>
 
           {/* Live Totals summary */}
-          <div className="bg-slate-100/40 border border-slate-200 rounded-xl p-5 space-y-4 max-w-md ml-auto w-full">
+          <div className="bg-slate-100/40 border border-slate-200 rounded-xl p-3 space-y-2 max-w-md ml-auto w-full">
             <div className="flex justify-between items-center text-sm">
               <span className="text-slate-400">Subtotal:</span>
               <span className="font-mono text-slate-800">{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
@@ -674,9 +674,9 @@ export default function InvoiceEditor() {
             </div>
 
             {/* Grand Total */}
-            <div className="border-t border-slate-200 pt-4 flex justify-between items-center">
+            <div className="border-t border-slate-200 pt-2 flex justify-between items-center">
               <span className="font-display font-semibold text-slate-900">Grand Total</span>
-              <span className="font-display font-bold text-xl text-brand-600 bg-brand-50 px-3 py-1.5 rounded-xl">
+              <span className="font-display font-bold text-lg text-brand-600 bg-brand-50 px-2.5 py-1 rounded-lg">
                 {currency} {total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </span>
             </div>
@@ -684,8 +684,8 @@ export default function InvoiceEditor() {
         </div>
 
         {/* Form Action Controls */}
-        <div className="pt-5 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          <Link to="/invoices" className="btn-secondary text-center">
+        <div className="pt-3 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2">
+          <Link to="/invoices" className="btn-secondary text-center !min-h-9 py-1.5">
             Discard
           </Link>
           <div className="flex flex-col sm:flex-row gap-2">
@@ -693,7 +693,7 @@ export default function InvoiceEditor() {
               type="button"
               disabled={submitting}
               onClick={() => handleSubmit('draft')}
-              className="btn-secondary"
+              className="btn-secondary !min-h-9 py-1.5"
             >
               {submitting ? 'Saving...' : 'Save as Draft'}
             </button>
@@ -701,7 +701,7 @@ export default function InvoiceEditor() {
               type="button"
               disabled={submitting}
               onClick={() => handleSubmit('sent')}
-              className="btn-primary"
+              className="btn-primary !min-h-9 py-1.5"
             >
               <Save className="h-4 w-4" />
               <span>{isEdit ? 'Update & Finalize' : 'Create & Mark Sent'}</span>

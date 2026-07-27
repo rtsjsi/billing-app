@@ -16,6 +16,7 @@ import { useFilters } from '../lib/FilterContext';
 import PageHeader from '../components/PageHeader';
 import { useToast } from '../components/Toast';
 import Spinner from '../components/Spinner';
+import POAmounts from '../components/POAmounts';
 
 function getFYDateRange(fy: string) {
   if (!fy) return { start: undefined, end: undefined };
@@ -335,20 +336,12 @@ export default function PurchaseOrders() {
                     </td>
                     <td data-label="PO Date" className="px-6 py-4 text-slate-400">{formatDate(po.po_date)}</td>
                     <td data-label="Amounts" className="px-6 py-4 text-right">
-                      <div className="space-y-0.5 tabular-nums">
-                        <div className="font-medium text-slate-800">
-                          <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mr-1.5">PO</span>
-                          {po.amount != null ? formatCurrency(po.amount, po.currency) : '-'}
-                        </div>
-                        <div className="text-xs text-emerald-600">
-                          <span className="text-[10px] font-semibold uppercase tracking-wide text-emerald-500/80 mr-1.5">Confirmed</span>
-                          {formatCurrency(po.confirmed_amount ?? 0, po.currency)}
-                        </div>
-                        <div className="text-xs text-amber-600">
-                          <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-500/80 mr-1.5">Outstanding</span>
-                          {formatCurrency(getPOOutstanding(po.confirmed_amount ?? po.amount, po.invoiced_amount), po.currency)}
-                        </div>
-                      </div>
+                      <POAmounts
+                        amount={po.amount}
+                        confirmedAmount={po.confirmed_amount}
+                        invoicedAmount={po.invoiced_amount}
+                        currency={po.currency}
+                      />
                     </td>
                     <td data-label="Status" className="px-6 py-4 text-center">
                       <span className={`badge badge-${po.status}`}>
@@ -394,10 +387,10 @@ export default function PurchaseOrders() {
 
       {/* Editor Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[210] flex items-center justify-center p-4">
-          <div className="w-full max-w-4xl bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
-            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-200 shrink-0">
-              <h2 className="font-display font-semibold text-lg text-slate-900">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[210] flex items-start md:items-center justify-center p-2 sm:p-4 overflow-y-auto">
+          <div className="w-full max-w-6xl bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden max-h-[96vh] my-2 md:my-0 flex flex-col form-dense">
+            <div className="flex justify-between items-center px-4 py-2.5 border-b border-slate-200 shrink-0">
+              <h2 className="font-display font-semibold text-base text-slate-900">
                 {editingPO ? 'Edit Purchase Order' : 'Record Purchase Order'}
               </h2>
               <button 
@@ -414,80 +407,98 @@ export default function PurchaseOrders() {
             </div>
 
             <form onSubmit={handleFormSubmit} className="flex flex-col min-h-0 flex-1">
-              <div className="p-6 space-y-4 overflow-y-auto flex-1">
+              <div className="p-4 space-y-3 overflow-y-auto flex-1">
                 {error && (
-                  <div className="p-3 bg-red-100 border border-red-500/20 text-red-600 rounded-lg text-xs flex items-start space-x-2">
+                  <div className="p-2.5 bg-red-100 border border-red-500/20 text-red-600 rounded-lg text-xs flex items-start space-x-2">
                     <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                     <span>{error}</span>
                   </div>
                 )}
 
-                <div>
-                  <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">Client *</label>
-                  <select
-                    required
-                    className="w-full form-input text-sm"
-                    value={formClientId}
-                    onChange={(e) => setFormClientId(e.target.value)}
-                  >
-                    <option value="" disabled>Select client...</option>
-                    {clients.map(c => (
-                      <option key={c.id} value={c.id}>{c.name} {c.company_name ? `(${c.company_name})` : ''}</option>
-                    ))}
-                  </select>
-                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
+                  <div className="lg:col-span-4">
+                    <label className="block text-[10px] text-slate-400 font-medium uppercase tracking-wider">Client *</label>
+                    <select
+                      required
+                      className="w-full form-input"
+                      value={formClientId}
+                      onChange={(e) => setFormClientId(e.target.value)}
+                    >
+                      <option value="" disabled>Select client...</option>
+                      {clients.map(c => (
+                        <option key={c.id} value={c.id}>{c.name} {c.company_name ? `(${c.company_name})` : ''}</option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div>
-                  <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">PO Number / Code *</label>
-                  <input 
-                    type="text" 
-                    required
-                    placeholder="e.g. PO-2026-0492"
-                    className="w-full form-input text-sm font-mono"
-                    value={formPoNumber}
-                    onChange={(e) => setFormPoNumber(e.target.value)}
-                  />
-                </div>
+                  <div className="lg:col-span-3">
+                    <label className="block text-[10px] text-slate-400 font-medium uppercase tracking-wider">PO Number *</label>
+                    <input 
+                      type="text" 
+                      required
+                      placeholder="e.g. PO-2026-0492"
+                      className="w-full form-input font-mono"
+                      value={formPoNumber}
+                      onChange={(e) => setFormPoNumber(e.target.value)}
+                    />
+                  </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">PO Date (Optional)</label>
+                  <div className="lg:col-span-2">
+                    <label className="block text-[10px] text-slate-400 font-medium uppercase tracking-wider">PO Date</label>
                     <input 
                       type="date"
-                      className="w-full form-input text-sm"
+                      className="w-full form-input"
                       value={formPoDate}
                       onChange={(e) => setFormPoDate(e.target.value)}
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">Currency</label>
+
+                  <div className="lg:col-span-1">
+                    <label className="block text-[10px] text-slate-400 font-medium uppercase tracking-wider">Currency</label>
                     <select 
-                      className="w-full form-input text-sm"
+                      className="w-full form-input"
                       value={formCurrency}
                       onChange={(e) => setFormCurrency(e.target.value)}
                     >
-                      <option value="INR">INR (₹)</option>
-                      <option value="USD">USD ($)</option>
-                      <option value="EUR">EUR (€)</option>
-                      <option value="GBP">GBP (£)</option>
+                      <option value="INR">INR</option>
+                      <option value="USD">USD</option>
+                      <option value="EUR">EUR</option>
+                      <option value="GBP">GBP</option>
                     </select>
+                  </div>
+
+                  {editingPO ? (
+                    <div className="lg:col-span-2">
+                      <label className="block text-[10px] text-slate-400 font-medium uppercase tracking-wider">Status</label>
+                      <select
+                        className="w-full form-input"
+                        value={formStatus}
+                        onChange={(e) => setFormStatus(e.target.value as any)}
+                      >
+                        <option value="open">Open</option>
+                        <option value="closed">Closed</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                    </div>
+                  ) : (
+                    <div className="lg:col-span-2 hidden lg:block" />
+                  )}
+
+                  <div className="sm:col-span-2 lg:col-span-12">
+                    <label className="block text-[10px] text-slate-400 font-medium uppercase tracking-wider">Description</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. Q2 Software Development Services contract"
+                      className="w-full form-input"
+                      value={formDescription}
+                      onChange={(e) => setFormDescription(e.target.value)}
+                    />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">Description (Optional)</label>
-                  <input 
-                    type="text" 
-                    placeholder="e.g. Q2 Software Development Services contract"
-                    className="w-full form-input text-sm"
-                    value={formDescription}
-                    onChange={(e) => setFormDescription(e.target.value)}
-                  />
-                </div>
-
-                <div className="mt-6 border-t border-slate-200 pt-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-semibold text-slate-700">Line Items *</h3>
+                <div className="border-t border-slate-200 pt-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Line Items *</h3>
                     <button
                       type="button"
                       disabled={modalLoading}
@@ -500,89 +511,80 @@ export default function PurchaseOrders() {
                   </div>
 
                   {modalLoading ? (
-                    <div className="py-8 flex justify-center">
+                    <div className="py-6 flex justify-center">
                       <Spinner label="Loading items..." />
                     </div>
                   ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_4.5rem_6.5rem_7rem_7.5rem_2rem] gap-2 px-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                      <span>Description</span>
+                      <span className="text-right">Qty</span>
+                      <span className="text-right">Price</span>
+                      <span className="text-right">Amount</span>
+                      <span className="text-center">Confirmed</span>
+                      <span />
+                    </div>
                     {formItems.map((item, index) => (
-                      <div key={index} className="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-2">
-                        <div className="flex flex-wrap sm:flex-nowrap items-start gap-3">
-                          <div className="w-full sm:flex-1">
-                            <input
-                              type="text"
-                              required
-                              placeholder="Description"
-                              className="w-full form-input text-xs"
-                              value={item.description}
-                              onChange={(e) => {
-                                const newItems = [...formItems];
-                                newItems[index] = { ...newItems[index], description: e.target.value };
-                                setFormItems(newItems);
-                              }}
-                            />
-                          </div>
-                          <div className="w-24 shrink-0">
-                            <input
-                              type="number"
-                              required
-                              min="0.01"
-                              step="0.01"
-                              placeholder="Qty"
-                              className="w-full form-input text-xs"
-                              value={item.quantity}
-                              onChange={(e) => {
-                                const newItems = [...formItems];
-                                const quantity = parseFloat(e.target.value) || 0;
-                                const unit_price = newItems[index].unit_price;
-                                newItems[index] = {
-                                  ...newItems[index],
-                                  quantity,
-                                  amount: quantity * unit_price,
-                                };
-                                setFormItems(newItems);
-                              }}
-                            />
-                          </div>
-                          <div className="w-32 shrink-0">
-                            <input
-                              type="number"
-                              required
-                              min="0"
-                              step="0.01"
-                              placeholder="Price"
-                              className="w-full form-input text-xs"
-                              value={item.unit_price}
-                              onChange={(e) => {
-                                const newItems = [...formItems];
-                                const unit_price = parseFloat(e.target.value) || 0;
-                                const quantity = newItems[index].quantity;
-                                newItems[index] = {
-                                  ...newItems[index],
-                                  unit_price,
-                                  amount: quantity * unit_price,
-                                };
-                                setFormItems(newItems);
-                              }}
-                            />
-                          </div>
-                          <div className="w-32 shrink-0">
-                            <div className="w-full form-input text-xs bg-white text-slate-400 flex items-center">
-                              {formatCurrency(item.amount, formCurrency)}
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const newItems = formItems.filter((_, i) => i !== index);
-                              setFormItems(newItems);
-                            }}
-                            className="shrink-0 p-2 text-slate-500 hover:text-red-600 hover:bg-red-100 rounded-lg transition-colors mt-0.5 sm:mt-0"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                      <div
+                        key={index}
+                        className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem_7rem_7.5rem_2rem] gap-2 items-center bg-slate-50 px-2 py-1.5 rounded-lg border border-slate-200"
+                      >
+                        <input
+                          type="text"
+                          required
+                          placeholder="Description"
+                          className="w-full form-input"
+                          value={item.description}
+                          onChange={(e) => {
+                            const newItems = [...formItems];
+                            newItems[index] = { ...newItems[index], description: e.target.value };
+                            setFormItems(newItems);
+                          }}
+                        />
+                        <input
+                          type="number"
+                          required
+                          min="0.01"
+                          step="0.01"
+                          placeholder="Qty"
+                          className="w-full form-input text-right"
+                          value={item.quantity}
+                          onChange={(e) => {
+                            const newItems = [...formItems];
+                            const quantity = parseFloat(e.target.value) || 0;
+                            const unit_price = newItems[index].unit_price;
+                            newItems[index] = {
+                              ...newItems[index],
+                              quantity,
+                              amount: quantity * unit_price,
+                            };
+                            setFormItems(newItems);
+                          }}
+                        />
+                        <input
+                          type="number"
+                          required
+                          min="0"
+                          step="0.01"
+                          placeholder="Price"
+                          className="w-full form-input text-right"
+                          value={item.unit_price}
+                          onChange={(e) => {
+                            const newItems = [...formItems];
+                            const unit_price = parseFloat(e.target.value) || 0;
+                            const quantity = newItems[index].quantity;
+                            newItems[index] = {
+                              ...newItems[index],
+                              unit_price,
+                              amount: quantity * unit_price,
+                            };
+                            setFormItems(newItems);
+                          }}
+                        />
+                        <div className="form-input bg-white text-slate-500 flex items-center justify-end tabular-nums">
+                          {formatCurrency(item.amount, formCurrency)}
                         </div>
-                        <label className="inline-flex items-center gap-2 text-xs text-slate-600 cursor-pointer select-none">
+                        <label className="inline-flex items-center justify-center gap-1.5 text-xs text-slate-600 cursor-pointer select-none">
                           <input
                             type="checkbox"
                             className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
@@ -593,91 +595,81 @@ export default function PurchaseOrders() {
                               setFormItems(newItems);
                             }}
                           />
-                          <span>Work confirmed</span>
-                          <span className="text-slate-400">(counts toward dashboard totals)</span>
+                          <span className="sm:hidden">Work confirmed</span>
                         </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newItems = formItems.filter((_, i) => i !== index);
+                            setFormItems(newItems);
+                          }}
+                          className="justify-self-center p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
                     ))}
                     {formItems.length === 0 && (
-                      <div className="text-center py-6 border border-dashed border-slate-200 rounded-lg text-slate-500 text-xs">
+                      <div className="text-center py-4 border border-dashed border-slate-200 rounded-lg text-slate-500 text-xs">
                         No line items added. At least one item is required.
                       </div>
                     )}
                   </div>
                   )}
                   
-                  <div className="flex justify-end mt-4 pt-4 border-t border-slate-200">
-                    <div className="text-right space-y-2">
+                  <div className="flex flex-wrap justify-end gap-x-6 gap-y-1 mt-3 pt-3 border-t border-slate-200 text-right">
+                    <div>
+                      <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mr-2">Total</span>
+                      <span className="font-mono font-semibold text-slate-900">
+                        {formatCurrency(formItems.reduce((sum, item) => sum + item.amount, 0), formCurrency)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-emerald-500 uppercase tracking-wider font-semibold mr-2">Confirmed</span>
+                      <span className="font-mono font-semibold text-emerald-600">
+                        {formatCurrency(
+                          formItems
+                            .filter((item) => item.work_confirmed)
+                            .reduce((sum, item) => sum + item.amount, 0),
+                          formCurrency
+                        )}
+                      </span>
+                    </div>
+                    {editingPO && (
                       <div>
-                        <div className="text-xs text-slate-500 mb-1 uppercase tracking-wider font-semibold">PO Amount</div>
-                        <div className="text-xl font-mono font-semibold text-slate-900">
-                          {formatCurrency(formItems.reduce((sum, item) => sum + item.amount, 0), formCurrency)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-slate-500 mb-1 uppercase tracking-wider font-semibold">Confirmed</div>
-                        <div className="text-lg font-mono font-semibold text-emerald-600">
+                        <span className="text-[10px] text-amber-500 uppercase tracking-wider font-semibold mr-2">Outstanding</span>
+                        <span className="font-mono font-semibold text-amber-600">
                           {formatCurrency(
-                            formItems
-                              .filter((item) => item.work_confirmed)
-                              .reduce((sum, item) => sum + item.amount, 0),
+                            getPOOutstanding(
+                              formItems
+                                .filter((item) => item.work_confirmed)
+                                .reduce((sum, item) => sum + item.amount, 0),
+                              editingPO.invoiced_amount
+                            ),
                             formCurrency
                           )}
-                        </div>
+                        </span>
                       </div>
-                      {editingPO && (
-                        <div>
-                          <div className="text-xs text-slate-500 mb-1 uppercase tracking-wider font-semibold">Outstanding</div>
-                          <div className="text-lg font-mono font-semibold text-amber-600">
-                            {formatCurrency(
-                              getPOOutstanding(
-                                formItems
-                                  .filter((item) => item.work_confirmed)
-                                  .reduce((sum, item) => sum + item.amount, 0),
-                                editingPO.invoiced_amount
-                              ),
-                              formCurrency
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </div>
-
-                {editingPO && (
-                  <div>
-                    <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">PO Status</label>
-                    <select
-                      className="w-full form-input text-sm"
-                      value={formStatus}
-                      onChange={(e) => setFormStatus(e.target.value as any)}
-                    >
-                      <option value="open">Open / Active</option>
-                      <option value="closed">Closed</option>
-                      <option value="cancelled">Cancelled</option>
-                    </select>
-                  </div>
-                )}
-
-
               </div>
 
-              <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end space-x-3 shrink-0">
+              <div className="px-4 py-2.5 border-t border-slate-200 bg-slate-50 flex items-center justify-end space-x-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => {
                     setModalOpen(false);
                     setModalLoading(false);
                   }}
-                  className="px-4 py-2 border border-slate-200 hover:border-slate-300 bg-white rounded-lg text-sm font-semibold text-slate-700 transition-colors cursor-pointer"
+                  className="px-3 py-1.5 border border-slate-200 hover:border-slate-300 bg-white rounded-lg text-sm font-semibold text-slate-700 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={formSubmitting || modalLoading}
-                  className="px-4 py-2 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 rounded-lg text-sm font-semibold text-white shadow-lg shadow-sky-500/10 cursor-pointer disabled:opacity-50 transition-colors"
+                  className="px-3 py-1.5 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 rounded-lg text-sm font-semibold text-white shadow-lg shadow-sky-500/10 cursor-pointer disabled:opacity-50 transition-colors"
                 >
                   {formSubmitting ? 'Saving...' : 'Save PO'}
                 </button>

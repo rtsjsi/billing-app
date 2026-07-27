@@ -14,7 +14,8 @@ import {
   Plus
 } from 'lucide-react';
 import { api, Client, Invoice, PurchaseOrder } from '../lib/api';
-import { formatCurrency, formatDate, getPOOutstanding } from '../lib/utils';
+import { formatCurrency, formatDate } from '../lib/utils';
+import POAmounts from '../components/POAmounts';
 import { useFilters } from '../lib/FilterContext';
 import Spinner from '../components/Spinner';
 
@@ -329,20 +330,12 @@ export default function ClientDetail() {
                       </td>
                       <td data-label="PO Date" className="px-6 py-4 text-slate-400">{formatDate(po.po_date)}</td>
                       <td data-label="Amounts" className="px-6 py-4 text-right">
-                        <div className="space-y-0.5 tabular-nums">
-                          <div className="font-medium text-slate-900">
-                            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mr-1.5">PO</span>
-                            {po.amount != null ? formatCurrency(po.amount, po.currency) : '-'}
-                          </div>
-                          <div className="text-xs text-emerald-600">
-                            <span className="text-[10px] font-semibold uppercase tracking-wide text-emerald-500/80 mr-1.5">Confirmed</span>
-                            {formatCurrency(po.confirmed_amount ?? 0, po.currency)}
-                          </div>
-                          <div className="text-xs text-amber-600">
-                            <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-500/80 mr-1.5">Outstanding</span>
-                            {formatCurrency(getPOOutstanding(po.confirmed_amount ?? po.amount, po.invoiced_amount), po.currency)}
-                          </div>
-                        </div>
+                        <POAmounts
+                          amount={po.amount}
+                          confirmedAmount={po.confirmed_amount}
+                          invoicedAmount={po.invoiced_amount}
+                          currency={po.currency}
+                        />
                       </td>
                       <td data-label="Status" className="px-6 py-4 text-center">
                         <span className={`badge badge-${po.status}`}>

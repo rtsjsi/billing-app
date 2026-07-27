@@ -12,7 +12,8 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { api, DashboardData } from '../lib/api';
-import { formatCurrency, formatDate, getPOOutstanding } from '../lib/utils';
+import { formatCurrency, formatDate } from '../lib/utils';
+import POAmounts from '../components/POAmounts';
 import PageHeader from '../components/PageHeader';
 
 export default function Dashboard() {
@@ -215,16 +216,13 @@ export default function Dashboard() {
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="mobile-list-item-amount">
-                    {po.amount != null ? formatCurrency(po.amount, po.currency) : '-'}
-                  </p>
-                  <p className="text-[11px] text-emerald-600 mt-0.5">
-                    Confirmed {formatCurrency(po.confirmed_amount ?? 0, po.currency)}
-                  </p>
-                  <p className="text-[11px] text-amber-600 mt-0.5">
-                    Outstanding {formatCurrency(getPOOutstanding(po.confirmed_amount ?? po.amount, po.invoiced_amount), po.currency)}
-                  </p>
-                  <span className={`badge badge-${po.status} mt-1`}>
+                  <POAmounts
+                    amount={po.amount}
+                    confirmedAmount={po.confirmed_amount}
+                    invoicedAmount={po.invoiced_amount}
+                    currency={po.currency}
+                  />
+                  <span className={`badge badge-${po.status} mt-1.5`}>
                     {po.status}
                   </span>
                 </div>
