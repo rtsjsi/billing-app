@@ -14,7 +14,7 @@ import {
   Plus
 } from 'lucide-react';
 import { api, Client, Invoice, PurchaseOrder } from '../lib/api';
-import { formatCurrency, formatDate } from '../lib/utils';
+import { formatCurrency, formatDate, getPOOutstanding } from '../lib/utils';
 import { useFilters } from '../lib/FilterContext';
 import Spinner from '../components/Spinner';
 
@@ -311,7 +311,8 @@ export default function ClientDetail() {
                   <tr className="border-b border-slate-200 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-50">
                     <th className="px-6 py-3">PO Number</th>
                     <th className="px-6 py-3">PO Date</th>
-                    <th className="px-6 py-3 text-right">Amount</th>
+                    <th className="px-6 py-3 text-right">PO Amount</th>
+                    <th className="px-6 py-3 text-right">Outstanding</th>
                     <th className="px-6 py-3 text-center">Status</th>
                   </tr>
                 </thead>
@@ -320,12 +321,15 @@ export default function ClientDetail() {
                     <tr key={po.id} className="hover:bg-slate-50/10 transition-all">
                       <td data-label="PO Number" className="px-6 py-4 font-mono font-medium text-slate-700">{po.po_number}</td>
                       <td data-label="PO Date" className="px-6 py-4 text-slate-400">{formatDate(po.po_date)}</td>
-                      <td data-label="Amount" className="px-6 py-4 text-right font-medium text-slate-900">
-                        {po.amount ? formatCurrency(po.amount, po.currency) : '-'}
+                      <td data-label="PO Amount" className="px-6 py-4 text-right font-medium text-slate-900">
+                        {po.amount != null ? formatCurrency(po.amount, po.currency) : '-'}
+                      </td>
+                      <td data-label="Outstanding" className="px-6 py-4 text-right font-medium text-amber-600">
+                        {formatCurrency(getPOOutstanding(po.amount, po.invoiced_amount), po.currency)}
                       </td>
                       <td data-label="Status" className="px-6 py-4 text-center">
                         <span className={`badge badge-${po.status}`}>
-                          {po.status === 'partially_invoiced' ? 'Part. Invoiced' : po.status}
+                          {po.status}
                         </span>
                       </td>
                     </tr>

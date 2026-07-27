@@ -18,7 +18,7 @@ VALUES (
   'Craftsman ASN Changes', 
   25000, 
   'INR', 
-  'fulfilled', 
+  'closed', 
   NULL, 
   '2026-06-22T05:04:18.725Z', 
   '2026-06-22T05:04:18.725Z'
@@ -32,7 +32,7 @@ VALUES (
   'Fadv Einvoice', 
   90000, 
   'INR', 
-  'fulfilled', 
+  'closed', 
   NULL, 
   '2026-06-22T05:04:18.725Z', 
   '2026-06-22T05:04:18.725Z'
@@ -46,7 +46,7 @@ VALUES (
   'LSI Reports', 
   40000, 
   'INR', 
-  'fulfilled', 
+  'closed', 
   'Added 15k in Original Amount for Extra Efforts', 
   '2026-06-22T05:04:18.725Z', 
   '2026-06-22T05:04:18.725Z'
@@ -60,7 +60,7 @@ VALUES (
   'LSI Reports (Tunning and New Report)', 
   15000, 
   'INR', 
-  'fulfilled', 
+  'closed', 
   'As discussed on WP', 
   '2026-06-22T05:04:18.725Z', 
   '2026-06-22T05:04:18.725Z'
@@ -74,7 +74,7 @@ VALUES (
   'Invoice (Sep-Oct 25)', 
   70000, 
   'INR', 
-  'fulfilled', 
+  'closed', 
   NULL, 
   '2026-06-22T05:04:18.725Z', 
   '2026-06-22T05:04:18.725Z'
@@ -88,7 +88,7 @@ VALUES (
   'Invoice (Oct-Nov 25)', 
   70000, 
   'INR', 
-  'fulfilled', 
+  'closed', 
   NULL, 
   '2026-06-22T05:04:18.725Z', 
   '2026-06-22T05:04:18.725Z'
@@ -102,7 +102,7 @@ VALUES (
   'Fadv Einvoice Design Change and AP', 
   60000, 
   'INR', 
-  'fulfilled', 
+  'closed', 
   'Will add aditional 5k for efforts due to frequent cloning ', 
   '2026-06-22T05:04:18.725Z', 
   '2026-06-22T05:04:18.725Z'
@@ -116,7 +116,7 @@ VALUES (
   'LSI TID Report', 
   10000, 
   'INR', 
-  'fulfilled', 
+  'closed', 
   NULL, 
   '2026-06-22T05:04:18.725Z', 
   '2026-06-22T05:04:18.725Z'
@@ -130,7 +130,7 @@ VALUES (
   'LSI Journal Ledger Report', 
   45000, 
   'INR', 
-  'fulfilled', 
+  'closed', 
   '5k Added for New Req from Sabrina on 02Apr2026', 
   '2026-06-22T05:04:18.725Z', 
   '2026-06-22T05:04:18.725Z'
@@ -144,7 +144,7 @@ VALUES (
   'Kota Visit', 
   17355, 
   'INR', 
-  'fulfilled', 
+  'closed', 
   NULL, 
   '2026-06-22T05:04:18.725Z', 
   '2026-06-22T05:04:18.725Z'
@@ -158,7 +158,7 @@ VALUES (
   'Add Transaction Finish Date as paraeter in LSI Project Cost with Distribution Details Report', 
   5000, 
   'INR', 
-  'fulfilled', 
+  'closed', 
   NULL, 
   '2026-06-22T05:04:18.725Z', 
   '2026-06-22T05:04:18.725Z'
@@ -172,7 +172,7 @@ VALUES (
   'LSI TID Report With Supplier Parameter (CR for Sorting)', 
   10000, 
   'INR', 
-  'fulfilled', 
+  'closed', 
   NULL, 
   '2026-06-22T05:04:18.725Z', 
   '2026-06-22T05:04:18.725Z'
@@ -186,7 +186,7 @@ VALUES (
   'CT SR and PR Performance Issue', 
   10000, 
   'INR', 
-  'fulfilled', 
+  'closed', 
   NULL, 
   '2026-06-22T05:04:18.725Z', 
   '2026-06-22T05:04:18.725Z'
@@ -200,7 +200,7 @@ VALUES (
   'Add Project Status as paraeter in LSI Project Cost with Distribution Details Report', 
   4000, 
   'INR', 
-  'fulfilled', 
+  'closed', 
   NULL, 
   '2026-06-22T05:04:18.725Z', 
   '2026-06-22T05:04:18.725Z'
@@ -214,7 +214,7 @@ VALUES (
   'OSC Malaysia BIP for EINV', 
   40000, 
   'INR', 
-  'fulfilled', 
+  'closed', 
   NULL, 
   '2026-06-22T05:04:18.725Z', 
   '2026-06-22T05:04:18.725Z'
@@ -228,7 +228,7 @@ VALUES (
   'CT SR and PR Changes', 
   10000, 
   'INR', 
-  'fulfilled', 
+  'closed', 
   NULL, 
   '2026-06-22T05:04:18.725Z', 
   '2026-06-22T05:04:18.725Z'
@@ -242,7 +242,7 @@ VALUES (
   'LSI TID Report New Requirement from Saurabh', 
   10000, 
   'INR', 
-  'fulfilled', 
+  'closed', 
   'Incorporate sort by "Natural Account". \nPlease look into the sort by amount. I dont think that is working.\ninclude another parameter for "Customer Number" and incorporate search based on that. This would be same as our vendor number search but the results would be more on the AR side.', 
   '2026-06-22T05:04:18.725Z', 
   '2026-06-22T05:04:18.725Z'
@@ -256,7 +256,7 @@ VALUES (
   'LSI Asset Register Change Needed from Jacque', 
   10000, 
   'INR', 
-  'fulfilled', 
+  'closed', 
   NULL, 
   '2026-06-22T05:04:18.725Z', 
   '2026-06-22T05:04:18.725Z'

@@ -128,9 +128,9 @@ export default function InvoiceEditor() {
     const fetchPOs = async () => {
       try {
         const cId = parseInt(clientId, 10);
-        // Only load 'open' or 'partially_invoiced' POs for linking
+        // Only load open POs for linking (keep currently linked PO even if closed)
         const posRes = await api.pos.list(cId);
-        const activePOs = posRes.filter(po => po.status === 'open' || po.status === 'partially_invoiced' || po.id.toString() === poId);
+        const activePOs = posRes.filter(po => po.status === 'open' || po.id.toString() === poId);
         setClientPOs(activePOs);
       } catch (err) {
         console.error('Failed to load client Purchase Orders', err);

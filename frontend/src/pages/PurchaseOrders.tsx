@@ -11,7 +11,7 @@ import {
 import ActionMenu from '../components/ActionMenu';
 import ConfirmModal from '../components/ConfirmModal';
 import { api, PurchaseOrder, PurchaseOrderItem } from '../lib/api';
-import { formatCurrency, formatDate } from '../lib/utils';
+import { formatCurrency, formatDate, getPOOutstanding } from '../lib/utils';
 import { useFilters } from '../lib/FilterContext';
 import PageHeader from '../components/PageHeader';
 import { useToast } from '../components/Toast';
@@ -55,7 +55,7 @@ export default function PurchaseOrders() {
   const [formDescription, setFormDescription] = useState('');
   const [formAmount, setFormAmount] = useState('');
   const [formCurrency, setFormCurrency] = useState('INR');
-  const [formStatus, setFormStatus] = useState<'open' | 'partially_invoiced' | 'fulfilled' | 'cancelled'>('open');
+  const [formStatus, setFormStatus] = useState<'open' | 'closed' | 'cancelled'>('open');
   const [formItems, setFormItems] = useState<PurchaseOrderItem[]>([]);
 
   const [formSubmitting, setFormSubmitting] = useState(false);
@@ -286,8 +286,7 @@ export default function PurchaseOrders() {
           <select className="form-input text-sm py-2 min-h-0" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
             <option value="">All Statuses</option>
             <option value="open">Open</option>
-            <option value="partially_invoiced">Partially Invoiced</option>
-            <option value="fulfilled">Fulfilled</option>
+            <option value="closed">Closed</option>
             <option value="cancelled">Cancelled</option>
           </select>
         </div>
@@ -304,66 +303,14 @@ export default function PurchaseOrders() {
           </div>
         ) : (
           <div className="min-h-[200px]">
-            <div className="md:hidden mobile-list">
-              {pos.map((po) => (
-                <div key={po.id} className="mobile-list-item">
-                  <div className="flex-1 min-w-0">
-                    <p className="mobile-list-item-title font-mono truncate">{po.po_number}</p>
-                    <p className="mobile-list-item-subtitle truncate">
-                      {po.client_name} · {formatDate(po.po_date)}
-                    </p>
-                    {po.description && (
-                      <p className="text-xs text-slate-400 mt-0.5 truncate">{po.description}</p>
-                    )}
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="mobile-list-item-amount">
-                      {po.amount ? formatCurrency(po.amount, po.currency) : '-'}
-                    </p>
-                    <span className={`badge badge-${po.status} mt-1`}>
-                      {po.status === 'partially_invoiced' ? 'Part. Invoiced' : po.status}
-                    </span>
-                  </div>
-                  <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
-                    <ActionMenu
-                      isOpen={activeDropdownId === po.id}
-                      onToggle={(e) => {
-                        e.stopPropagation();
-                        setActiveDropdownId(activeDropdownId === po.id ? null : po.id);
-                      }}
-                      onClose={() => setActiveDropdownId(null)}
-                      title={po.po_number}
-                      items={[
-                        {
-                          label: 'Edit PO',
-                          icon: <Edit2 className="h-4 w-4" />,
-                          onClick: () => openEditModal(po),
-                        },
-                        {
-                          label: 'Related Invoices',
-                          icon: <FileCheck className="h-4 w-4" />,
-                          onClick: () => navigate(`/invoices?po_id=${po.id}`),
-                        },
-                        {
-                          label: 'Delete PO',
-                          icon: <Trash2 className="h-4 w-4" />,
-                          variant: 'danger',
-                          onClick: () => handleDeletePO(po.id),
-                        },
-                      ]}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <table className="hidden md:table w-full text-left border-collapse">
+            <table className="responsive-table w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 text-xs text-slate-400 font-semibold uppercase tracking-wider bg-slate-50">
                   <th className="px-6 py-3.5">PO details</th>
                   <th className="px-6 py-3.5">Client</th>
                   <th className="px-6 py-3.5">PO Date</th>
-                  <th className="px-6 py-3.5 text-right">Amount</th>
+                  <th className="px-6 py-3.5 text-right">PO Amount</th>
+                  <th className="px-6 py-3.5 text-right">Outstanding</th>
                   <th className="px-6 py-3.5 text-center">Status</th>
                   <th className="px-6 py-3.5 text-right">Actions</th>
                 </tr>
@@ -371,23 +318,26 @@ export default function PurchaseOrders() {
               <tbody className="divide-y divide-slate-200 text-sm">
                 {pos.map((po) => (
                   <tr key={po.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4">
+                    <td data-label="PO details" className="px-6 py-4">
                       <div className="font-mono font-semibold text-slate-800">{po.po_number}</div>
                       {po.description && (
                         <div className="text-slate-400 text-xs mt-0.5 truncate max-w-xs">{po.description}</div>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-slate-800 font-medium">{po.client_name}</td>
-                    <td className="px-6 py-4 text-slate-400">{formatDate(po.po_date)}</td>
-                    <td className="px-6 py-4 text-right font-medium text-slate-800">
-                      {po.amount ? formatCurrency(po.amount, po.currency) : '-'}
+                    <td data-label="Client" className="px-6 py-4 text-slate-800 font-medium">{po.client_name}</td>
+                    <td data-label="PO Date" className="px-6 py-4 text-slate-400">{formatDate(po.po_date)}</td>
+                    <td data-label="PO Amount" className="px-6 py-4 text-right font-medium text-slate-800">
+                      {po.amount != null ? formatCurrency(po.amount, po.currency) : '-'}
                     </td>
-                    <td className="px-6 py-4 text-center">
+                    <td data-label="Outstanding" className="px-6 py-4 text-right font-medium text-amber-600">
+                      {formatCurrency(getPOOutstanding(po.amount, po.invoiced_amount), po.currency)}
+                    </td>
+                    <td data-label="Status" className="px-6 py-4 text-center">
                       <span className={`badge badge-${po.status}`}>
-                        {po.status === 'partially_invoiced' ? 'Part. Invoiced' : po.status}
+                        {po.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                    <td data-label="Actions" className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                       <ActionMenu
                         isOpen={activeDropdownId === po.id}
                         onToggle={(e) => {
@@ -623,11 +573,27 @@ export default function PurchaseOrders() {
                   )}
                   
                   <div className="flex justify-end mt-4 pt-4 border-t border-slate-200">
-                    <div className="text-right">
-                      <div className="text-xs text-slate-500 mb-1 uppercase tracking-wider font-semibold">Total Amount</div>
-                      <div className="text-xl font-mono font-semibold text-slate-900">
-                        {formatCurrency(formItems.reduce((sum, item) => sum + item.amount, 0), formCurrency)}
+                    <div className="text-right space-y-2">
+                      <div>
+                        <div className="text-xs text-slate-500 mb-1 uppercase tracking-wider font-semibold">PO Amount</div>
+                        <div className="text-xl font-mono font-semibold text-slate-900">
+                          {formatCurrency(formItems.reduce((sum, item) => sum + item.amount, 0), formCurrency)}
+                        </div>
                       </div>
+                      {editingPO && (
+                        <div>
+                          <div className="text-xs text-slate-500 mb-1 uppercase tracking-wider font-semibold">Outstanding</div>
+                          <div className="text-lg font-mono font-semibold text-amber-600">
+                            {formatCurrency(
+                              getPOOutstanding(
+                                formItems.reduce((sum, item) => sum + item.amount, 0),
+                                editingPO.invoiced_amount
+                              ),
+                              formCurrency
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -641,8 +607,7 @@ export default function PurchaseOrders() {
                       onChange={(e) => setFormStatus(e.target.value as any)}
                     >
                       <option value="open">Open / Active</option>
-                      <option value="partially_invoiced">Partially Invoiced</option>
-                      <option value="fulfilled">Fulfilled</option>
+                      <option value="closed">Closed</option>
                       <option value="cancelled">Cancelled</option>
                     </select>
                   </div>

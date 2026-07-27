@@ -65,7 +65,7 @@ export interface PurchaseOrder {
   description: string | null;
   amount: number | null;
   currency: string;
-  status: 'open' | 'partially_invoiced' | 'fulfilled' | 'cancelled';
+  status: 'open' | 'closed' | 'cancelled';
   attachment_key: string | null;
   notes: string | null;
   created_at: string;
@@ -853,7 +853,7 @@ async function recalculateInvoicePayment(db: D1Database, userId: number, invoice
 // Business Logic Helpers
 // ----------------------------------------------------
 
-// Automatically derive PO status (open | partially_invoiced | fulfilled | cancelled)
+// Automatically derive PO status (open | closed | cancelled)
 export async function updatePOStatusFromInvoices(db: D1Database, userId: number, poId: number): Promise<void> {
   const po = await getPOById(db, userId, poId);
   if (!po || po.status === 'cancelled') return;
@@ -861,12 +861,13 @@ export async function updatePOStatusFromInvoices(db: D1Database, userId: number,
   const invoicedAmount = await getPOInvoicedAmount(db, userId, poId);
   const poAmount = po.amount || 0;
 
+  // Fully invoiced → closed; otherwise remain open (no partial status)
   let newStatus: PurchaseOrder['status'] = 'open';
   if (invoicedAmount >= poAmount && poAmount > 0) {
-    newStatus = 'fulfilled';
-  } else if (invoicedAmount > 0) {
-    newStatus = 'partially_invoiced';
+    newStatus = 'closed';
   }
+
+  if (newStatus === po.status) return;
 
   const now = new Date().toISOString();
   await db
@@ -1033,8 +1034,8 @@ export async function getRecentActivity(
     .bind(...invoiceParams)
     .all<Invoice>();
 
-  // Open Purchase Orders not yet fully invoiced (status is 'open' or 'partially_invoiced')
-  let poWhere = "WHERE po.user_id = ? AND po.status IN ('open', 'partially_invoiced')";
+  // Open Purchase Orders (active work not yet closed/cancelled)
+  let poWhere = "WHERE po.user_id = ? AND po.status = 'open'";
   const poParams: any[] = [userId];
   if (clientId) {
     poWhere += " AND po.client_id = ?";
@@ -1047,7 +1048,8 @@ export async function getRecentActivity(
 
   const { results: openPOs } = await db
     .prepare(`
-      SELECT po.*, c.name as client_name
+      SELECT po.*, c.name as client_name,
+             (SELECT COALESCE(SUM(total), 0) FROM invoices WHERE po_id = po.id AND status != 'cancelled') as invoiced_amount
       FROM purchase_orders po
       JOIN clients c ON po.client_id = c.id
       ${poWhere}

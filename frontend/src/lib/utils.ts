@@ -44,6 +44,14 @@ export function formatDate(dateString: string | null | undefined): string {
   }
 }
 
+/** Remaining PO value not yet invoiced (excludes cancelled invoices). */
+export function getPOOutstanding(
+  amount: number | null | undefined,
+  invoicedAmount: number | null | undefined
+): number {
+  return Math.max(0, (amount || 0) - (invoicedAmount || 0));
+}
+
 /** Debounce a callback; returns a cancellable debounced function. */
 export function debounce<T extends (...args: any[]) => void>(fn: T, delayMs: number) {
   let timer: ReturnType<typeof setTimeout> | null = null;

@@ -37,7 +37,7 @@ export interface PurchaseOrder {
   description: string | null;
   amount: number | null;
   currency: string;
-  status: 'open' | 'partially_invoiced' | 'fulfilled' | 'cancelled';
+  status: 'open' | 'closed' | 'cancelled';
   attachment_key: string | null;
   notes: string | null;
   created_at: string;

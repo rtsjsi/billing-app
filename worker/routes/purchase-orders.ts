@@ -26,7 +26,7 @@ const poSchema = z.object({
   description: z.string().nullable().optional(),
   amount: z.coerce.number().min(0).nullable().optional(),
   currency: z.string().default('INR'),
-  status: z.enum(['open', 'partially_invoiced', 'fulfilled', 'cancelled']).default('open'),
+  status: z.enum(['open', 'closed', 'cancelled']).default('open'),
   attachment_key: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
   items: z.array(poItemSchema).min(1, 'At least one line item is required')

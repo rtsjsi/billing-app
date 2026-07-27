@@ -57,7 +57,7 @@ CREATE TABLE purchase_orders (
   description TEXT,
   amount REAL,
   currency TEXT NOT NULL DEFAULT 'INR',
-  status TEXT NOT NULL DEFAULT 'open',     -- open | partially_invoiced | fulfilled | cancelled
+  status TEXT NOT NULL DEFAULT 'open',     -- open | closed | cancelled
   attachment_key TEXT,                      -- optional R2 object key, if attachments implemented
   notes TEXT,
   created_at TEXT NOT NULL,

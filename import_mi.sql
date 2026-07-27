@@ -18,7 +18,7 @@ VALUES (
   'Motherson Reload Activity ', 
   30000, 
   'INR', 
-  'fulfilled', 
+  'closed', 
   'And 10K remaining from Kunal other than this, revised to 30k due to additional email requirement', 
   '2026-06-22T05:22:09.616Z', 
   '2026-06-22T05:22:09.616Z'
@@ -32,7 +32,7 @@ VALUES (
   'Max issues - Additional', 
   10000, 
   'INR', 
-  'fulfilled', 
+  'closed', 
   NULL, 
   '2026-06-22T05:22:09.616Z', 
   '2026-06-22T05:22:09.616Z'
@@ -46,7 +46,7 @@ VALUES (
   'Alana IRN List Project', 
   125000, 
   'INR', 
-  'fulfilled', 
+  'closed', 
   NULL, 
   '2026-06-22T05:22:09.616Z', 
   '2026-06-22T05:22:09.616Z'
@@ -60,7 +60,7 @@ VALUES (
   'Adhoc Work', 
   4000, 
   'INR', 
-  'fulfilled', 
+  'closed', 
   '1. Analysis for new Client and Screenshots for Debit and Credit Memo (25-11-2024 2 Hrs) 2. Allana Issue resolved over a call (1 Hour) 3. Allana Issue 27-Dec-2024 Call and bugfix (1hour)', 
   '2026-06-22T05:22:09.616Z', 
   '2026-06-22T05:22:09.616Z'
@@ -74,7 +74,7 @@ VALUES (
   'BGPPL GST AMC (PO/24-25/077) (1st Feb,2025 to 31st Jan,2026)', 
   100000, 
   'INR', 
-  'fulfilled', 
+  'closed', 
   NULL, 
   '2026-06-22T05:22:09.616Z', 
   '2026-06-22T05:22:09.616Z'
@@ -88,7 +88,7 @@ VALUES (
   'BGPPL Adhoc Work (Add Two Fields in Integration)', 
   10000, 
   'INR', 
-  'fulfilled', 
+  'closed', 
   'Voucer Number and GL Date is added In Purchase File as well as Recon files', 
   '2026-06-22T05:22:09.616Z', 
   '2026-06-22T05:22:09.616Z'
@@ -102,7 +102,7 @@ VALUES (
   'Motherson Work (PO/25-26/007)', 
   40000, 
   'INR', 
-  'fulfilled', 
+  'closed', 
   NULL, 
   '2026-06-22T05:22:09.616Z', 
   '2026-06-22T05:22:09.616Z'
@@ -116,7 +116,7 @@ VALUES (
   'Motherson PROD Deployment', 
   20000, 
   'INR', 
-  'fulfilled', 
+  'closed', 
   NULL, 
   '2026-06-22T05:22:09.616Z', 
   '2026-06-22T05:22:09.616Z'
@@ -130,7 +130,7 @@ VALUES (
   'Motherson Change Request for Email Notification + Bugfix on 11032026 + Bugfix on 18052026', 
   35000, 
   'INR', 
-  'partially_invoiced', 
+  'open', 
   NULL, 
   '2026-06-22T05:22:09.616Z', 
   '2026-06-22T05:22:09.616Z'
@@ -144,7 +144,7 @@ VALUES (
   'Portscape AMC', 
   80000, 
   'INR', 
-  'partially_invoiced', 
+  'open', 
   NULL, 
   '2026-06-22T05:22:09.616Z', 
   '2026-06-22T05:22:09.616Z'
