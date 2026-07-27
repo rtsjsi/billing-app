@@ -218,11 +218,11 @@ export default function Dashboard() {
                   <p className="mobile-list-item-amount">
                     {po.amount != null ? formatCurrency(po.amount, po.currency) : '-'}
                   </p>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Outstanding:{' '}
-                    <span className="font-medium text-amber-600">
-                      {formatCurrency(getPOOutstanding(po.confirmed_amount ?? po.amount, po.invoiced_amount), po.currency)}
-                    </span>
+                  <p className="text-[11px] text-emerald-600 mt-0.5">
+                    Confirmed {formatCurrency(po.confirmed_amount ?? 0, po.currency)}
+                  </p>
+                  <p className="text-[11px] text-amber-600 mt-0.5">
+                    Outstanding {formatCurrency(getPOOutstanding(po.confirmed_amount ?? po.amount, po.invoiced_amount), po.currency)}
                   </p>
                   <span className={`badge badge-${po.status} mt-1`}>
                     {po.status}

@@ -312,8 +312,7 @@ export default function ClientDetail() {
                     <th className="px-6 py-3">PO Number</th>
                     <th className="px-6 py-3">Description</th>
                     <th className="px-6 py-3">PO Date</th>
-                    <th className="px-6 py-3 text-right">PO Amount</th>
-                    <th className="px-6 py-3 text-right">Outstanding</th>
+                    <th className="px-6 py-3 text-right">Amounts</th>
                     <th className="px-6 py-3 text-center">Status</th>
                   </tr>
                 </thead>
@@ -329,11 +328,21 @@ export default function ClientDetail() {
                         )}
                       </td>
                       <td data-label="PO Date" className="px-6 py-4 text-slate-400">{formatDate(po.po_date)}</td>
-                      <td data-label="PO Amount" className="px-6 py-4 text-right font-medium text-slate-900">
-                        {po.amount != null ? formatCurrency(po.amount, po.currency) : '-'}
-                      </td>
-                      <td data-label="Outstanding" className="px-6 py-4 text-right font-medium text-amber-600">
-                        {formatCurrency(getPOOutstanding(po.confirmed_amount ?? po.amount, po.invoiced_amount), po.currency)}
+                      <td data-label="Amounts" className="px-6 py-4 text-right">
+                        <div className="space-y-0.5 tabular-nums">
+                          <div className="font-medium text-slate-900">
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mr-1.5">PO</span>
+                            {po.amount != null ? formatCurrency(po.amount, po.currency) : '-'}
+                          </div>
+                          <div className="text-xs text-emerald-600">
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-emerald-500/80 mr-1.5">Confirmed</span>
+                            {formatCurrency(po.confirmed_amount ?? 0, po.currency)}
+                          </div>
+                          <div className="text-xs text-amber-600">
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-500/80 mr-1.5">Outstanding</span>
+                            {formatCurrency(getPOOutstanding(po.confirmed_amount ?? po.amount, po.invoiced_amount), po.currency)}
+                          </div>
+                        </div>
                       </td>
                       <td data-label="Status" className="px-6 py-4 text-center">
                         <span className={`badge badge-${po.status}`}>
