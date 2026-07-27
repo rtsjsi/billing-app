@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useFilters } from '../lib/FilterContext';
 import {
   DollarSign,
@@ -9,11 +9,9 @@ import {
   AlertCircle,
   FileCheck,
   Plus,
-  ChevronRight,
 } from 'lucide-react';
 import { api, DashboardData } from '../lib/api';
-import { formatCurrency, formatDate } from '../lib/utils';
-import POAmounts from '../components/POAmounts';
+import { formatCurrency } from '../lib/utils';
 import PageHeader from '../components/PageHeader';
 
 export default function Dashboard() {
@@ -21,7 +19,6 @@ export default function Dashboard() {
   const { selectedFY, selectedClient } = useFilters();
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState('');
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -57,8 +54,6 @@ export default function Dashboard() {
   }
 
   const stats = data?.stats;
-  const recentInvoices = data?.recentInvoices || [];
-  const openPOs = data?.openPOs || [];
 
   const secondaryStats = [
     { label: 'Total PO Amount', value: formatCurrency(stats?.totalPOAmount), icon: FileCheck, color: 'text-indigo-500' },
@@ -142,95 +137,6 @@ export default function Dashboard() {
             );
           })}
         </div>
-      </div>
-
-      {/* Recent Invoices */}
-      <div className="app-card overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100">
-          <h2 className="section-title">Recent Invoices</h2>
-          <Link to="/invoices" className="btn-ghost text-xs py-1 px-2">
-            View all
-            <ChevronRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-
-        {recentInvoices.length === 0 ? (
-          <div className="p-8 text-center text-slate-400 text-sm">
-            No invoices yet. Create your first invoice to get started.
-          </div>
-        ) : (
-          <div className="mobile-list">
-            {recentInvoices.map((inv) => (
-              <button
-                key={inv.id}
-                type="button"
-                onClick={() => navigate(`/invoices/preview/${inv.id}`)}
-                className="mobile-list-item w-full text-left"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="mobile-list-item-title font-mono">{inv.invoice_number}</p>
-                  <p className="mobile-list-item-subtitle">
-                    {inv.client_name} · {formatDate(inv.issue_date)}
-                  </p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="mobile-list-item-amount">{formatCurrency(inv.total, inv.currency)}</p>
-                  <span className={`badge badge-${inv.status} mt-1`}>
-                    {inv.status === 'partially_paid' ? 'Part. Paid' : inv.status}
-                  </span>
-                </div>
-                <ChevronRight className="h-4 w-4 text-slate-300 shrink-0 hidden md:block" />
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Active POs */}
-      <div className="app-card overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100">
-          <h2 className="section-title">Active Purchase Orders</h2>
-          <Link to="/purchase-orders" className="btn-ghost text-xs py-1 px-2">
-            View all
-            <ChevronRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-
-        {openPOs.length === 0 ? (
-          <div className="p-8 text-center text-slate-400 text-sm">
-            No active purchase orders. Record a PO to get started.
-          </div>
-        ) : (
-          <div className="mobile-list">
-            {openPOs.map((po) => (
-              <button
-                key={po.id}
-                type="button"
-                onClick={() => navigate(`/clients/${po.client_id}`)}
-                className="mobile-list-item w-full text-left"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="mobile-list-item-title font-mono">{po.po_number}</p>
-                  <p className="mobile-list-item-subtitle">
-                    {po.client_name} · {formatDate(po.po_date)}
-                  </p>
-                </div>
-                <div className="text-right shrink-0">
-                  <POAmounts
-                    amount={po.amount}
-                    confirmedAmount={po.confirmed_amount}
-                    invoicedAmount={po.invoiced_amount}
-                    currency={po.currency}
-                  />
-                  <span className={`badge badge-${po.status} mt-1.5`}>
-                    {po.status}
-                  </span>
-                </div>
-                <ChevronRight className="h-4 w-4 text-slate-300 shrink-0 hidden md:block" />
-              </button>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );

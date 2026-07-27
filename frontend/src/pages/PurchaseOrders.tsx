@@ -322,33 +322,35 @@ export default function PurchaseOrders() {
               </thead>
               <tbody className="divide-y divide-slate-200 text-sm">
                 {pos.map((po) => (
-                  <tr key={po.id} className="hover:bg-slate-50 transition-colors">
-                    <td data-label="PO Number" className="px-6 py-4 font-mono font-semibold text-slate-800">
+                  <tr key={po.id} className="hover:bg-slate-50 transition-colors align-top">
+                    <td data-label="PO Number" className="px-6 py-3.5 font-mono font-semibold text-slate-800 whitespace-nowrap">
                       {po.po_number}
                     </td>
-                    <td data-label="Client" className="px-6 py-4 text-slate-800 font-medium">{po.client_name}</td>
-                    <td data-label="Description" className="px-6 py-4 text-slate-600 max-w-xs">
+                    <td data-label="Client" className="px-6 py-3.5 text-slate-800 font-medium">{po.client_name}</td>
+                    <td data-label="Description" className="px-6 py-3.5 text-slate-600 max-w-xs">
                       {po.description ? (
                         <span className="line-clamp-2">{po.description}</span>
                       ) : (
                         <span className="text-slate-400">-</span>
                       )}
                     </td>
-                    <td data-label="PO Date" className="px-6 py-4 text-slate-400">{formatDate(po.po_date)}</td>
-                    <td data-label="Amounts" className="px-6 py-4 text-right">
-                      <POAmounts
-                        amount={po.amount}
-                        confirmedAmount={po.confirmed_amount}
-                        invoicedAmount={po.invoiced_amount}
-                        currency={po.currency}
-                      />
+                    <td data-label="PO Date" className="px-6 py-3.5 text-slate-400 whitespace-nowrap">{formatDate(po.po_date)}</td>
+                    <td data-label="Amounts" className="px-6 py-3.5">
+                      <div className="flex justify-end">
+                        <POAmounts
+                          amount={po.amount}
+                          confirmedAmount={po.confirmed_amount}
+                          invoicedAmount={po.invoiced_amount}
+                          currency={po.currency}
+                        />
+                      </div>
                     </td>
-                    <td data-label="Status" className="px-6 py-4 text-center">
+                    <td data-label="Status" className="px-6 py-3.5 text-center">
                       <span className={`badge badge-${po.status}`}>
                         {po.status}
                       </span>
                     </td>
-                    <td data-label="Actions" className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                    <td data-label="Actions" className="px-6 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
                       <ActionMenu
                         isOpen={activeDropdownId === po.id}
                         onToggle={(e) => {

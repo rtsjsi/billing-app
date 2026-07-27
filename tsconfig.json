@@ -24,7 +24,6 @@
     "types": ["@cloudflare/workers-types"],
 
     /* Paths */
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./frontend/src/*"]
     }
