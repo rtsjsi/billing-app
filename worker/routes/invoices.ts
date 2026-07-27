@@ -54,6 +54,9 @@ app.get('/', async (c) => {
     const poId = poIdStr ? parseInt(poIdStr, 10) : undefined;
     const startDate = c.req.query('startDate') || undefined;
     const endDate = c.req.query('endDate') || undefined;
+    const sortBy = c.req.query('sortBy') || 'created_at';
+    const sortDirRaw = (c.req.query('sortDir') || 'desc').toLowerCase();
+    const sortDir = sortDirRaw === 'asc' ? 'asc' as const : 'desc' as const;
     
     const rawLimit = Number(c.req.query('limit') || '20');
     const rawPage = Number(c.req.query('page') || '1');
@@ -74,7 +77,9 @@ app.get('/', async (c) => {
       endDate,
       clampedLimit,
       offset,
-      poId
+      poId,
+      sortBy,
+      sortDir
     );
     const total = await countInvoices(c.env.DB, userId, status, clientId, startDate, endDate, poId);
 

@@ -14,34 +14,23 @@ import {
 import ActionMenu, { ActionMenuItem } from '../components/ActionMenu';
 import ConfirmModal from '../components/ConfirmModal';
 import RecordPaymentModal from '../components/RecordPaymentModal';
+import SortableTh, { SortDir, nextSortState } from '../components/SortableTh';
 import { api, Invoice } from '../lib/api';
-import { formatDate } from '../lib/utils';
+import { formatDate, getFYDateRange } from '../lib/utils';
 import { useFilters } from '../lib/FilterContext';
 import PageHeader from '../components/PageHeader';
 import InvoiceAmounts from '../components/InvoiceAmounts';
 import { useToast } from '../components/Toast';
 import InvoiceEditorModal from './InvoiceEditor';
 
-function getFYDateRange(fy: string) {
-  if (!fy) return { start: undefined, end: undefined };
-  const match = fy.match(/^(\d{4})-\d{2}$/);
-  if (!match) return { start: undefined, end: undefined };
-  const startYear = parseInt(match[1], 10);
-  const endYear = startYear + 1;
-  return {
-    start: `${startYear}-04-01`,
-    end: `${endYear}-03-31`
-  };
-}
-
 export default function Invoices() {
   const navigate = useNavigate();
   const toast = useToast();
   const [searchParams] = useSearchParams();
-  const initialPoId = searchParams.get('po_id');
+  const linkedPoId = searchParams.get('po_id');
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const { selectedFY, selectedClient, clients } = useFilters();
+  const { selectedFY, setSelectedFY, selectedClient, availableYears, clients } = useFilters();
   const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
   const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<number | null>(null);
   const [deleteInvoiceId, setDeleteInvoiceId] = useState<number | null>(null);
@@ -55,9 +44,10 @@ export default function Invoices() {
   // Filters
   const [filterStatus, setFilterStatus] = useState('');
   const [filterClientId, setFilterClientId] = useState('');
-  const [filterPoId, setFilterPoId] = useState(initialPoId || '');
-  const [filterStartDate, setFilterStartDate] = useState('');
-  const [filterEndDate, setFilterEndDate] = useState('');
+
+  // Sorting (default: creation date descending)
+  const [sortKey, setSortKey] = useState('created_at');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -75,11 +65,13 @@ export default function Invoices() {
       const res = await api.invoices.list({
         status: filterStatus || undefined,
         client_id: selectedClient ? parseInt(selectedClient, 10) : (filterClientId ? parseInt(filterClientId, 10) : undefined),
-        po_id: filterPoId ? parseInt(filterPoId, 10) : undefined,
-        startDate: fyRange.start || filterStartDate || undefined,
-        endDate: fyRange.end || filterEndDate || undefined,
+        po_id: linkedPoId ? parseInt(linkedPoId, 10) : undefined,
+        startDate: fyRange.start || undefined,
+        endDate: fyRange.end || undefined,
         page,
-        limit
+        limit,
+        sortBy: sortKey,
+        sortDir,
       });
       setInvoices(res.invoices);
       setTotalPages(res.pagination.totalPages || 1);
@@ -93,7 +85,7 @@ export default function Invoices() {
 
   useEffect(() => {
     fetchInvoices();
-  }, [filterStatus, filterClientId, filterPoId, filterStartDate, filterEndDate, page, selectedFY, selectedClient]);
+  }, [filterStatus, filterClientId, linkedPoId, page, selectedFY, selectedClient, sortKey, sortDir]);
 
   // Open modal when URL contains ?new=1 or ?edit=<id>
   useEffect(() => {
@@ -119,9 +111,14 @@ export default function Invoices() {
   const handleClearFilters = () => {
     setFilterStatus('');
     setFilterClientId('');
-    setFilterPoId('');
-    setFilterStartDate('');
-    setFilterEndDate('');
+    setSelectedFY('');
+    setPage(1);
+  };
+
+  const handleSort = (column: string) => {
+    const next = nextSortState(sortKey, sortDir, column);
+    setSortKey(next.key);
+    setSortDir(next.dir);
     setPage(1);
   };
 
@@ -226,7 +223,20 @@ export default function Invoices() {
         Create Invoice
       </button>
 
-      <div className="app-card p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="app-card p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 mb-1.5">Financial Year</label>
+          <select
+            className="form-input text-sm py-2 min-h-0"
+            value={selectedFY}
+            onChange={(e) => { setSelectedFY(e.target.value); setPage(1); }}
+          >
+            <option value="">All Years</option>
+            {availableYears.map((fy) => (
+              <option key={fy} value={fy}>FY {fy}</option>
+            ))}
+          </select>
+        </div>
         <div>
           <label className="block text-xs font-semibold text-slate-500 mb-1.5">Client</label>
           <select
@@ -242,49 +252,21 @@ export default function Invoices() {
         </div>
         <div>
           <label className="block text-xs font-semibold text-slate-500 mb-1.5">Status</label>
-          <select
-            className="form-input text-sm py-2 min-h-0"
-            value={filterStatus}
-            onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}
-          >
-            <option value="">All Statuses</option>
-            <option value="draft">Draft</option>
-            <option value="sent">Sent</option>
-            <option value="partially_paid">Partially Paid</option>
-            <option value="paid">Paid</option>
-            <option value="overdue">Overdue</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5">Start Date</label>
-          <input
-            type="date"
-            className="form-input text-sm py-2 min-h-0"
-            value={filterStartDate}
-            onChange={(e) => { setFilterStartDate(e.target.value); setPage(1); }}
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5">End Date</label>
-          <input
-            type="date"
-            className="form-input text-sm py-2 min-h-0"
-            value={filterEndDate}
-            onChange={(e) => { setFilterEndDate(e.target.value); setPage(1); }}
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5">Linked PO ID</label>
           <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="PO id..."
+            <select
               className="form-input text-sm py-2 min-h-0"
-              value={filterPoId}
-              onChange={(e) => { setFilterPoId(e.target.value); setPage(1); }}
-            />
-            {(filterStatus || filterClientId || filterPoId || filterStartDate || filterEndDate) && (
+              value={filterStatus}
+              onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}
+            >
+              <option value="">All Statuses</option>
+              <option value="draft">Draft</option>
+              <option value="sent">Sent</option>
+              <option value="partially_paid">Partially Paid</option>
+              <option value="paid">Paid</option>
+              <option value="overdue">Overdue</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+            {(filterStatus || filterClientId || selectedFY) && (
               <button
                 type="button"
                 onClick={handleClearFilters}
@@ -297,6 +279,19 @@ export default function Invoices() {
           </div>
         </div>
       </div>
+
+      {linkedPoId && (
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl bg-sky-50 border border-sky-100 text-sm text-sky-800">
+          <span>Showing invoices linked to PO #{linkedPoId}</span>
+          <button
+            type="button"
+            onClick={() => navigate('/invoices')}
+            className="text-xs font-semibold text-sky-700 hover:text-sky-900"
+          >
+            Clear
+          </button>
+        </div>
+      )}
 
       {error && (
         <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm">{error}</div>
@@ -315,13 +310,13 @@ export default function Invoices() {
           <div className="min-h-[200px]">
             <table className="responsive-table w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-200 text-xs text-slate-400 font-semibold uppercase tracking-wider bg-slate-50">
-                  <th className="px-6 py-3.5">Invoice</th>
-                  <th className="px-6 py-3.5">Client</th>
-                  <th className="px-6 py-3.5">Dates</th>
-                  <th className="px-6 py-3.5 text-right">Amounts</th>
-                  <th className="px-6 py-3.5 text-center">Status</th>
-                  <th className="px-6 py-3.5 text-right">Actions</th>
+                <tr className="border-b border-slate-200 bg-slate-50">
+                  <SortableTh label="Invoice" column="invoice_number" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                  <SortableTh label="Client" column="client_name" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                  <SortableTh label="Dates" column="issue_date" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                  <SortableTh label="Amounts" column="total" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} align="right" />
+                  <SortableTh label="Status" column="status" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} align="center" />
+                  <th className="px-6 py-3.5 text-right text-xs text-slate-400 font-semibold uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 text-sm">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { 
   FileCheck, 
@@ -10,25 +10,14 @@ import {
 } from 'lucide-react';
 import ActionMenu from '../components/ActionMenu';
 import ConfirmModal from '../components/ConfirmModal';
+import SortableTh, { SortDir, nextSortState } from '../components/SortableTh';
 import { api, PurchaseOrder, PurchaseOrderItem } from '../lib/api';
-import { formatCurrency, formatDate, getPOOutstanding } from '../lib/utils';
+import { formatCurrency, formatDate, getPOOutstanding, getFYDateRange } from '../lib/utils';
 import { useFilters } from '../lib/FilterContext';
 import PageHeader from '../components/PageHeader';
 import { useToast } from '../components/Toast';
 import Spinner from '../components/Spinner';
 import POAmounts from '../components/POAmounts';
-
-function getFYDateRange(fy: string) {
-  if (!fy) return { start: undefined, end: undefined };
-  const match = fy.match(/^(\d{4})-\d{2}$/);
-  if (!match) return { start: undefined, end: undefined };
-  const startYear = parseInt(match[1], 10);
-  const endYear = startYear + 1;
-  return {
-    start: `${startYear}-04-01`,
-    end: `${endYear}-03-31`
-  };
-}
 
 export default function PurchaseOrders() {
   const [searchParams] = useSearchParams();
@@ -37,11 +26,13 @@ export default function PurchaseOrders() {
   const initialClientId = searchParams.get('client_id');
 
   const [pos, setPOs] = useState<PurchaseOrder[]>([]);
-  const { selectedFY, selectedClient, clients } = useFilters();
+  const { selectedFY, setSelectedFY, selectedClient, availableYears, clients } = useFilters();
   const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
 
   const [filterClientId, setFilterClientId] = useState(initialClientId || '');
   const [filterStatus, setFilterStatus] = useState('');
+  const [sortKey, setSortKey] = useState('created_at');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -111,6 +102,43 @@ export default function PurchaseOrders() {
   useEffect(() => {
     fetchPOs();
   }, [selectedClient, selectedFY, filterStatus, filterClientId]);
+
+  const sortedPOs = useMemo(() => {
+    const list = [...pos];
+    const dir = sortDir === 'asc' ? 1 : -1;
+    list.sort((a, b) => {
+      const cmp = (left: string | number | null | undefined, right: string | number | null | undefined) => {
+        if (left == null && right == null) return 0;
+        if (left == null) return -1;
+        if (right == null) return 1;
+        if (typeof left === 'number' && typeof right === 'number') return left - right;
+        return String(left).localeCompare(String(right), undefined, { numeric: true, sensitivity: 'base' });
+      };
+
+      switch (sortKey) {
+        case 'po_number':
+          return cmp(a.po_number, b.po_number) * dir;
+        case 'client_name':
+          return cmp(a.client_name, b.client_name) * dir;
+        case 'po_date':
+          return cmp(a.po_date, b.po_date) * dir;
+        case 'amount':
+          return cmp(a.amount ?? 0, b.amount ?? 0) * dir;
+        case 'status':
+          return cmp(a.status, b.status) * dir;
+        case 'created_at':
+        default:
+          return cmp(a.created_at, b.created_at) * dir;
+      }
+    });
+    return list;
+  }, [pos, sortKey, sortDir]);
+
+  const handleSort = (column: string) => {
+    const next = nextSortState(sortKey, sortDir, column);
+    setSortKey(next.key);
+    setSortDir(next.dir);
+  };
 
   // Lock body scroll while the edit/create modal is open
   useEffect(() => {
@@ -276,7 +304,20 @@ export default function PurchaseOrders() {
         New PO
       </button>
 
-      <div className="app-card p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="app-card p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 mb-1.5">Financial Year</label>
+          <select
+            className="form-input text-sm py-2 min-h-0"
+            value={selectedFY}
+            onChange={(e) => setSelectedFY(e.target.value)}
+          >
+            <option value="">All Years</option>
+            {availableYears.map((fy) => (
+              <option key={fy} value={fy}>FY {fy}</option>
+            ))}
+          </select>
+        </div>
         <div>
           <label className="block text-xs font-semibold text-slate-500 mb-1.5">Client</label>
           <select className="form-input text-sm py-2 min-h-0" value={filterClientId} onChange={(e) => setFilterClientId(e.target.value)}>
@@ -288,12 +329,28 @@ export default function PurchaseOrders() {
         </div>
         <div>
           <label className="block text-xs font-semibold text-slate-500 mb-1.5">Status</label>
-          <select className="form-input text-sm py-2 min-h-0" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-            <option value="">All Statuses</option>
-            <option value="open">Open</option>
-            <option value="closed">Closed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
+          <div className="flex gap-2">
+            <select className="form-input text-sm py-2 min-h-0" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+              <option value="">All Statuses</option>
+              <option value="open">Open</option>
+              <option value="closed">Closed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+            {(filterStatus || filterClientId || selectedFY) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterStatus('');
+                  setFilterClientId('');
+                  setSelectedFY('');
+                }}
+                className="shrink-0 px-2 text-xs text-red-600 hover:text-red-700 font-semibold"
+                title="Clear filters"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -302,7 +359,7 @@ export default function PurchaseOrders() {
           <div className="p-12 text-center">
             <div className="spinner mx-auto" />
           </div>
-        ) : pos.length === 0 ? (
+        ) : sortedPOs.length === 0 ? (
           <div className="p-12 text-center text-slate-500 text-sm">
             No Purchase Orders found. Click "New PO" to record one!
           </div>
@@ -310,17 +367,17 @@ export default function PurchaseOrders() {
           <div className="min-h-[200px]">
             <table className="responsive-table w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-200 text-xs text-slate-400 font-semibold uppercase tracking-wider bg-slate-50">
-                  <th className="px-6 py-3.5">PO Number</th>
-                  <th className="px-6 py-3.5">Client</th>
-                  <th className="px-6 py-3.5">PO Date</th>
-                  <th className="px-6 py-3.5 text-right">Amounts</th>
-                  <th className="px-6 py-3.5 text-center">Status</th>
-                  <th className="px-6 py-3.5 text-right">Actions</th>
+                <tr className="border-b border-slate-200 bg-slate-50">
+                  <SortableTh label="PO Number" column="po_number" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                  <SortableTh label="Client" column="client_name" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                  <SortableTh label="PO Date" column="po_date" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                  <SortableTh label="Amounts" column="amount" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} align="right" />
+                  <SortableTh label="Status" column="status" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} align="center" />
+                  <th className="px-6 py-3.5 text-right text-xs text-slate-400 font-semibold uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 text-sm">
-                {pos.map((po) => (
+                {sortedPOs.map((po) => (
                   <tr key={po.id} className="hover:bg-slate-50 transition-colors align-top">
                     <td data-label="PO Number" className="px-6 py-3.5">
                       <div className="font-mono font-semibold text-slate-800 whitespace-nowrap">{po.po_number}</div>

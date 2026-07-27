@@ -333,7 +333,7 @@ export async function listPOs(db: D1Database, userId: number, clientId?: number,
     query += ' AND po.status = ?';
     binds.push(status);
   }
-  query += ' ORDER BY po.po_date DESC, po.id DESC';
+  query += ' ORDER BY po.created_at DESC, po.id DESC';
 
   const { results } = await db.prepare(query).bind(...binds).all<PurchaseOrder>();
   return results || [];
@@ -491,7 +491,9 @@ export async function listInvoices(
   endDate?: string,
   limit: number = 20,
   offset: number = 0,
-  poId?: number
+  poId?: number,
+  sortBy: string = 'created_at',
+  sortDir: 'asc' | 'desc' = 'desc'
 ): Promise<Invoice[]> {
   let query = `
     SELECT ${INVOICE_SELECT_FIELDS}
@@ -529,7 +531,18 @@ export async function listInvoices(
     }
   }
 
-  query += ' ORDER BY i.issue_date DESC, i.invoice_number DESC LIMIT ? OFFSET ?';
+  const sortColumns: Record<string, string> = {
+    created_at: 'i.created_at',
+    invoice_number: 'i.invoice_number',
+    client_name: 'c.name',
+    issue_date: 'i.issue_date',
+    total: 'i.total',
+    status: 'i.status',
+  };
+  const sortCol = sortColumns[sortBy] || sortColumns.created_at;
+  const dir = sortDir === 'asc' ? 'ASC' : 'DESC';
+
+  query += ` ORDER BY ${sortCol} ${dir}, i.id DESC LIMIT ? OFFSET ?`;
   binds.push(limit, offset);
 
   const { results } = await db.prepare(query).bind(...binds).all<Invoice>();

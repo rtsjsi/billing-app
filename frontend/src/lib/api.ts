@@ -279,7 +279,7 @@ export const api = {
 
   // Invoices
   invoices: {
-    list: (params: { status?: string, client_id?: number, po_id?: number, startDate?: string, endDate?: string, page?: number, limit?: number } = {}) => {
+    list: (params: { status?: string, client_id?: number, po_id?: number, startDate?: string, endDate?: string, page?: number, limit?: number, sortBy?: string, sortDir?: 'asc' | 'desc' } = {}) => {
       const query = new URLSearchParams();
       if (params.status) query.append('status', params.status);
       if (params.client_id) query.append('client_id', params.client_id.toString());
@@ -288,6 +288,8 @@ export const api = {
       if (params.endDate) query.append('endDate', params.endDate);
       if (params.page) query.append('page', params.page.toString());
       if (params.limit) query.append('limit', params.limit.toString());
+      if (params.sortBy) query.append('sortBy', params.sortBy);
+      if (params.sortDir) query.append('sortDir', params.sortDir);
       
       return request<InvoiceListResponse>(`/api/invoices?${query.toString()}`);
     },

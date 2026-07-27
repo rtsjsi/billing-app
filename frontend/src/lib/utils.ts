@@ -52,6 +52,19 @@ export function getPOOutstanding(
   return Math.max(0, (amount || 0) - (invoicedAmount || 0));
 }
 
+/** India FY date range for a label like "2025-26". */
+export function getFYDateRange(fy: string): { start?: string; end?: string } {
+  if (!fy) return { start: undefined, end: undefined };
+  const match = fy.match(/^(\d{4})-\d{2}$/);
+  if (!match) return { start: undefined, end: undefined };
+  const startYear = parseInt(match[1], 10);
+  const endYear = startYear + 1;
+  return {
+    start: `${startYear}-04-01`,
+    end: `${endYear}-03-31`,
+  };
+}
+
 /** Debounce a callback; returns a cancellable debounced function. */
 export function debounce<T extends (...args: any[]) => void>(fn: T, delayMs: number) {
   let timer: ReturnType<typeof setTimeout> | null = null;
