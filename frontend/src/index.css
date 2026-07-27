@@ -369,6 +369,74 @@
   letter-spacing: -0.02em;
 }
 
+/* Dashboard metric cards */
+.dash-metric {
+  display: block;
+  background: #ffffff;
+  border: 1px solid #eef1f6;
+  border-radius: 1rem;
+  padding: 1.125rem 1.25rem;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.dash-metric-plain:hover {
+  border-color: #dbe3ef;
+  box-shadow: 0 4px 14px rgba(16, 24, 40, 0.06);
+  transform: translateY(-1px);
+}
+
+.dash-metric-amber {
+  background: linear-gradient(180deg, #fffbeb 0%, #ffffff 55%);
+  border-color: #fde68a;
+}
+
+.dash-metric-green {
+  background: linear-gradient(180deg, #ecfdf5 0%, #ffffff 55%);
+  border-color: #a7f3d0;
+}
+
+.dash-metric-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.dash-metric-hint {
+  font-size: 0.6875rem;
+  color: #94a3b8;
+  margin-top: 0.125rem;
+  line-height: 1.35;
+}
+
+.dash-metric-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.625rem;
+  flex-shrink: 0;
+}
+
+.dash-metric-value {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.625rem;
+  letter-spacing: -0.03em;
+  margin-top: 1rem;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 768px) {
+  .dash-metric-value {
+    font-size: 1.875rem;
+  }
+}
+
 /* Hero portfolio card */
 .hero-card {
   background: linear-gradient(135deg, #00b386 0%, #007a5c 100%);

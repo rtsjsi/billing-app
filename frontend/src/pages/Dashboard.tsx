@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useFilters } from '../lib/FilterContext';
 import {
-  DollarSign,
-  FileText,
-  Clock,
-  CheckCircle2,
   AlertCircle,
+  ArrowRight,
+  CheckCircle2,
+  Clock,
   FileCheck,
+  FileText,
   Plus,
+  Wallet,
 } from 'lucide-react';
 import { api, DashboardData } from '../lib/api';
 import { formatCurrency } from '../lib/utils';
@@ -54,23 +55,49 @@ export default function Dashboard() {
   }
 
   const stats = data?.stats;
+  const overdueCount = stats?.overdueCount ?? 0;
+  const outstanding = stats?.totalOutstanding ?? 0;
+  const collected = stats?.totalPaidAmount ?? 0;
+  const confirmedPO = stats?.totalPOAmount ?? 0;
+  const invoiced = stats?.totalInvoiceAmount ?? 0;
+  const pending = stats?.invoicePendingAmount ?? 0;
 
-  const secondaryStats = [
-    { label: 'Total PO Amount', value: formatCurrency(stats?.totalPOAmount), icon: FileCheck, color: 'text-indigo-500' },
-    { label: 'Total Invoiced', value: formatCurrency(stats?.totalInvoiceAmount), icon: DollarSign, color: 'text-blue-500' },
-    { label: 'Invoice Pending', value: formatCurrency(stats?.invoicePendingAmount), icon: FileText, color: 'text-violet-500' },
-    { label: 'Total Paid', value: formatCurrency(stats?.totalPaidAmount), icon: CheckCircle2, color: 'text-emerald-500' },
-    { label: 'Outstanding', value: formatCurrency(stats?.totalOutstanding), icon: Clock, color: 'text-amber-500' },
-    { label: 'Overdue', value: String(stats?.overdueCount ?? 0), icon: AlertCircle, color: 'text-red-500', danger: (stats?.overdueCount ?? 0) > 0 },
+  const pipeline = [
+    {
+      label: 'Confirmed PO',
+      hint: 'Work confirmed to start',
+      value: formatCurrency(confirmedPO),
+      icon: FileCheck,
+      tone: 'text-slate-700',
+      iconBg: 'bg-slate-100 text-slate-600',
+      to: '/purchase-orders',
+    },
+    {
+      label: 'Invoiced',
+      hint: 'Billed to clients',
+      value: formatCurrency(invoiced),
+      icon: FileText,
+      tone: 'text-slate-700',
+      iconBg: 'bg-sky-50 text-sky-600',
+      to: '/invoices',
+    },
+    {
+      label: 'Yet to invoice',
+      hint: 'Confirmed PO − invoiced',
+      value: formatCurrency(pending),
+      icon: Clock,
+      tone: 'text-violet-700',
+      iconBg: 'bg-violet-50 text-violet-600',
+      to: '/purchase-orders',
+    },
   ];
 
   return (
-    <div className="space-y-5 md:space-y-8">
-      {/* Desktop page header — hidden title on mobile (shown in layout header) */}
+    <div className="space-y-5 md:space-y-6">
       <div className="hidden md:block">
         <PageHeader
           title="Dashboard"
-          subtitle="Overview of your billings, payments, and purchase orders"
+          subtitle="Cash position and billing pipeline at a glance"
           actions={
             <>
               <Link to="/purchase-orders" className="btn-secondary">
@@ -86,26 +113,6 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Hero portfolio card */}
-      <div className="hero-card">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="hero-card-label">Total Outstanding</p>
-            <p className="hero-card-value">{formatCurrency(stats?.totalOutstanding)}</p>
-          </div>
-          <div>
-            <p className="hero-card-label">Total Collected</p>
-            <p className="hero-card-value">{formatCurrency(stats?.totalPaidAmount)}</p>
-          </div>
-        </div>
-        {(stats?.overdueCount ?? 0) > 0 && (
-          <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2 text-sm">
-            <AlertCircle className="h-4 w-4" />
-            <span>{stats?.overdueCount} overdue invoice{stats?.overdueCount !== 1 ? 's' : ''} need follow-up</span>
-          </div>
-        )}
-      </div>
-
       {/* Mobile quick actions */}
       <div className="flex gap-2 md:hidden">
         <Link to="/invoices/new" className="btn-primary flex-1">
@@ -118,26 +125,87 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      {/* Horizontal scroll stats on mobile, grid on desktop */}
-      <div>
-        <h2 className="section-title mb-3 px-0.5">Overview</h2>
-        <div className="stats-scroll md:grid md:grid-cols-3 lg:grid-cols-6 md:gap-3 md:overflow-visible">
-          {secondaryStats.map((stat) => {
-            const Icon = stat.icon;
-            return (
-              <div key={stat.label} className="stat-card md:min-w-0">
-                <div className="flex items-center justify-between">
-                  <span className="stat-card-label">{stat.label}</span>
-                  <Icon className={`h-3.5 w-3.5 ${stat.color}`} />
-                </div>
-                <p className={`stat-card-value ${stat.danger ? 'text-red-500' : ''}`}>
-                  {stat.value}
-                </p>
+      {overdueCount > 0 && (
+        <Link
+          to="/invoices"
+          className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 hover:bg-red-100/80 transition-colors"
+        >
+          <span className="flex items-center gap-2 font-medium">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            {overdueCount} overdue invoice{overdueCount !== 1 ? 's' : ''} need follow-up
+          </span>
+          <span className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide">
+            View
+            <ArrowRight className="h-3.5 w-3.5" />
+          </span>
+        </Link>
+      )}
+
+      {/* Cash position — primary */}
+      <section>
+        <h2 className="section-title mb-3 px-0.5">Cash position</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+          <div className="dash-metric dash-metric-amber">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="dash-metric-label">Outstanding</p>
+                <p className="dash-metric-hint">Unpaid on sent invoices</p>
               </div>
+              <span className="dash-metric-icon bg-amber-100 text-amber-700">
+                <Wallet className="h-4 w-4" />
+              </span>
+            </div>
+            <p className="dash-metric-value text-amber-800">
+              {formatCurrency(outstanding)}
+            </p>
+          </div>
+
+          <div className="dash-metric dash-metric-green">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="dash-metric-label">Collected</p>
+                <p className="dash-metric-hint">Payments received</p>
+              </div>
+              <span className="dash-metric-icon bg-emerald-100 text-emerald-700">
+                <CheckCircle2 className="h-4 w-4" />
+              </span>
+            </div>
+            <p className="dash-metric-value text-emerald-800">
+              {formatCurrency(collected)}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Billing pipeline — secondary */}
+      <section>
+        <h2 className="section-title mb-3 px-0.5">Billing pipeline</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {pipeline.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.label}
+                to={item.to}
+                className="dash-metric dash-metric-plain group"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="dash-metric-label">{item.label}</p>
+                    <p className="dash-metric-hint">{item.hint}</p>
+                  </div>
+                  <span className={`dash-metric-icon ${item.iconBg}`}>
+                    <Icon className="h-4 w-4" />
+                  </span>
+                </div>
+                <p className={`dash-metric-value ${item.tone}`}>
+                  {item.value}
+                </p>
+              </Link>
             );
           })}
         </div>
-      </div>
+      </section>
     </div>
   );
 }

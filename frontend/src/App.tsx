@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { api } from './lib/api';
 import { FilterProvider } from './lib/FilterContext';
 import { ToastProvider } from './components/Toast';
@@ -74,21 +74,17 @@ export default function App() {
     setUser(null);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#f5f7fa] flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="spinner mx-auto" />
-          <p className="text-slate-400 text-xs font-medium">Loading your workspace...</p>
-        </div>
-      </div>
-    );
-  }
-
   // Helper route guards
   const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+    const location = useLocation();
     if (!user) {
-      return <Navigate to={needsSetup ? "/setup" : "/login"} replace />;
+      return (
+        <Navigate
+          to={needsSetup ? '/setup' : '/login'}
+          replace
+          state={{ from: location.pathname + location.search }}
+        />
+      );
     }
     return (
       <FilterProvider>
@@ -98,8 +94,10 @@ export default function App() {
   };
 
   const PublicRoute = ({ children }: { children: React.ReactNode }) => {
+    const location = useLocation();
     if (user) {
-      return <Navigate to="/" replace />;
+      const from = (location.state as { from?: string } | null)?.from;
+      return <Navigate to={from || '/'} replace />;
     }
     return <>{children}</>;
   };
@@ -107,39 +105,48 @@ export default function App() {
   return (
     <BrowserRouter>
       <ToastProvider>
-        <Routes>
-          {/* Public Routes */}
-          <Route 
-            path="/login" 
-            element={
-              <PublicRoute>
-                <Login onLoginSuccess={handleLoginSuccess} />
-              </PublicRoute>
-            } 
-          />
-          <Route 
-            path="/setup" 
-            element={
-              <PublicRoute>
-                <Setup onSetupComplete={handleLoginSuccess} />
-              </PublicRoute>
-            } 
-          />
+        {loading ? (
+          <div className="min-h-screen bg-[#f5f7fa] flex items-center justify-center">
+            <div className="text-center space-y-4">
+              <div className="spinner mx-auto" />
+              <p className="text-slate-400 text-xs font-medium">Loading your workspace...</p>
+            </div>
+          </div>
+        ) : (
+          <Routes>
+            {/* Public Routes */}
+            <Route
+              path="/login"
+              element={
+                <PublicRoute>
+                  <Login onLoginSuccess={handleLoginSuccess} />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/setup"
+              element={
+                <PublicRoute>
+                  <Setup onSetupComplete={handleLoginSuccess} />
+                </PublicRoute>
+              }
+            />
 
-          {/* Protected Core Layout routes */}
-          <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
-          <Route path="/clients/:id" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
-          <Route path="/purchase-orders" element={<ProtectedRoute><PurchaseOrders /></ProtectedRoute>} />
-          <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
-          <Route path="/invoices/new" element={<ProtectedRoute><InvoiceEditor /></ProtectedRoute>} />
-          <Route path="/invoices/edit/:id" element={<ProtectedRoute><InvoiceEditor /></ProtectedRoute>} />
-          <Route path="/invoices/preview/:id" element={<ProtectedRoute><InvoicePreview /></ProtectedRoute>} />
-          <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            {/* Protected Core Layout routes */}
+            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
+            <Route path="/clients/:id" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
+            <Route path="/purchase-orders" element={<ProtectedRoute><PurchaseOrders /></ProtectedRoute>} />
+            <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
+            <Route path="/invoices/new" element={<ProtectedRoute><InvoiceEditor /></ProtectedRoute>} />
+            <Route path="/invoices/edit/:id" element={<ProtectedRoute><InvoiceEditor /></ProtectedRoute>} />
+            <Route path="/invoices/preview/:id" element={<ProtectedRoute><InvoicePreview /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
 
-          {/* Fallback Catch-All */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            {/* Fallback Catch-All */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        )}
       </ToastProvider>
     </BrowserRouter>
   );

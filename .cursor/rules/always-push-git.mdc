@@ -1,0 +1,14 @@
+---
+description: Always commit and push completed changes to git
+alwaysApply: true
+---
+
+# Always commit and push
+
+When you finish making code or config changes in this project:
+
+1. Commit the relevant files with a clear message (never commit `.env` or secrets).
+2. Push to `origin` on the current branch immediately.
+3. Do not wait for the user to ask to push, unless they explicitly say not to.
+
+If the change should go live and Cloudflare credentials are available, apply D1 migrations and deploy after the push.

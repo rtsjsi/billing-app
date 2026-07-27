@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Zap, ShieldAlert, ArrowRight, Lock } from 'lucide-react';
 import { api } from '../lib/api';
 
@@ -14,6 +14,8 @@ export default function Login({ onLoginSuccess }: LoginProps) {
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = (location.state as { from?: string } | null)?.from || '/';
 
   useEffect(() => {
     const checkSetup = async () => {
@@ -50,7 +52,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
           businessName: userRes.businessName,
           currency: userRes.currency
         });
-        navigate('/');
+        navigate(returnTo === '/login' ? '/' : returnTo, { replace: true });
       } else {
         setError('Authentication succeeded but failed to load profile.');
       }
