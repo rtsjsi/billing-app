@@ -345,8 +345,7 @@ export default function InvoiceEditor() {
 
   return (
     <div className="space-y-3 form-dense">
-      {/* Back + desktop title */}
-      <div className="space-y-0.5">
+      <div className="flex items-center justify-between gap-3">
         <Link
           to="/invoices"
           className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 transition-colors"
@@ -354,338 +353,246 @@ export default function InvoiceEditor() {
           <ArrowLeft className="h-4 w-4" />
           <span>Back to Invoices</span>
         </Link>
-        <div className="hidden md:block pt-0.5">
-          <h1 className="page-title">{isEdit ? 'Edit Invoice' : 'Create Invoice'}</h1>
-          <p className="page-subtitle mt-0">
-            {isEdit ? 'Modify billing details' : 'Fill in details to generate a new invoice'}
-          </p>
-        </div>
       </div>
 
       {error && (
-        <div className="p-3 bg-red-100 border border-red-500/20 rounded-xl flex items-start space-x-3 text-red-600 text-sm">
-          <AlertCircle className="h-5 w-5 shrink-0 text-red-600 mt-0.5" />
+        <div className="p-2.5 bg-red-100 border border-red-500/20 text-red-600 rounded-lg text-xs flex items-start space-x-2">
+          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
           <span>{error}</span>
         </div>
       )}
 
-      {/* Main Form Box */}
-      <div className="glass-card rounded-2xl border-slate-200 p-4 md:p-5 space-y-4">
-        
-        {/* Core fields (Client, PO, dates) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
-          
-          {/* Client picker & Shortcut */}
-          <div className="sm:col-span-2 lg:col-span-2">
-            <div className="flex justify-between items-center mb-0.5">
-              <label className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Client *</label>
-              <button
-                type="button"
-                onClick={() => setInlineClientOpen(true)}
-                className="text-xs text-blue-600 hover:text-blue-500 font-medium flex items-center space-x-1 cursor-pointer"
-              >
-                <UserPlus className="h-3 w-3" />
-                <span>+ New Client</span>
-              </button>
-            </div>
-            <select
-              required
-              className="w-full form-input"
-              value={clientId}
-              onChange={(e) => setClientId(e.target.value)}
-            >
-              <option value="" disabled>Select billing client...</option>
-              {clients.map(c => (
-                <option key={c.id} value={c.id}>{c.name} {c.company_name ? `(${c.company_name})` : ''}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* PO Picker */}
-          <div className="lg:col-span-2">
-            <label className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Link PO (Optional)</label>
-            <select
-              className="w-full form-input"
-              value={poId}
-              onChange={(e) => handlePoChange(e.target.value)}
-              disabled={!clientId}
-            >
-              <option value="">No PO Linked</option>
-              {clientPOs.map(po => (
-                <option key={po.id} value={po.id}>{po.po_number}{po.description ? ` - ${po.description}` : ''} ({po.status})</option>
-              ))}
-            </select>
-            {!clientId && (
-              <span className="text-[10px] text-slate-500 mt-0.5 block">Pick client first to load POs</span>
-            )}
-          </div>
-
-          {/* Currency selection */}
+      <div className="app-card overflow-hidden flex flex-col max-w-6xl">
+        <div className="flex justify-between items-center px-4 py-2.5 border-b border-slate-200 shrink-0">
           <div>
-            <label className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Currency</label>
-            <select
-              className="w-full form-input"
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value)}
-            >
-              <option value="INR">INR (₹)</option>
-              <option value="USD">USD ($)</option>
-              <option value="EUR">EUR (€)</option>
-              <option value="GBP">GBP (£)</option>
-              <option value="JPY">JPY (¥)</option>
-            </select>
-          </div>
-
-          {/* Dates */}
-          <div>
-            <label className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Issue Date *</label>
-            <input 
-              type="date"
-              required
-              className="w-full form-input"
-              value={issueDate}
-              onChange={(e) => handleIssueDateChange(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Due Date *</label>
-            <input 
-              type="date"
-              required
-              className="w-full form-input"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-            />
+            <h1 className="font-display font-semibold text-base text-slate-900">
+              {isEdit ? 'Edit Invoice' : 'Create Invoice'}
+            </h1>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {isEdit ? 'Modify billing details' : 'Fill in details to generate a new invoice'}
+            </p>
           </div>
         </div>
 
-        {/* Line Items */}
-        <div className="space-y-2">
-          <h3 className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Line Items</h3>
+        <div className="p-4 space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
+            <div className="lg:col-span-4">
+              <div className="flex justify-between items-center">
+                <label className="block text-[10px] text-slate-400 font-medium uppercase tracking-wider">Client *</label>
+                <button
+                  type="button"
+                  onClick={() => setInlineClientOpen(true)}
+                  className="text-[10px] text-blue-600 hover:text-blue-500 font-medium flex items-center gap-1"
+                >
+                  <UserPlus className="h-3 w-3" />
+                  New
+                </button>
+              </div>
+              <select
+                required
+                className="w-full form-input"
+                value={clientId}
+                onChange={(e) => setClientId(e.target.value)}
+              >
+                <option value="" disabled>Select billing client...</option>
+                {clients.map(c => (
+                  <option key={c.id} value={c.id}>{c.name} {c.company_name ? `(${c.company_name})` : ''}</option>
+                ))}
+              </select>
+            </div>
 
-          {/* Mobile: card layout */}
-          <div className="md:hidden space-y-2">
-            {items.map((item, index) => (
-              <div key={index} className="line-item-card space-y-2 !p-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-400">Item {index + 1}</span>
+            <div className="lg:col-span-3">
+              <label className="block text-[10px] text-slate-400 font-medium uppercase tracking-wider">Link PO</label>
+              <select
+                className="w-full form-input"
+                value={poId}
+                onChange={(e) => handlePoChange(e.target.value)}
+                disabled={!clientId}
+              >
+                <option value="">No PO Linked</option>
+                {clientPOs.map(po => (
+                  <option key={po.id} value={po.id}>{po.po_number}{po.description ? ` - ${po.description}` : ''} ({po.status})</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="lg:col-span-1">
+              <label className="block text-[10px] text-slate-400 font-medium uppercase tracking-wider">Currency</label>
+              <select
+                className="w-full form-input"
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+              >
+                <option value="INR">INR</option>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="GBP">GBP</option>
+                <option value="JPY">JPY</option>
+              </select>
+            </div>
+
+            <div className="lg:col-span-2">
+              <label className="block text-[10px] text-slate-400 font-medium uppercase tracking-wider">Issue Date *</label>
+              <input
+                type="date"
+                required
+                className="w-full form-input"
+                value={issueDate}
+                onChange={(e) => handleIssueDateChange(e.target.value)}
+              />
+            </div>
+
+            <div className="lg:col-span-2">
+              <label className="block text-[10px] text-slate-400 font-medium uppercase tracking-wider">Due Date *</label>
+              <input
+                type="date"
+                required
+                className="w-full form-input"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="border-t border-slate-200 pt-3">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Line Items *</h3>
+              <button
+                type="button"
+                onClick={addLineItem}
+                className="text-xs flex items-center space-x-1 text-blue-600 hover:text-blue-500"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>Add Item</span>
+              </button>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_4.5rem_6.5rem_7rem_2rem] gap-2 px-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                <span>Description</span>
+                <span className="text-right">Qty</span>
+                <span className="text-right">Price</span>
+                <span className="text-right">Amount</span>
+                <span />
+              </div>
+              {items.map((item, index) => (
+                <div
+                  key={index}
+                  className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem_7rem_2rem] gap-2 items-center bg-slate-50 px-2 py-1.5 rounded-lg border border-slate-200"
+                >
+                  <input
+                    type="text"
+                    required
+                    placeholder="Description"
+                    className="w-full form-input"
+                    value={item.description}
+                    onChange={(e) => handleItemFieldChange(index, 'description', e.target.value)}
+                  />
+                  <input
+                    type="number"
+                    required
+                    step="any"
+                    placeholder="Qty"
+                    className="w-full form-input text-right"
+                    value={item.quantity === 0 ? '' : item.quantity}
+                    onChange={(e) => handleItemFieldChange(index, 'quantity', e.target.value)}
+                  />
+                  <input
+                    type="number"
+                    required
+                    step="0.01"
+                    placeholder="Price"
+                    className="w-full form-input text-right font-mono"
+                    value={item.unit_price === 0 ? '' : item.unit_price}
+                    onChange={(e) => handleItemFieldChange(index, 'unit_price', e.target.value)}
+                  />
+                  <div className="form-input bg-white text-slate-500 flex items-center justify-end tabular-nums">
+                    {item.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
                   <button
                     type="button"
                     onClick={() => removeLineItem(index)}
                     disabled={items.length <= 1}
-                    className="text-slate-400 hover:text-red-500 p-1 disabled:opacity-30"
-                    title="Remove"
+                    className="justify-self-center p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-100 rounded-lg disabled:opacity-30"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
-                <div>
-                  <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Description *</label>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-slate-200">
+            <div className="space-y-2.5">
+              <div>
+                <label className="block text-[10px] text-slate-400 font-medium uppercase tracking-wider">Payment Terms</label>
+                <textarea
+                  placeholder="Details of payment terms..."
+                  rows={2}
+                  className="w-full form-input text-xs resize-none"
+                  value={terms}
+                  onChange={(e) => setTerms(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-400 font-medium uppercase tracking-wider">Notes to Client</label>
+                <textarea
+                  placeholder="Bank coordinates or UPI details..."
+                  rows={2}
+                  className="w-full form-input text-xs resize-none"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2 max-w-md ml-auto w-full">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-slate-400">Subtotal</span>
+                <span className="font-mono text-slate-800">{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center space-x-2">
                   <input
                     type="text"
-                    required
-                    placeholder="e.g. Consulting Services"
-                    className="form-input text-sm"
-                    value={item.description}
-                    onChange={(e) => handleItemFieldChange(index, 'description', e.target.value)}
+                    className="form-input py-0.5 px-1.5 text-[10px] w-12 font-semibold uppercase tracking-wider text-center"
+                    value={taxLabel}
+                    onChange={(e) => setTaxLabel(e.target.value)}
+                    placeholder="Tax"
                   />
+                  <input
+                    type="number"
+                    className="form-input py-0.5 px-1.5 text-[10px] w-12 text-right font-mono"
+                    value={taxRate === 0 ? '' : taxRate}
+                    onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
+                    placeholder="%"
+                  />
+                  <span className="text-slate-400 text-xs">%</span>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Qty</label>
-                    <input
-                      type="number"
-                      required
-                      step="any"
-                      placeholder="1"
-                      className="form-input text-sm"
-                      value={item.quantity === 0 ? '' : item.quantity}
-                      onChange={(e) => handleItemFieldChange(index, 'quantity', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Unit Price</label>
-                    <input
-                      type="number"
-                      required
-                      step="0.01"
-                      placeholder="0.00"
-                      className="form-input text-sm font-mono"
-                      value={item.unit_price === 0 ? '' : item.unit_price}
-                      onChange={(e) => handleItemFieldChange(index, 'unit_price', e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-between items-center pt-1 border-t border-slate-200">
-                  <span className="text-xs text-slate-400">Amount</span>
-                  <span className="font-mono font-semibold text-slate-900">
-                    {item.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
-                </div>
+                <span className="font-mono text-slate-800">+{taxAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
               </div>
-            ))}
-          </div>
-
-          {/* Desktop: table layout */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-200">
-                  <th className="py-1.5 pr-3 w-3/5">Item Description *</th>
-                  <th className="py-1.5 px-3 text-right">Qty</th>
-                  <th className="py-1.5 px-3 text-right">Unit Price</th>
-                  <th className="py-1.5 pl-3 text-right">Amount</th>
-                  <th className="py-1.5 w-8"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {items.map((item, index) => (
-                  <tr key={index} className="align-middle">
-                    <td className="py-1.5 pr-3">
-                      <input
-                        type="text"
-                        required
-                        placeholder="e.g. Consulting Services"
-                        className="w-full form-input"
-                        value={item.description}
-                        onChange={(e) => handleItemFieldChange(index, 'description', e.target.value)}
-                      />
-                    </td>
-                    <td className="py-1.5 px-3">
-                      <input
-                        type="number"
-                        required
-                        step="any"
-                        placeholder="1"
-                        className="w-full form-input text-right"
-                        value={item.quantity === 0 ? '' : item.quantity}
-                        onChange={(e) => handleItemFieldChange(index, 'quantity', e.target.value)}
-                      />
-                    </td>
-                    <td className="py-1.5 px-3">
-                      <input
-                        type="number"
-                        required
-                        step="0.01"
-                        placeholder="0.00"
-                        className="w-full form-input text-right font-mono"
-                        value={item.unit_price === 0 ? '' : item.unit_price}
-                        onChange={(e) => handleItemFieldChange(index, 'unit_price', e.target.value)}
-                      />
-                    </td>
-                    <td className="py-1.5 pl-3 text-right align-middle font-mono font-medium text-slate-900 text-sm">
-                      {item.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </td>
-                    <td className="py-1.5 text-right align-middle">
-                      <button
-                        type="button"
-                        onClick={() => removeLineItem(index)}
-                        disabled={items.length <= 1}
-                        className="text-slate-400 hover:text-red-500 p-1 disabled:opacity-30"
-                        title="Remove"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <button
-            type="button"
-            onClick={addLineItem}
-            className="btn-secondary w-full md:w-auto border-dashed !min-h-9 py-1.5 text-xs"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add Line Item
-          </button>
-        </div>
-
-        {/* Aggregates Calculations & Terms */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-slate-200">
-          {/* Notes / Terms */}
-          <div className="space-y-2.5">
-            <div>
-              <label className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Payment Terms</label>
-              <textarea
-                placeholder="Details of payment terms..."
-                rows={2}
-                className="w-full form-input text-xs resize-none"
-                value={terms}
-                onChange={(e) => setTerms(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Notes to Client</label>
-              <textarea
-                placeholder="Bank coordinates or UPI details..."
-                rows={2}
-                className="w-full form-input text-xs resize-none"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Live Totals summary */}
-          <div className="bg-slate-100/40 border border-slate-200 rounded-xl p-3 space-y-2 max-w-md ml-auto w-full">
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-slate-400">Subtotal:</span>
-              <span className="font-mono text-slate-800">{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-            </div>
-
-            {/* Tax Settings */}
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center space-x-2">
-                <input 
-                  type="text" 
-                  className="form-input py-0.5 px-1.5 text-[10px] w-12 font-semibold uppercase tracking-wider text-center"
-                  value={taxLabel}
-                  onChange={(e) => setTaxLabel(e.target.value)}
-                  placeholder="Tax"
-                />
-                <input 
-                  type="number" 
-                  className="form-input py-0.5 px-1.5 text-[10px] w-12 text-right font-mono"
-                  value={taxRate === 0 ? '' : taxRate}
-                  onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
-                  placeholder="%"
-                />
-                <span className="text-slate-400 text-xs">%</span>
-              </div>
-              <span className="font-mono text-slate-800">+{taxAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-            </div>
-
-            {/* Discount */}
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-400">Discount Amount:</span>
-              <div className="flex items-center space-x-2">
-                <input 
-                  type="number" 
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-400">Discount</span>
+                <input
+                  type="number"
                   placeholder="0.00"
                   className="form-input py-0.5 px-2 text-xs w-24 text-right font-mono"
                   value={discountAmount === 0 ? '' : discountAmount}
                   onChange={(e) => setDiscountAmount(parseFloat(e.target.value) || 0)}
                 />
               </div>
-            </div>
-
-            {/* Grand Total */}
-            <div className="border-t border-slate-200 pt-2 flex justify-between items-center">
-              <span className="font-display font-semibold text-slate-900">Grand Total</span>
-              <span className="font-display font-bold text-lg text-brand-600 bg-brand-50 px-2.5 py-1 rounded-lg">
-                {currency} {total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-              </span>
+              <div className="border-t border-slate-200 pt-2 flex justify-between items-center">
+                <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Grand Total</span>
+                <span className="font-mono font-semibold text-brand-600">
+                  {currency} {total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Form Action Controls */}
-        <div className="pt-3 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2">
-          <Link to="/invoices" className="btn-secondary text-center !min-h-9 py-1.5">
+        <div className="px-4 py-2.5 border-t border-slate-200 bg-slate-50 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2 shrink-0">
+          <Link to="/invoices" className="px-3 py-1.5 border border-slate-200 hover:border-slate-300 bg-white rounded-lg text-sm font-semibold text-slate-700 text-center">
             Discard
           </Link>
           <div className="flex flex-col sm:flex-row gap-2">
@@ -693,7 +600,7 @@ export default function InvoiceEditor() {
               type="button"
               disabled={submitting}
               onClick={() => handleSubmit('draft')}
-              className="btn-secondary !min-h-9 py-1.5"
+              className="px-3 py-1.5 border border-slate-200 hover:border-slate-300 bg-white rounded-lg text-sm font-semibold text-slate-700 disabled:opacity-50"
             >
               {submitting ? 'Saving...' : 'Save as Draft'}
             </button>
@@ -701,14 +608,13 @@ export default function InvoiceEditor() {
               type="button"
               disabled={submitting}
               onClick={() => handleSubmit('sent')}
-              className="btn-primary !min-h-9 py-1.5"
+              className="px-3 py-1.5 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 rounded-lg text-sm font-semibold text-white shadow-lg shadow-sky-500/10 disabled:opacity-50 inline-flex items-center justify-center gap-1.5"
             >
               <Save className="h-4 w-4" />
               <span>{isEdit ? 'Update & Finalize' : 'Create & Mark Sent'}</span>
             </button>
           </div>
         </div>
-
       </div>
 
       {/* Inline Client Creator Panel */}
