@@ -311,7 +311,6 @@ export default function ClientDetail() {
                 <thead>
                   <tr className="border-b border-slate-200 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-50">
                     <th className="px-6 py-3">PO Number</th>
-                    <th className="px-6 py-3">Description</th>
                     <th className="px-6 py-3">PO Date</th>
                     <th className="px-6 py-3 text-right">Amounts</th>
                     <th className="px-6 py-3 text-center">Status</th>
@@ -320,13 +319,11 @@ export default function ClientDetail() {
                 <tbody className="divide-y divide-slate-100 text-sm">
                   {filteredPOs.map((po) => (
                     <tr key={po.id} className="hover:bg-slate-50/10 transition-all align-top">
-                      <td data-label="PO Number" className="px-6 py-3.5 font-mono font-medium text-slate-700 whitespace-nowrap">{po.po_number}</td>
-                      <td data-label="Description" className="px-6 py-3.5 text-slate-600 max-w-xs">
+                      <td data-label="PO Number" className="px-6 py-3.5">
+                        <div className="font-mono font-medium text-slate-700 whitespace-nowrap">{po.po_number}</div>
                         {po.description ? (
-                          <span className="line-clamp-2">{po.description}</span>
-                        ) : (
-                          <span className="text-slate-400">-</span>
-                        )}
+                          <div className="text-xs text-slate-400 mt-0.5 line-clamp-2 max-w-xs">{po.description}</div>
+                        ) : null}
                       </td>
                       <td data-label="PO Date" className="px-6 py-3.5 text-slate-400 whitespace-nowrap">{formatDate(po.po_date)}</td>
                       <td data-label="Amounts" className="px-6 py-3.5">

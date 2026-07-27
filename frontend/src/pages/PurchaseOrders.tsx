@@ -313,7 +313,6 @@ export default function PurchaseOrders() {
                 <tr className="border-b border-slate-200 text-xs text-slate-400 font-semibold uppercase tracking-wider bg-slate-50">
                   <th className="px-6 py-3.5">PO Number</th>
                   <th className="px-6 py-3.5">Client</th>
-                  <th className="px-6 py-3.5">Description</th>
                   <th className="px-6 py-3.5">PO Date</th>
                   <th className="px-6 py-3.5 text-right">Amounts</th>
                   <th className="px-6 py-3.5 text-center">Status</th>
@@ -323,17 +322,13 @@ export default function PurchaseOrders() {
               <tbody className="divide-y divide-slate-200 text-sm">
                 {pos.map((po) => (
                   <tr key={po.id} className="hover:bg-slate-50 transition-colors align-top">
-                    <td data-label="PO Number" className="px-6 py-3.5 font-mono font-semibold text-slate-800 whitespace-nowrap">
-                      {po.po_number}
+                    <td data-label="PO Number" className="px-6 py-3.5">
+                      <div className="font-mono font-semibold text-slate-800 whitespace-nowrap">{po.po_number}</div>
+                      {po.description ? (
+                        <div className="text-xs text-slate-400 mt-0.5 line-clamp-2 max-w-xs">{po.description}</div>
+                      ) : null}
                     </td>
                     <td data-label="Client" className="px-6 py-3.5 text-slate-800 font-medium">{po.client_name}</td>
-                    <td data-label="Description" className="px-6 py-3.5 text-slate-600 max-w-xs">
-                      {po.description ? (
-                        <span className="line-clamp-2">{po.description}</span>
-                      ) : (
-                        <span className="text-slate-400">-</span>
-                      )}
-                    </td>
                     <td data-label="PO Date" className="px-6 py-3.5 text-slate-400 whitespace-nowrap">{formatDate(po.po_date)}</td>
                     <td data-label="Amounts" className="px-6 py-3.5">
                       <div className="flex justify-end">
