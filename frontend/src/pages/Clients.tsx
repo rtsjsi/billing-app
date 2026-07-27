@@ -17,24 +17,18 @@ import {
 import ActionMenu from '../components/ActionMenu';
 import ConfirmModal from '../components/ConfirmModal';
 import { api, Client } from '../lib/api';
-import { useFilters } from '../lib/FilterContext';
 import PageHeader from '../components/PageHeader';
 import MobileModal from '../components/MobileModal';
 
 export default function Clients() {
   const navigate = useNavigate();
   const [clients, setClients] = useState<Client[]>([]);
-  const { selectedClient } = useFilters();
   const [search, setSearch] = useState('');
   const [includeArchived, setIncludeArchived] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deleteConflict, setDeleteConflict] = useState<string | null>(null);
   const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
-
-  const displayedClients = selectedClient
-    ? clients.filter(c => c.id === parseInt(selectedClient, 10))
-    : clients;
 
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteClientId, setDeleteClientId] = useState<number | null>(null);
@@ -225,7 +219,7 @@ export default function Clients() {
           <div className="p-12 text-center">
             <div className="spinner mx-auto" />
           </div>
-        ) : displayedClients.length === 0 ? (
+        ) : clients.length === 0 ? (
           <div className="p-12 text-center text-slate-500 text-sm">
             No clients found. Click "New Client" to create one.
           </div>
@@ -242,7 +236,7 @@ export default function Clients() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 text-sm">
-                {displayedClients.map((client) => (
+                {clients.map((client) => (
                   <tr key={client.id} className="hover:bg-slate-50 transition-colors">
                     <td data-label="Client Details" className="px-6 py-4">
                       <div className="font-semibold text-slate-800">{client.name}</div>

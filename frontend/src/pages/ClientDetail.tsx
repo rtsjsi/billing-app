@@ -16,20 +16,7 @@ import {
 import { api, Client, Invoice, PurchaseOrder } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/utils';
 import POAmounts from '../components/POAmounts';
-import { useFilters } from '../lib/FilterContext';
 import Spinner from '../components/Spinner';
-
-function getFYDateRange(fy: string) {
-  if (!fy) return { start: undefined, end: undefined };
-  const match = fy.match(/^(\d{4})-\d{2}$/);
-  if (!match) return { start: undefined, end: undefined };
-  const startYear = parseInt(match[1], 10);
-  const endYear = startYear + 1;
-  return {
-    start: `${startYear}-04-01`,
-    end: `${endYear}-03-31`
-  };
-}
 
 export default function ClientDetail() {
   const { id } = useParams<{ id: string }>();
@@ -42,7 +29,6 @@ export default function ClientDetail() {
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const { selectedFY } = useFilters();
 
   useEffect(() => {
     if (isNaN(clientId)) {
@@ -93,17 +79,7 @@ export default function ClientDetail() {
   }
 
   // Calculate client specific aggregates (ignore cancelled invoices)
-  const fyRange = getFYDateRange(selectedFY);
-
-  const filteredInvoices = selectedFY && fyRange.start && fyRange.end
-    ? invoices.filter(inv => inv.issue_date >= fyRange.start! && inv.issue_date <= fyRange.end!)
-    : invoices;
-
-  const filteredPOs = selectedFY && fyRange.start && fyRange.end
-    ? pos.filter(po => po.po_date && po.po_date >= fyRange.start! && po.po_date <= fyRange.end!)
-    : pos;
-
-  const activeInvoices = filteredInvoices.filter(inv => inv.status !== 'cancelled');
+  const activeInvoices = invoices.filter(inv => inv.status !== 'cancelled');
   const totalBilled = activeInvoices.reduce((sum, inv) => sum + inv.total, 0);
   const totalPaid = activeInvoices.reduce((sum, inv) => sum + inv.amount_paid, 0);
   const totalOutstanding = activeInvoices.reduce((sum, inv) => {
@@ -257,11 +233,11 @@ export default function ClientDetail() {
           <div className="px-6 py-4 border-b border-slate-200 bg-white/10">
             <h2 className="font-display font-bold text-base text-slate-900 flex items-center space-x-2">
               <FileText className="h-5 w-5 text-blue-600" />
-              <span>Invoice Ledger ({filteredInvoices.length})</span>
+              <span>Invoice Ledger ({invoices.length})</span>
             </h2>
           </div>
           <div>
-            {filteredInvoices.length === 0 ? (
+            {invoices.length === 0 ? (
               <div className="p-8 text-center text-slate-500 text-sm">
                 No invoices issued for this client.
               </div>
@@ -276,7 +252,7 @@ export default function ClientDetail() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-sm">
-                  {filteredInvoices.map((inv) => (
+                  {invoices.map((inv) => (
                     <tr 
                       key={inv.id}
                       onClick={() => navigate(`/invoices/preview/${inv.id}`)}
@@ -305,11 +281,11 @@ export default function ClientDetail() {
           <div className="px-6 py-4 border-b border-slate-200 bg-white/10">
             <h2 className="font-display font-bold text-base text-slate-900 flex items-center space-x-2">
               <FileCheck className="h-5 w-5 text-blue-600" />
-              <span>Purchase Orders ({filteredPOs.length})</span>
+              <span>Purchase Orders ({pos.length})</span>
             </h2>
           </div>
           <div>
-            {filteredPOs.length === 0 ? (
+            {pos.length === 0 ? (
               <div className="p-8 text-center text-slate-500 text-sm">
                 No Purchase Orders recorded for this client.
               </div>
@@ -324,7 +300,7 @@ export default function ClientDetail() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-sm">
-                  {filteredPOs.map((po) => (
+                  {pos.map((po) => (
                     <tr key={po.id} className="hover:bg-slate-50/10 transition-all align-top">
                       <td data-label="PO Number" className="px-6 py-3.5">
                         <div className="font-mono font-medium text-slate-700 whitespace-nowrap">{po.po_number}</div>

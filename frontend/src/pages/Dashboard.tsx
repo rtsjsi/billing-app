@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useFilters } from '../lib/FilterContext';
 import {
   AlertCircle,
   ArrowRight,
@@ -17,17 +16,13 @@ import PageHeader from '../components/PageHeader';
 
 export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
-  const { selectedFY, selectedClient } = useFilters();
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const res = await api.dashboard.getStats(
-          selectedFY || undefined,
-          selectedClient || undefined
-        );
+        const res = await api.dashboard.getStats();
         setData(res);
       } catch (err: any) {
         setError(err.message || 'Failed to fetch dashboard data.');
@@ -36,7 +31,7 @@ export default function Dashboard() {
       }
     };
     fetchDashboard();
-  }, [selectedFY, selectedClient]);
+  }, []);
 
   if (initialLoading) {
     return (

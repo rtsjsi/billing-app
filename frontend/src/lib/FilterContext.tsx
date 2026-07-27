@@ -4,8 +4,6 @@ import { api, Client } from './api';
 interface FilterContextType {
   selectedFY: string;
   setSelectedFY: (fy: string) => void;
-  selectedClient: string;
-  setSelectedClient: (clientId: string) => void;
   availableYears: string[];
   clients: Client[];
   loading: boolean;
@@ -16,7 +14,6 @@ const FilterContext = createContext<FilterContextType | undefined>(undefined);
 
 export function FilterProvider({ children }: { children: React.ReactNode }) {
   const [selectedFY, setSelectedFY] = useState<string>('');
-  const [selectedClient, setSelectedClient] = useState<string>('');
   const [availableYears, setAvailableYears] = useState<string[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(false);
@@ -24,17 +21,15 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
   const fetchFilterOptions = async () => {
     setLoading(true);
     try {
-      // 1. Fetch clients list
       const clientList = await api.clients.list();
       setClients(clientList);
 
-      // 2. Fetch available years via the stats API
       const statsRes = await api.dashboard.getStats();
       if (statsRes && statsRes.availableYears) {
         setAvailableYears(statsRes.availableYears);
       }
     } catch (err) {
-      console.error('Failed to fetch global filter options:', err);
+      console.error('Failed to fetch filter options:', err);
     } finally {
       setLoading(false);
     }
@@ -49,8 +44,6 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
       value={{
         selectedFY,
         setSelectedFY,
-        selectedClient,
-        setSelectedClient,
         availableYears,
         clients,
         loading,

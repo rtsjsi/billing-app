@@ -26,7 +26,7 @@ export default function PurchaseOrders() {
   const initialClientId = searchParams.get('client_id');
 
   const [pos, setPOs] = useState<PurchaseOrder[]>([]);
-  const { selectedFY, setSelectedFY, selectedClient, availableYears, clients } = useFilters();
+  const { selectedFY, setSelectedFY, availableYears, clients } = useFilters();
   const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
 
   const [filterClientId, setFilterClientId] = useState(initialClientId || '');
@@ -78,7 +78,7 @@ export default function PurchaseOrders() {
   const fetchPOs = async () => {
     setLoading(true);
     try {
-      const cId = selectedClient ? parseInt(selectedClient, 10) : (filterClientId ? parseInt(filterClientId, 10) : undefined);
+      const cId = filterClientId ? parseInt(filterClientId, 10) : undefined;
       const res = await api.pos.list(cId, filterStatus || undefined);
       
       let filtered = res;
@@ -101,7 +101,7 @@ export default function PurchaseOrders() {
 
   useEffect(() => {
     fetchPOs();
-  }, [selectedClient, selectedFY, filterStatus, filterClientId]);
+  }, [selectedFY, filterStatus, filterClientId]);
 
   const sortedPOs = useMemo(() => {
     const list = [...pos];

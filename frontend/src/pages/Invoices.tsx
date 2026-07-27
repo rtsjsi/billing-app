@@ -30,7 +30,7 @@ export default function Invoices() {
   const linkedPoId = searchParams.get('po_id');
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const { selectedFY, setSelectedFY, selectedClient, availableYears, clients } = useFilters();
+  const { selectedFY, setSelectedFY, availableYears, clients } = useFilters();
   const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
   const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<number | null>(null);
   const [deleteInvoiceId, setDeleteInvoiceId] = useState<number | null>(null);
@@ -64,7 +64,7 @@ export default function Invoices() {
       const fyRange = getFYDateRange(selectedFY);
       const res = await api.invoices.list({
         status: filterStatus || undefined,
-        client_id: selectedClient ? parseInt(selectedClient, 10) : (filterClientId ? parseInt(filterClientId, 10) : undefined),
+        client_id: filterClientId ? parseInt(filterClientId, 10) : undefined,
         po_id: linkedPoId ? parseInt(linkedPoId, 10) : undefined,
         startDate: fyRange.start || undefined,
         endDate: fyRange.end || undefined,
@@ -85,7 +85,7 @@ export default function Invoices() {
 
   useEffect(() => {
     fetchInvoices();
-  }, [filterStatus, filterClientId, linkedPoId, page, selectedFY, selectedClient, sortKey, sortDir]);
+  }, [filterStatus, filterClientId, linkedPoId, page, selectedFY, sortKey, sortDir]);
 
   // Open modal when URL contains ?new=1 or ?edit=<id>
   useEffect(() => {

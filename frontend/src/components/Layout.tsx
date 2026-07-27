@@ -8,13 +8,9 @@ import {
   Settings,
   LogOut,
   Zap,
-  ChevronDown,
-  SlidersHorizontal,
-  X,
   ArrowLeft,
 } from 'lucide-react';
 import { api } from '../lib/api';
-import { useFilters } from '../lib/FilterContext';
 import ConfirmModal from './ConfirmModal';
 
 interface LayoutProps {
@@ -22,8 +18,6 @@ interface LayoutProps {
   user: { username: string; businessName: string; currency: string } | null;
   onLogout: () => void;
 }
-
-const FILTER_PAGES = ['/', '/invoices', '/purchase-orders', '/clients'];
 
 function getPageTitle(pathname: string): string {
   if (pathname === '/') return 'Dashboard';
@@ -47,11 +41,9 @@ function getBackPath(pathname: string): string | null {
 }
 
 export default function Layout({ children, user, onLogout }: LayoutProps) {
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { selectedFY, setSelectedFY, selectedClient, setSelectedClient, availableYears, clients } = useFilters();
 
   const handleLogout = async () => {
     try {
@@ -84,11 +76,6 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
     return location.pathname.startsWith(path);
   };
 
-  const showFilters = FILTER_PAGES.some(
-    (p) => p === location.pathname || (p !== '/' && location.pathname.startsWith(p))
-  ) && !location.pathname.match(/^\/clients\/\d+$/);
-
-  const activeFilterCount = (selectedFY ? 1 : 0) + (selectedClient ? 1 : 0);
   const pageTitle = getPageTitle(location.pathname);
   const backPath = getBackPath(location.pathname);
 
@@ -171,25 +158,6 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              {showFilters && (
-                <button
-                  onClick={() => setFiltersOpen(!filtersOpen)}
-                  className={`relative flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
-                    filtersOpen || activeFilterCount > 0
-                      ? 'bg-brand-50 text-brand-700'
-                      : 'bg-slate-100 text-slate-600'
-                  }`}
-                >
-                  <SlidersHorizontal className="h-3.5 w-3.5" />
-                  Filters
-                  {activeFilterCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-brand-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                      {activeFilterCount}
-                    </span>
-                  )}
-                  <ChevronDown className={`h-3 w-3 transition-transform ${filtersOpen ? 'rotate-180' : ''}`} />
-                </button>
-              )}
               <button
                 onClick={() => setLogoutConfirmOpen(true)}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
@@ -200,99 +168,7 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
               </button>
             </div>
           </div>
-
-          {/* Collapsible mobile filters */}
-          {showFilters && filtersOpen && (
-            <div className="px-4 pb-3 space-y-2.5 border-t border-slate-50 animate-fade-in">
-              <div>
-                <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                  Financial Year
-                </label>
-                <select
-                  value={selectedFY}
-                  onChange={(e) => setSelectedFY(e.target.value)}
-                  className="form-input text-sm py-2 min-h-0"
-                >
-                  <option value="">All Years</option>
-                  {availableYears.map((fy) => (
-                    <option key={fy} value={fy}>FY {fy}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                  Client
-                </label>
-                <select
-                  value={selectedClient}
-                  onChange={(e) => setSelectedClient(e.target.value)}
-                  className="form-input text-sm py-2 min-h-0"
-                >
-                  <option value="">All Clients</option>
-                  {clients.map((client) => (
-                    <option key={client.id} value={client.id}>{client.name}</option>
-                  ))}
-                </select>
-              </div>
-              {activeFilterCount > 0 && (
-                <button
-                  onClick={() => {
-                    setSelectedFY('');
-                    setSelectedClient('');
-                  }}
-                  className="text-xs font-semibold text-red-500 flex items-center gap-1"
-                >
-                  <X className="h-3 w-3" />
-                  Clear filters
-                </button>
-              )}
-            </div>
-          )}
         </header>
-
-        {/* Desktop filters bar */}
-        {showFilters && (
-          <header className="hidden md:block no-print sticky top-0 z-30 bg-white border-b border-slate-100 px-6 py-3">
-            <div className="flex items-center gap-4 max-w-7xl mx-auto">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider shrink-0">
-                Filters
-              </span>
-              <div className="flex flex-1 gap-3">
-                <select
-                  value={selectedFY}
-                  onChange={(e) => setSelectedFY(e.target.value)}
-                  className="form-input text-sm py-2 min-h-0 max-w-[180px]"
-                >
-                  <option value="">All Years</option>
-                  {availableYears.map((fy) => (
-                    <option key={fy} value={fy}>FY {fy}</option>
-                  ))}
-                </select>
-                <select
-                  value={selectedClient}
-                  onChange={(e) => setSelectedClient(e.target.value)}
-                  className="form-input text-sm py-2 min-h-0 max-w-[220px]"
-                >
-                  <option value="">All Clients</option>
-                  {clients.map((client) => (
-                    <option key={client.id} value={client.id}>{client.name}</option>
-                  ))}
-                </select>
-                {activeFilterCount > 0 && (
-                  <button
-                    onClick={() => {
-                      setSelectedFY('');
-                      setSelectedClient('');
-                    }}
-                    className="btn-ghost text-xs text-red-500 hover:bg-red-50"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-            </div>
-          </header>
-        )}
 
         <div className="flex-1 px-4 py-4 sm:px-6 md:px-8 md:py-6 max-w-7xl w-full mx-auto pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-8">
           {children}
