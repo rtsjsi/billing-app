@@ -40,7 +40,8 @@ SELECT
   bank_account_name, bank_account_number, bank_ifsc, bank_name, upi_id,
   currency, tax_label, default_tax_rate, invoice_prefix, invoice_next_number,
   invoice_number_reset, default_payment_terms_days, default_notes, default_terms, updated_at
-FROM business_settings;
+FROM business_settings
+WHERE EXISTS (SELECT 1 FROM users WHERE id = 1);
 
 -- Drop old table and rename the new one
 DROP TABLE business_settings;
