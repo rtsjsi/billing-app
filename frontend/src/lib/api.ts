@@ -213,6 +213,84 @@ async function request<T = any>(
   return response.json() as Promise<T>;
 }
 
+function parseFilenameFromContentDisposition(header: string | null): string | null {
+  if (!header) return null;
+  const utf8Match = /filename\*\s*=\s*UTF-8''([^;]+)/i.exec(header);
+  if (utf8Match?.[1]) {
+    try {
+      return decodeURIComponent(utf8Match[1].trim().replace(/^["']|["']$/g, ''));
+    } catch {
+      // fall through
+    }
+  }
+  const asciiMatch = /filename\s*=\s*("?)([^";]+)\1/i.exec(header);
+  return asciiMatch?.[2]?.trim() || null;
+}
+
+function isLikelyMobileClient(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(max-width: 767px), (pointer: coarse)').matches;
+}
+
+/**
+ * Fetch a binary file with session cookies, then trigger a real download.
+ * On mobile, prefers the Web Share sheet (Save to Files / share apps) because
+ * navigating to application/pdf often only opens an inline viewer.
+ */
+async function downloadBinaryFile(path: string, fallbackFilename: string): Promise<void> {
+  const response = await fetch(`${BASE_URL}${path}`, { credentials: 'include' });
+
+  if (response.status === 401) {
+    window.dispatchEvent(new Event('api-unauthorized'));
+    throw new Error('Unauthorized');
+  }
+
+  if (!response.ok) {
+    const errorData = (await response.json().catch(() => ({}))) as { error?: string };
+    throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
+  }
+
+  const blob = await response.blob();
+  const filename =
+    parseFilenameFromContentDisposition(response.headers.get('Content-Disposition')) ||
+    fallbackFilename;
+  const file = new File([blob], filename, { type: blob.type || 'application/pdf' });
+
+  const canShareFiles =
+    typeof navigator !== 'undefined' &&
+    typeof navigator.share === 'function' &&
+    typeof navigator.canShare === 'function' &&
+    navigator.canShare({ files: [file] });
+
+  if (isLikelyMobileClient() && canShareFiles) {
+    try {
+      await navigator.share({
+        files: [file],
+        title: filename,
+      });
+      return;
+    } catch (err: unknown) {
+      // User dismissed the share sheet — treat as success (no fallback open).
+      if (err instanceof DOMException && err.name === 'AbortError') return;
+      // Otherwise fall through to anchor download.
+    }
+  }
+
+  const objectUrl = URL.createObjectURL(blob);
+  try {
+    const anchor = document.createElement('a');
+    anchor.href = objectUrl;
+    anchor.download = filename;
+    anchor.rel = 'noopener';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  } finally {
+    // Delay revoke so the browser can start the download.
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 2_000);
+  }
+}
+
 // ----------------------------------------------------
 // API Methods
 // ----------------------------------------------------
@@ -299,7 +377,13 @@ export const api = {
     delete: (id: number) => request<{ message: string }>(`/api/invoices/${id}`, { method: 'DELETE' }),
     updateStatus: (id: number, status: string) => request(`/api/invoices/${id}/status`, { method: 'POST', body: JSON.stringify({ status }) }),
     duplicate: (id: number) => request<{ message: string; invoice: Invoice }>(`/api/invoices/${id}/duplicate`, { method: 'POST' }),
-    getPDFUrl: (id: number) => `/api/invoices/${id}/pdf`
+    getPDFUrl: (id: number) => `/api/invoices/${id}/pdf`,
+    /** Fetch PDF as a blob and download/share (avoids mobile inline-only open). */
+    downloadPDF: (id: number, invoiceNumber?: string) =>
+      downloadBinaryFile(
+        `/api/invoices/${id}/pdf`,
+        `invoice_${invoiceNumber || id}.pdf`
+      ),
   },
 
   // Payments
