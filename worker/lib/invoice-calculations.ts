@@ -6,8 +6,9 @@ export interface CalculableInvoiceItem {
   sort_order?: number;
 }
 
-export interface CalculatedInvoiceItem extends CalculableInvoiceItem {
+export interface CalculatedInvoiceItem extends Omit<CalculableInvoiceItem, 'sort_order'> {
   amount: number;
+  sort_order: number;
 }
 
 export interface InvoiceTotals {
@@ -33,7 +34,7 @@ export function calculateInvoiceTotals(
     throw new Error('Discount amount must be a non-negative number');
   }
 
-  const calculatedItems = items.map((item) => {
+  const calculatedItems = items.map((item, index) => {
     if (!Number.isFinite(item.quantity) || item.quantity <= 0) {
       throw new Error('Invoice item quantity must be greater than zero');
     }
@@ -43,6 +44,7 @@ export function calculateInvoiceTotals(
     return {
       ...item,
       amount: roundMoney(item.quantity * item.unit_price),
+      sort_order: item.sort_order ?? index,
     };
   });
 
