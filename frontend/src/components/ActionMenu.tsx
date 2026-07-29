@@ -71,12 +71,11 @@ export default function ActionMenu({ isOpen, onToggle, onClose, items, title = '
 
   const handleItemClick = (item: ActionMenuItem) => {
     if (item.disabled) return;
-    // Close first, then run action on next tick so the sheet/dropdown
-    // fully unmounts before opening a modal (avoids z-index / focus races).
+    // Close synchronously, then run the action in the same click turn so
+    // APIs that need user activation (e.g. navigator.share for PDF save)
+    // still work. React batches the close state update with any modal open.
     onClose();
-    window.setTimeout(() => {
-      item.onClick();
-    }, 0);
+    item.onClick();
   };
 
   const desktopMenu =

@@ -35,6 +35,7 @@ export default function InvoicePreview() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   
   // Payment Modal
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -67,9 +68,16 @@ export default function InvoicePreview() {
     fetchData();
   }, [invoiceId]);
 
-  const handleDownloadPDF = () => {
-    if (isNaN(invoiceId)) return;
-    window.location.href = api.invoices.getPDFUrl(invoiceId);
+  const handleDownloadPDF = async () => {
+    if (isNaN(invoiceId) || downloadingPdf) return;
+    setDownloadingPdf(true);
+    try {
+      await api.invoices.downloadPDF(invoiceId, invoice?.invoice_number);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to download invoice PDF.');
+    } finally {
+      setDownloadingPdf(false);
+    }
   };
 
   const handleUpdateStatus = async (status: string) => {
@@ -189,11 +197,12 @@ export default function InvoicePreview() {
               </button>
             )}
             <button
-              onClick={handleDownloadPDF}
-              className="btn-secondary min-h-0 py-2 px-3 text-xs"
+              onClick={() => { void handleDownloadPDF(); }}
+              disabled={downloadingPdf}
+              className="btn-secondary min-h-0 py-2 px-3 text-xs disabled:opacity-60"
             >
               <Download className="h-3.5 w-3.5" />
-              <span>Download PDF</span>
+              <span>{downloadingPdf ? 'Generating...' : 'Download PDF'}</span>
             </button>
           </div>
         </div>

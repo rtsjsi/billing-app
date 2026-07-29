@@ -143,6 +143,18 @@ export default function Invoices() {
     window.open(url, '_blank');
   };
 
+  const handleDownloadPDF = async (inv: Invoice) => {
+    if (downloadingInvoiceId != null) return;
+    setDownloadingInvoiceId(inv.id);
+    try {
+      await api.invoices.downloadPDF(inv.id, inv.invoice_number);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to download invoice PDF.');
+    } finally {
+      setDownloadingInvoiceId(null);
+    }
+  };
+
   const getInvoiceActionItems = (inv: Invoice): ActionMenuItem[] => {
     const isOutstanding = inv.status !== 'paid' && inv.status !== 'cancelled';
     const items: ActionMenuItem[] = [
@@ -174,7 +186,7 @@ export default function Invoices() {
         label: downloadingInvoiceId === inv.id ? 'Generating...' : 'Download PDF',
         icon: <Download className="h-4 w-4" />,
         disabled: downloadingInvoiceId === inv.id,
-        onClick: () => { window.location.href = api.invoices.getPDFUrl(inv.id); },
+        onClick: () => { void handleDownloadPDF(inv); },
       },
       {
         label: 'Delete Invoice',
