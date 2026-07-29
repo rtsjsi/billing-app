@@ -17,3 +17,7 @@ Thumbs.db
 .idea/
 .vscode/
 *.local
+
+# Private billing exports and one-off data imports
+*.xlsx
+import_*.sql
