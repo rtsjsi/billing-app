@@ -382,7 +382,7 @@ export const api = {
     downloadPDF: (id: number, invoiceNumber?: string) =>
       downloadBinaryFile(
         `/api/invoices/${id}/pdf`,
-        `invoice_${invoiceNumber || id}.pdf`
+        `${invoiceNumber || `invoice_${id}`}.pdf`
       ),
   },
 

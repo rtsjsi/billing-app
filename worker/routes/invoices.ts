@@ -296,7 +296,7 @@ app.get('/:id/pdf', async (c) => {
     const pdfBytes = await pdfDoc.save();
 
     const safeName = String(invoice.invoice_number).replace(/[^\w.-]+/g, '_');
-    const filename = `invoice_${safeName}.pdf`;
+    const filename = `${safeName}.pdf`;
     return new Response(pdfBytes as any, {
       headers: {
         'Content-Type': 'application/pdf',
