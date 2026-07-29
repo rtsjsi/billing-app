@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { api } from './lib/api';
 import { FilterProvider } from './lib/FilterContext';
 import { ToastProvider } from './components/Toast';
@@ -85,7 +85,7 @@ export default function App() {
   };
 
   // Helper route guards
-  const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const ProtectedRoute = () => {
     const location = useLocation();
     if (!user) {
       return (
@@ -98,7 +98,7 @@ export default function App() {
     }
     return (
       <FilterProvider>
-        <Layout user={user} onLogout={handleLogout}>{children}</Layout>
+        <Layout user={user} onLogout={handleLogout}><Outlet /></Layout>
       </FilterProvider>
     );
   };
@@ -143,15 +143,17 @@ export default function App() {
             />
 
             {/* Protected Core Layout routes */}
-            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
-            <Route path="/clients/:id" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
-            <Route path="/purchase-orders" element={<ProtectedRoute><PurchaseOrders /></ProtectedRoute>} />
-            <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
-            <Route path="/invoices/new" element={<InvoiceNewRedirect />} />
-            <Route path="/invoices/edit/:id" element={<InvoiceEditRedirect />} />
-            <Route path="/invoices/preview/:id" element={<ProtectedRoute><InvoicePreview /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route element={<ProtectedRoute />}>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/clients" element={<Clients />} />
+              <Route path="/clients/:id" element={<ClientDetail />} />
+              <Route path="/purchase-orders" element={<PurchaseOrders />} />
+              <Route path="/invoices" element={<Invoices />} />
+              <Route path="/invoices/new" element={<InvoiceNewRedirect />} />
+              <Route path="/invoices/edit/:id" element={<InvoiceEditRedirect />} />
+              <Route path="/invoices/preview/:id" element={<InvoicePreview />} />
+              <Route path="/settings" element={<Settings />} />
+            </Route>
 
             {/* Fallback Catch-All */}
             <Route path="*" element={<Navigate to="/" replace />} />

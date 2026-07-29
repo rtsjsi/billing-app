@@ -42,7 +42,7 @@ export default function Invoices() {
   const [modalClientId, setModalClientId] = useState<string>('');
 
   // Filters
-  const [filterStatus, setFilterStatus] = useState('');
+  const [filterStatus, setFilterStatus] = useState(searchParams.get('status') || '');
   const [filterClientId, setFilterClientId] = useState('');
 
   // Sorting (default: creation date descending)

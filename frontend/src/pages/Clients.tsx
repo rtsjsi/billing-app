@@ -93,14 +93,14 @@ export default function Clients() {
       return;
     }
 
-    setFormSubmitting(true);
-    setError('');
-    
     const tds = parseFloat(formTdsPercent);
     if (Number.isNaN(tds) || tds < 0 || tds > 100) {
       setError('TDS % must be between 0 and 100.');
       return;
     }
+
+    setFormSubmitting(true);
+    setError('');
 
     const payload = {
       name: formName,

@@ -151,8 +151,8 @@ export default function Settings() {
     setPasswordSuccess('');
     setPasswordError('');
 
-    if (newPassword.length < 6) {
-      setPasswordError('New password must be at least 6 characters long.');
+    if (newPassword.length < 12) {
+      setPasswordError('New password must be at least 12 characters long.');
       setPasswordSaving(false);
       return;
     }
@@ -523,7 +523,9 @@ export default function Settings() {
                   id="settings-new-password"
                   type="password" 
                   required
-                  placeholder="Min 6 characters"
+                  minLength={12}
+                  maxLength={128}
+                  placeholder="Min 12 characters"
                   className="w-full form-input text-xs" 
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}

@@ -17,8 +17,7 @@ import { useFilters } from '../lib/FilterContext';
 import PageHeader from '../components/PageHeader';
 
 export default function Dashboard() {
-  const { availableYears, clients } = useFilters();
-  const [filterFY, setFilterFY] = useState('');
+  const { availableYears, clients, selectedFY, setSelectedFY } = useFilters();
   const [filterClientId, setFilterClientId] = useState('');
   const [data, setData] = useState<DashboardData | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -28,7 +27,7 @@ export default function Dashboard() {
     const fetchDashboard = async () => {
       try {
         const res = await api.dashboard.getStats(
-          filterFY || undefined,
+          selectedFY || undefined,
           filterClientId || undefined
         );
         setData(res);
@@ -40,7 +39,7 @@ export default function Dashboard() {
       }
     };
     fetchDashboard();
-  }, [filterFY, filterClientId]);
+  }, [selectedFY, filterClientId]);
 
   if (initialLoading) {
     return (
@@ -65,7 +64,7 @@ export default function Dashboard() {
   const confirmedPO = stats?.totalPOAmount ?? 0;
   const invoiced = stats?.totalInvoiceAmount ?? 0;
   const pending = stats?.invoicePendingAmount ?? 0;
-  const hasFilters = Boolean(filterFY || filterClientId);
+  const hasFilters = Boolean(selectedFY || filterClientId);
 
   const pipeline = [
     {
@@ -105,7 +104,7 @@ export default function Dashboard() {
           subtitle="Cash position and billing pipeline at a glance"
           actions={
             <>
-              <Link to="/purchase-orders" className="btn-secondary">
+              <Link to="/purchase-orders?new=1" className="btn-secondary">
                 <Plus className="h-4 w-4" />
                 New PO
               </Link>
@@ -124,7 +123,7 @@ export default function Dashboard() {
           <Plus className="h-4 w-4" />
           Create Invoice
         </Link>
-        <Link to="/purchase-orders" className="btn-secondary flex-1">
+        <Link to="/purchase-orders?new=1" className="btn-secondary flex-1">
           <Plus className="h-4 w-4" />
           New PO
         </Link>
@@ -135,8 +134,8 @@ export default function Dashboard() {
           <label className="block text-xs font-semibold text-slate-500 mb-1.5">Financial Year</label>
           <select
             className="form-input text-sm py-2 min-h-0"
-            value={filterFY}
-            onChange={(e) => setFilterFY(e.target.value)}
+            value={selectedFY}
+            onChange={(e) => setSelectedFY(e.target.value)}
           >
             <option value="">All Years</option>
             {availableYears.map((fy) => (
@@ -161,7 +160,7 @@ export default function Dashboard() {
               <button
                 type="button"
                 onClick={() => {
-                  setFilterFY('');
+                  setSelectedFY('');
                   setFilterClientId('');
                 }}
                 className="shrink-0 px-2 text-xs text-red-600 hover:text-red-700 font-semibold"
@@ -180,7 +179,7 @@ export default function Dashboard() {
 
       {overdueCount > 0 && (
         <Link
-          to="/invoices"
+          to="/invoices?status=overdue"
           className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 hover:bg-red-100/80 transition-colors"
         >
           <span className="flex items-center gap-2 font-medium">

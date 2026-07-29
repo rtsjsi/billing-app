@@ -44,8 +44,8 @@ export default function Setup({ onSetupComplete }: SetupProps) {
       setError('Please fill in all required fields.');
       return;
     }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
+    if (password.length < 12) {
+      setError('Password must be at least 12 characters.');
       return;
     }
     if (password !== confirmPassword) {
@@ -123,7 +123,7 @@ export default function Setup({ onSetupComplete }: SetupProps) {
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-500 mb-1.5">Password *</label>
-                <input type="password" required placeholder="At least 6 characters" className="form-input" value={password} onChange={(e) => setPassword(e.target.value)} />
+                <input type="password" required minLength={12} maxLength={128} placeholder="At least 12 characters" className="form-input" value={password} onChange={(e) => setPassword(e.target.value)} />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-500 mb-1.5">Confirm Password *</label>

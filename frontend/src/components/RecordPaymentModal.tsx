@@ -28,6 +28,7 @@ export default function RecordPaymentModal({ isOpen, invoice, onClose, onSuccess
   const [submitting, setSubmitting] = useState(false);
   const [tdsPercent, setTdsPercent] = useState(0);
   const [amountMode, setAmountMode] = useState<AmountMode>('net');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!isOpen || !invoice) return;
@@ -41,6 +42,7 @@ export default function RecordPaymentModal({ isOpen, invoice, onClose, onSuccess
     setPayNotes('');
     setAmountMode('net');
     setTdsPercent(0);
+    setError('');
     setPayAmount(remaining > 0 ? remaining.toFixed(2) : '0.00');
 
     (async () => {
@@ -62,6 +64,15 @@ export default function RecordPaymentModal({ isOpen, invoice, onClose, onSuccess
       cancelled = true;
     };
   }, [isOpen, invoice]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   const remainingDue = invoice ? invoice.total - invoice.amount_paid : 0;
   const entered = parseFloat(payAmount) || 0;
@@ -85,7 +96,11 @@ export default function RecordPaymentModal({ isOpen, invoice, onClose, onSuccess
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (breakdown.credit <= 0) {
-      alert('Please enter a positive payment amount.');
+      setError('Please enter a positive payment amount.');
+      return;
+    }
+    if (breakdown.credit > remainingDue + 0.001) {
+      setError('Payment cannot exceed the remaining outstanding balance.');
       return;
     }
 
@@ -96,6 +111,7 @@ export default function RecordPaymentModal({ isOpen, invoice, onClose, onSuccess
     const notes = [payNotes.trim(), tdsNote].filter(Boolean).join(' | ') || null;
 
     setSubmitting(true);
+    setError('');
     try {
       await api.payments.record({
         invoice_id: invoice.id,
@@ -108,7 +124,7 @@ export default function RecordPaymentModal({ isOpen, invoice, onClose, onSuccess
       onClose();
       onSuccess();
     } catch (err: any) {
-      alert(err.message || 'Failed to record payment.');
+      setError(err.message || 'Failed to record payment.');
     } finally {
       setSubmitting(false);
     }
@@ -116,13 +132,18 @@ export default function RecordPaymentModal({ isOpen, invoice, onClose, onSuccess
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden">
+      <div
+        className="w-full max-w-md bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="record-payment-title"
+      >
         <div className="flex justify-between items-center px-6 py-4 border-b border-slate-200">
-          <h2 className="font-display font-semibold text-lg text-slate-900 flex items-center space-x-2">
+          <h2 id="record-payment-title" className="font-display font-semibold text-lg text-slate-900 flex items-center space-x-2">
             <DollarSign className="h-5 w-5 text-emerald-600" />
             <span>Record Invoice Payment</span>
           </h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-900">
+          <button type="button" onClick={onClose} aria-label="Close payment dialog" className="text-slate-400 hover:text-slate-900">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -185,20 +206,24 @@ export default function RecordPaymentModal({ isOpen, invoice, onClose, onSuccess
             )}
 
             <div>
-              <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">
+              <label htmlFor="payment-amount" className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">
                 {tdsPercent > 0 && amountMode === 'net'
                   ? `Net received in bank (${invoice.currency}) *`
                   : `Payment Amount (${invoice.currency}) *`}
               </label>
               <input
+                id="payment-amount"
                 type="number"
                 step="0.01"
                 required
                 className="w-full form-input text-sm font-mono text-emerald-600"
                 value={payAmount}
                 onChange={(e) => setPayAmount(e.target.value)}
+                autoFocus
               />
             </div>
+
+            {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
 
             {tdsPercent > 0 && entered > 0 && (
               <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-600 space-y-1">
@@ -218,10 +243,11 @@ export default function RecordPaymentModal({ isOpen, invoice, onClose, onSuccess
             )}
 
             <div>
-              <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">
+              <label htmlFor="payment-date" className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">
                 Payment Date *
               </label>
               <input
+                id="payment-date"
                 type="date"
                 required
                 className="w-full form-input text-sm"
@@ -231,10 +257,11 @@ export default function RecordPaymentModal({ isOpen, invoice, onClose, onSuccess
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">
+              <label htmlFor="payment-method" className="block text-xs text-slate-400 font-medium mb-1.5 uppercase tracking-wider">
                 Payment Method *
               </label>
               <select
+                id="payment-method"
                 className="w-full form-input text-sm"
                 value={payMethod}
                 onChange={(e) => setPayMethod(e.target.value as typeof payMethod)}
