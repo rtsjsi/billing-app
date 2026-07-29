@@ -6,7 +6,8 @@ import {
   getPOItems,
   createPO, 
   updatePO, 
-  deletePO 
+  deletePO,
+  getPOInvoiceCount,
 } from '../db/queries';
 
 const app = new Hono<{ Bindings: { DB: D1Database }, Variables: { jwtPayload: { userId: number, username: string } } }>();
@@ -120,7 +121,12 @@ app.delete('/:id', async (c) => {
     const po = await getPOById(c.env.DB, userId, id);
     if (!po) return c.json({ error: 'Purchase Order not found' }, 404);
 
-
+    const invoiceCount = await getPOInvoiceCount(c.env.DB, userId, id);
+    if (invoiceCount > 0) {
+      return c.json({
+        error: `Cannot delete Purchase Order because it is referenced by ${invoiceCount} invoice${invoiceCount === 1 ? '' : 's'}`,
+      }, 409);
+    }
     await deletePO(c.env.DB, userId, id);
     return c.json({ message: 'Purchase Order deleted successfully' });
   } catch (error: any) {

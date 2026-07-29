@@ -13,7 +13,7 @@ interface FilterContextType {
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
 
 export function FilterProvider({ children }: { children: React.ReactNode }) {
-  const [selectedFY, setSelectedFY] = useState<string>('');
+  const [selectedFY, setSelectedFY] = useState<string>(() => sessionStorage.getItem('selectedFY') || '');
   const [availableYears, setAvailableYears] = useState<string[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(false);
@@ -38,6 +38,11 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     fetchFilterOptions();
   }, []);
+
+  useEffect(() => {
+    if (selectedFY) sessionStorage.setItem('selectedFY', selectedFY);
+    else sessionStorage.removeItem('selectedFY');
+  }, [selectedFY]);
 
   return (
     <FilterContext.Provider

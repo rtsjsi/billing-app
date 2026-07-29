@@ -317,7 +317,7 @@ export async function deleteClient(db: D1Database, userId: number, id: number): 
 export async function listPOs(db: D1Database, userId: number, clientId?: number, status?: string): Promise<PurchaseOrder[]> {
   let query = `
     SELECT po.*, c.name as client_name,
-           (SELECT COALESCE(SUM(total), 0) FROM invoices WHERE po_id = po.id AND status != 'cancelled') as invoiced_amount,
+           (SELECT COALESCE(SUM(total), 0) FROM invoices WHERE user_id = po.user_id AND po_id = po.id AND status != 'cancelled') as invoiced_amount,
            (SELECT COALESCE(SUM(amount), 0) FROM purchase_order_items WHERE po_id = po.id AND work_confirmed = 1) as confirmed_amount
     FROM purchase_orders po
     JOIN clients c ON po.client_id = c.id
@@ -342,7 +342,7 @@ export async function listPOs(db: D1Database, userId: number, clientId?: number,
 export async function getPOById(db: D1Database, userId: number, id: number): Promise<PurchaseOrder | null> {
   return await db.prepare(`
     SELECT po.*, c.name as client_name,
-           (SELECT COALESCE(SUM(total), 0) FROM invoices WHERE po_id = po.id AND status != 'cancelled') as invoiced_amount,
+           (SELECT COALESCE(SUM(total), 0) FROM invoices WHERE user_id = po.user_id AND po_id = po.id AND status != 'cancelled') as invoiced_amount,
            (SELECT COALESCE(SUM(amount), 0) FROM purchase_order_items WHERE po_id = po.id AND work_confirmed = 1) as confirmed_amount
     FROM purchase_orders po
     JOIN clients c ON po.client_id = c.id
@@ -360,6 +360,8 @@ export async function getPOItems(db: D1Database, userId: number, poId: number): 
 
 export async function createPO(db: D1Database, userId: number, po: Omit<PurchaseOrder, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: any[]): Promise<number> {
   const now = new Date().toISOString();
+  const client = await getClientById(db, userId, po.client_id);
+  if (!client) throw new Error('Client not found');
   const stmts = [];
   
   const insertPOStmt = db.prepare(`
@@ -408,6 +410,11 @@ export async function createPO(db: D1Database, userId: number, po: Omit<Purchase
 
 export async function updatePO(db: D1Database, userId: number, id: number, po: Partial<Omit<PurchaseOrder, 'id' | 'user_id' | 'created_at' | 'updated_at'>>, items?: any[]): Promise<void> {
   const now = new Date().toISOString();
+  const existing = await getPOById(db, userId, id);
+  if (!existing) throw new Error('Purchase Order not found');
+  if (po.client_id !== undefined && !(await getClientById(db, userId, po.client_id))) {
+    throw new Error('Client not found');
+  }
   const allowedKeys = new Set([
     'client_id',
     'po_number',
@@ -454,6 +461,14 @@ export async function updatePO(db: D1Database, userId: number, id: number, po: P
 
 export async function deletePO(db: D1Database, userId: number, id: number): Promise<void> {
   await db.prepare('DELETE FROM purchase_orders WHERE user_id = ? AND id = ?').bind(userId, id).run();
+}
+
+export async function getPOInvoiceCount(db: D1Database, userId: number, poId: number): Promise<number> {
+  const result = await db
+    .prepare('SELECT COUNT(*) AS count FROM invoices WHERE user_id = ? AND po_id = ?')
+    .bind(userId, poId)
+    .first<{ count: number }>();
+  return result?.count ?? 0;
 }
 
 export async function getPOInvoicedAmount(db: D1Database, userId: number, poId: number): Promise<number> {
@@ -647,66 +662,54 @@ export async function createInvoice(
   items: Omit<InvoiceItem, 'id' | 'invoice_id'>[]
 ): Promise<number> {
   const now = new Date().toISOString();
-  const settings = await getSettings(db, userId);
-  const { invoiceNumber, nextNumValue } = await getNextInvoiceNumber(db, userId, settings);
-
-  // We write statements to run in a D1 transaction batch
-  const stmts = [];
-
-  // 1. Insert invoice
-  const insertInvoiceStmt = db.prepare(`
-    INSERT INTO invoices (
-      user_id, invoice_number, client_id, po_id, issue_date, due_date, status, currency, 
-      subtotal, tax_label, tax_rate, tax_amount, discount_amount, total, amount_paid, notes, terms, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
-  `).bind(
-    userId,
-    invoiceNumber,
-    invoice.client_id,
-    invoice.po_id || null,
-    invoice.issue_date,
-    invoice.due_date || null,
-    invoice.status || 'draft',
-    invoice.currency,
-    invoice.subtotal,
-    invoice.tax_label || null,
-    invoice.tax_rate,
-    invoice.tax_amount,
-    invoice.discount_amount,
-    invoice.total,
-    invoice.notes || null,
-    invoice.terms || null,
-    now,
-    now
-  );
-  stmts.push(insertInvoiceStmt);
-
-  // Run the batch for the invoice row
-  // D1 executes batch queries in a single SQLite transaction
-  const batchRes = await db.batch(stmts);
-  
-  // The first execution result gives the generated row ID of the invoice
-  const invoiceId = batchRes[0].meta.last_row_id;
-  if (!invoiceId) throw new Error('Failed to retrieve inserted invoice ID');
-
-  // 3. Insert items
-  const itemStmts = items.map((item, index) => {
-    return db.prepare(`
-      INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, amount, sort_order)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).bind(
-      invoiceId,
-      item.description,
-      item.quantity,
-      item.unit_price,
-      item.amount,
-      item.sort_order ?? index
-    );
-  });
-
-  if (itemStmts.length > 0) {
-    await db.batch(itemStmts);
+  const client = await getClientById(db, userId, invoice.client_id);
+  if (!client) throw new Error('Client not found');
+  if (invoice.po_id) {
+    const po = await getPOById(db, userId, invoice.po_id);
+    if (!po) throw new Error('Purchase Order not found');
+    if (po.client_id !== invoice.client_id) {
+      throw new Error('Purchase Order does not belong to the selected client');
+    }
   }
+  const settings = await getSettings(db, userId);
+  let invoiceId = 0;
+  let lastError: unknown;
+
+  // Number allocation is optimistic; retry a unique collision after another request commits.
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const { invoiceNumber } = await getNextInvoiceNumber(db, userId, settings);
+    const insertInvoiceStmt = db.prepare(`
+      INSERT INTO invoices (
+        user_id, invoice_number, client_id, po_id, issue_date, due_date, status, currency,
+        subtotal, tax_label, tax_rate, tax_amount, discount_amount, total, amount_paid, notes, terms, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
+    `).bind(
+      userId, invoiceNumber, invoice.client_id, invoice.po_id || null, invoice.issue_date,
+      invoice.due_date || null, invoice.status || 'draft', invoice.currency, invoice.subtotal,
+      invoice.tax_label || null, invoice.tax_rate, invoice.tax_amount, invoice.discount_amount,
+      invoice.total, invoice.notes || null, invoice.terms || null, now, now
+    );
+
+    const itemStmts = items.map((item, index) => db.prepare(`
+      INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, amount, sort_order)
+      SELECT id, ?, ?, ?, ?, ? FROM invoices WHERE user_id = ? AND invoice_number = ?
+    `).bind(
+      item.description, item.quantity, item.unit_price, item.amount, item.sort_order ?? index,
+      userId, invoiceNumber
+    ));
+
+    try {
+      const batchRes = await db.batch([insertInvoiceStmt, ...itemStmts]);
+      invoiceId = batchRes[0].meta.last_row_id ?? 0;
+      if (!invoiceId) throw new Error('Failed to retrieve inserted invoice ID');
+      break;
+    } catch (error) {
+      lastError = error;
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.toLowerCase().includes('unique')) throw error;
+    }
+  }
+  if (!invoiceId) throw lastError ?? new Error('Failed to allocate a unique invoice number');
 
   // Update PO status if the invoice references a PO
   if (invoice.po_id) {
@@ -726,11 +729,25 @@ export async function updateInvoice(
   const now = new Date().toISOString();
   const oldInvoice = await getInvoiceById(db, userId, id);
   if (!oldInvoice) throw new Error('Invoice not found');
+  const targetClientId = invoice.client_id ?? oldInvoice.client_id;
+  if (!(await getClientById(db, userId, targetClientId))) throw new Error('Client not found');
+  const targetPOId = invoice.po_id === undefined ? oldInvoice.po_id : invoice.po_id;
+  if (targetPOId) {
+    const po = await getPOById(db, userId, targetPOId);
+    if (!po) throw new Error('Purchase Order not found');
+    if (po.client_id !== targetClientId) {
+      throw new Error('Purchase Order does not belong to the selected client');
+    }
+  }
 
   const stmts = [];
 
   // Update invoice fields
-  const keys = Object.keys(invoice);
+  const allowedKeys = new Set([
+    'client_id', 'po_id', 'issue_date', 'due_date', 'status', 'currency', 'subtotal',
+    'tax_label', 'tax_rate', 'tax_amount', 'discount_amount', 'total', 'notes', 'terms',
+  ]);
+  const keys = Object.keys(invoice).filter((key) => allowedKeys.has(key));
   if (keys.length > 0) {
     const sets = keys.map(k => `${k} = ?`).join(', ');
     const values = keys.map(k => (invoice as any)[k]);
@@ -815,6 +832,10 @@ export async function addPayment(
   // Verify invoice belongs to user
   const invoice = await getInvoiceById(db, userId, invoiceId);
   if (!invoice) throw new Error('Invoice not found');
+  const remaining = Math.round((invoice.total - invoice.amount_paid + Number.EPSILON) * 100) / 100;
+  if (amount > remaining + 0.001) {
+    throw new Error(`Payment exceeds the remaining balance of ${remaining.toFixed(2)}`);
+  }
 
   // Insert payment and update invoice amount_paid & status in a transaction batch
   const insertPaymentStmt = db.prepare(`
@@ -822,12 +843,22 @@ export async function addPayment(
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `).bind(invoiceId, amount, paymentDate, method, reference, notes, now);
 
-  const batchResult = await db.batch([insertPaymentStmt]);
+  const recalculateStmt = db.prepare(`
+    UPDATE invoices
+    SET amount_paid = (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE invoice_id = ?),
+        status = CASE
+          WHEN status IN ('draft', 'cancelled') THEN status
+          WHEN (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE invoice_id = ?) >= total THEN 'paid'
+          WHEN (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE invoice_id = ?) > 0 THEN 'partially_paid'
+          ELSE 'sent'
+        END,
+        updated_at = ?
+    WHERE user_id = ? AND id = ?
+  `).bind(invoiceId, invoiceId, invoiceId, now, userId, invoiceId);
+
+  const batchResult = await db.batch([insertPaymentStmt, recalculateStmt]);
   const paymentId = batchResult[0].meta.last_row_id;
   if (!paymentId) throw new Error('Failed to record payment');
-
-  // Recalculate invoice totals and status
-  await recalculateInvoicePayment(db, userId, invoiceId);
 
   return paymentId;
 }
@@ -1074,7 +1105,7 @@ export async function getRecentActivity(
   const { results: openPOs } = await db
     .prepare(`
       SELECT po.*, c.name as client_name,
-             (SELECT COALESCE(SUM(total), 0) FROM invoices WHERE po_id = po.id AND status != 'cancelled') as invoiced_amount,
+             (SELECT COALESCE(SUM(total), 0) FROM invoices WHERE user_id = po.user_id AND po_id = po.id AND status != 'cancelled') as invoiced_amount,
              (SELECT COALESCE(SUM(amount), 0) FROM purchase_order_items WHERE po_id = po.id AND work_confirmed = 1) as confirmed_amount
       FROM purchase_orders po
       JOIN clients c ON po.client_id = c.id

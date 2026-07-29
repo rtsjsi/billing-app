@@ -150,9 +150,9 @@ export default function PurchaseOrders() {
     };
   }, [modalOpen]);
 
-  const openCreateModal = () => {
+  const openCreateModal = (clientId?: string) => {
     setEditingPO(null);
-    setFormClientId(clients[0]?.id.toString() || '');
+    setFormClientId(clientId || clients[0]?.id.toString() || '');
     setFormPoNumber('');
     setFormPoDate(new Date().toISOString().split('T')[0]); // today
     setFormDescription('');
@@ -164,6 +164,12 @@ export default function PurchaseOrders() {
     setError('');
     setModalOpen(true);
   };
+
+  useEffect(() => {
+    if (searchParams.get('new') !== '1' || clients.length === 0) return;
+    openCreateModal(searchParams.get('client_id') || undefined);
+    navigate('/purchase-orders', { replace: true });
+  }, [clients, navigate, searchParams]);
 
   const openEditModal = async (po: PurchaseOrder) => {
     // Snapshot fields up front in case the list re-renders while loading
@@ -291,7 +297,7 @@ export default function PurchaseOrders() {
           title="Purchase Orders"
           subtitle="Record client PO contracts and map them to invoices"
           actions={
-            <button onClick={openCreateModal} className="btn-primary">
+            <button onClick={() => openCreateModal()} className="btn-primary">
               <Plus className="h-4 w-4" />
               New PO
             </button>
@@ -299,7 +305,7 @@ export default function PurchaseOrders() {
         />
       </div>
 
-      <button onClick={openCreateModal} className="md:hidden btn-primary w-full">
+      <button onClick={() => openCreateModal()} className="md:hidden btn-primary w-full">
         <Plus className="h-4 w-4" />
         New PO
       </button>

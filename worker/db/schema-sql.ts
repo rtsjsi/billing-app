@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS clients (
 );
 CREATE INDEX IF NOT EXISTS idx_clients_archived ON clients(is_archived);
 CREATE INDEX IF NOT EXISTS idx_clients_name ON clients(name);
+CREATE INDEX IF NOT EXISTS idx_clients_user ON clients(user_id);
 
 CREATE TABLE IF NOT EXISTS purchase_orders (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -70,6 +71,7 @@ CREATE TABLE IF NOT EXISTS purchase_orders (
 );
 CREATE INDEX IF NOT EXISTS idx_po_client ON purchase_orders(client_id);
 CREATE INDEX IF NOT EXISTS idx_po_status ON purchase_orders(status);
+CREATE INDEX IF NOT EXISTS idx_po_user ON purchase_orders(user_id);
 
 CREATE TABLE IF NOT EXISTS purchase_order_items (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -78,7 +80,8 @@ CREATE TABLE IF NOT EXISTS purchase_order_items (
   quantity REAL NOT NULL DEFAULT 1,
   unit_price REAL NOT NULL DEFAULT 0,
   amount REAL NOT NULL DEFAULT 0,
-  sort_order INTEGER NOT NULL DEFAULT 0
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  work_confirmed INTEGER NOT NULL DEFAULT 1
 );
 CREATE INDEX IF NOT EXISTS idx_items_po ON purchase_order_items(po_id);
 
@@ -109,6 +112,7 @@ CREATE TABLE IF NOT EXISTS invoices (
 CREATE INDEX IF NOT EXISTS idx_invoices_client ON invoices(client_id);
 CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status);
 CREATE INDEX IF NOT EXISTS idx_invoices_issue_date ON invoices(issue_date);
+CREATE INDEX IF NOT EXISTS idx_invoices_user ON invoices(user_id);
 
 CREATE TABLE IF NOT EXISTS invoice_items (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -132,5 +136,14 @@ CREATE TABLE IF NOT EXISTS payments (
   created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_payments_invoice ON payments(invoice_id);
+CREATE TRIGGER IF NOT EXISTS prevent_invoice_overpayment
+BEFORE INSERT ON payments
+WHEN NEW.amount > (
+  SELECT total - COALESCE((SELECT SUM(amount) FROM payments WHERE invoice_id = NEW.invoice_id), 0) + 0.001
+  FROM invoices WHERE id = NEW.invoice_id
+)
+BEGIN
+  SELECT RAISE(ABORT, 'Payment exceeds remaining invoice balance');
+END;
 
 `;

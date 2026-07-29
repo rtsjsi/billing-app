@@ -48,7 +48,10 @@ export default function SortableTh({
     align === 'right' ? 'justify-end text-right' : align === 'center' ? 'justify-center text-center' : 'justify-start text-left';
 
   return (
-    <th className={`px-6 py-3.5 ${className}`}>
+    <th
+      className={`px-6 py-3.5 ${className}`}
+      aria-sort={active ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+    >
       <button
         type="button"
         onClick={() => onSort(column)}
