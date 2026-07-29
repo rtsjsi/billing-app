@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { signatureBase64 } from '../signatureBase64';
+import { calculateInvoiceTotals } from '../lib/invoice-calculations';
 import { 
   listInvoices, 
   countInvoices, 
@@ -19,7 +20,7 @@ const app = new Hono<{ Bindings: { DB: D1Database }, Variables: { jwtPayload: { 
 
 const itemSchema = z.object({
   description: z.string().min(1, 'Item description is required'),
-  quantity: z.number().min(0, 'Quantity cannot be negative'),
+  quantity: z.number().positive('Quantity must be greater than zero'),
   unit_price: z.number().min(0, 'Unit price cannot be negative'),
   amount: z.number().min(0, 'Amount cannot be negative'),
   sort_order: z.number().int().default(0)
@@ -30,7 +31,7 @@ const invoiceSchema = z.object({
   po_id: z.number().int().nullable().optional(),
   issue_date: z.string().min(1, 'Issue date is required'),
   due_date: z.string().nullable().optional(),
-  status: z.enum(['draft', 'sent', 'partially_paid', 'paid', 'cancelled']).default('draft'),
+  status: z.enum(['draft', 'sent', 'cancelled']).default('draft'),
   currency: z.string().default('INR'),
   subtotal: z.number().min(0),
   tax_label: z.string().nullable().optional(),
@@ -321,7 +322,13 @@ app.post('/', async (c) => {
     }
 
     const { items, ...invoiceData } = parsed.data;
-    const invoiceId = await createInvoice(c.env.DB, userId, invoiceData as any, items);
+    const calculated = calculateInvoiceTotals(items, invoiceData.tax_rate, invoiceData.discount_amount);
+    const invoiceId = await createInvoice(c.env.DB, userId, {
+      ...invoiceData,
+      subtotal: calculated.subtotal,
+      tax_amount: calculated.taxAmount,
+      total: calculated.total,
+    } as any, calculated.items);
     const newInvoice = await getInvoiceById(c.env.DB, userId, invoiceId);
 
     return c.json({ message: 'Invoice created successfully', invoice: newInvoice }, 201);
@@ -344,7 +351,13 @@ app.put('/:id', async (c) => {
     }
 
     const { items, ...invoiceData } = parsed.data;
-    await updateInvoice(c.env.DB, userId, id, invoiceData as any, items);
+    const calculated = calculateInvoiceTotals(items, invoiceData.tax_rate, invoiceData.discount_amount);
+    await updateInvoice(c.env.DB, userId, id, {
+      ...invoiceData,
+      subtotal: calculated.subtotal,
+      tax_amount: calculated.taxAmount,
+      total: calculated.total,
+    } as any, calculated.items);
     const updated = await getInvoiceById(c.env.DB, userId, id);
 
     return c.json({ message: 'Invoice updated successfully', invoice: updated });
@@ -376,7 +389,7 @@ app.post('/:id/status', async (c) => {
 
     const body = await c.req.json();
     const { status } = body;
-    if (!status || !['draft', 'sent', 'cancelled', 'paid'].includes(status)) {
+    if (!status || !['draft', 'sent', 'cancelled'].includes(status)) {
       return c.json({ error: 'Invalid status' }, 400);
     }
 

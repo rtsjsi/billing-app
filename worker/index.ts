@@ -19,7 +19,6 @@ import {
   updateSettings,
   getSettings
 } from './db/queries';
-import { SCHEMA_SQL } from './db/schema-sql';
 
 // Import sub-routers
 import dashboardRouter from './routes/dashboard';
@@ -36,6 +35,24 @@ type Bindings = {
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
+
+app.use('*', async (c, next) => {
+  await next();
+  c.header('Content-Security-Policy', [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    "img-src 'self' data: blob:",
+    "connect-src 'self'",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join('; '));
+  c.header('X-Content-Type-Options', 'nosniff');
+  c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+  c.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+});
 
 // Free-tier hardening: restrict CORS to known dev origins.
 // Same-origin requests (app served from this Worker) don't need CORS.
@@ -74,15 +91,12 @@ app.get('/api/auth/setup-status', async (c) => {
   } catch (error: any) {
     const errMsg = error.message || '';
     if (errMsg.includes('no such table') || errMsg.includes('no such table: users')) {
-      try {
-        // Automatically initialize SQLite database tables
-        await c.env.DB.exec(SCHEMA_SQL);
-        return c.json({ needsSetup: true });
-      } catch (execError: any) {
-        return c.json({ error: `Auto-initialization of D1 failed: ${execError.message}` }, 500);
-      }
+      return c.json({
+        error: 'Database is not initialized. Apply the D1 migrations before running setup.',
+      }, 503);
     }
-    return c.json({ error: errMsg || 'Database connection error' }, 500);
+    console.error('Setup status failed:', error);
+    return c.json({ error: 'Database connection error' }, 500);
   }
 });
 
@@ -106,6 +120,9 @@ app.post('/api/auth/setup', async (c) => {
     const { username, password, business_name, owner_name, email } = await c.req.json();
     if (!username || !password || !business_name) {
       return c.json({ error: 'Username, password, and business name are required' }, 400);
+    }
+    if (typeof password !== 'string' || password.length < 12 || password.length > 128) {
+      return c.json({ error: 'Password must be between 12 and 128 characters' }, 400);
     }
 
     // Create user
@@ -202,7 +219,7 @@ app.get('/api/auth/me', async (c) => {
     });
   } catch (error: any) {
     console.error('Error in /api/auth/me:', error);
-    return c.json({ authenticated: false, debug_error: error.message || String(error) }, 200);
+    return c.json({ authenticated: false }, 200);
   }
 });
 

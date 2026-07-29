@@ -36,7 +36,9 @@ app.post('/', async (c) => {
 
     return c.json({ message: 'Payment recorded successfully', paymentId }, 201);
   } catch (error: any) {
-    return c.json({ error: error.message || 'Failed to record payment' }, 500);
+    const message = error.message || 'Failed to record payment';
+    const status = message.includes('remaining balance') || message === 'Invoice not found' ? 400 : 500;
+    return c.json({ error: message }, status);
   }
 });
 

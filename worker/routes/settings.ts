@@ -40,7 +40,7 @@ const settingsSchema = z.object({
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required'),
-  newPassword: z.string().min(6, 'New password must be at least 6 characters long')
+  newPassword: z.string().min(12, 'New password must be at least 12 characters long').max(128)
 });
 
 // Fetch settings
