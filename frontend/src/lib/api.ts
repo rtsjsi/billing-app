@@ -227,15 +227,20 @@ function parseFilenameFromContentDisposition(header: string | null): string | nu
   return asciiMatch?.[2]?.trim() || null;
 }
 
-function isLikelyMobileClient(): boolean {
-  if (typeof window === 'undefined') return false;
-  return window.matchMedia('(max-width: 767px), (pointer: coarse)').matches;
+/** iOS Safari often ignores <a download> for blob URLs; Web Share is needed there. */
+function needsShareToSaveFile(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  const iOS =
+    /iPad|iPhone|iPod/i.test(ua) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  return iOS;
 }
 
 /**
  * Fetch a binary file with session cookies, then trigger a real download.
- * On mobile, prefers the Web Share sheet (Save to Files / share apps) because
- * navigating to application/pdf often only opens an inline viewer.
+ * Uses a single download path so Android does not create a temporary share*
+ * file (from Web Share) in addition to the real PDF.
  */
 async function downloadBinaryFile(path: string, fallbackFilename: string): Promise<void> {
   const response = await fetch(`${BASE_URL}${path}`, { credentials: 'include' });
@@ -250,33 +255,38 @@ async function downloadBinaryFile(path: string, fallbackFilename: string): Promi
     throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
   }
 
-  const blob = await response.blob();
+  const rawBlob = await response.blob();
+  const pdfBlob =
+    rawBlob.type === 'application/pdf'
+      ? rawBlob
+      : new Blob([rawBlob], { type: 'application/pdf' });
   const filename =
     parseFilenameFromContentDisposition(response.headers.get('Content-Disposition')) ||
     fallbackFilename;
-  const file = new File([blob], filename, { type: blob.type || 'application/pdf' });
 
-  const canShareFiles =
-    typeof navigator !== 'undefined' &&
-    typeof navigator.share === 'function' &&
-    typeof navigator.canShare === 'function' &&
-    navigator.canShare({ files: [file] });
+  // Web Share on Android often renames the file (share12345.pdf) and can also
+  // leave a temp file beside the real download. Prefer it only on iOS.
+  if (needsShareToSaveFile()) {
+    const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+    const canShareFiles =
+      typeof navigator.share === 'function' &&
+      typeof navigator.canShare === 'function' &&
+      navigator.canShare({ files: [file] });
 
-  if (isLikelyMobileClient() && canShareFiles) {
-    try {
-      await navigator.share({
-        files: [file],
-        title: filename,
-      });
-      return;
-    } catch (err: unknown) {
-      // User dismissed the share sheet — treat as success (no fallback open).
-      if (err instanceof DOMException && err.name === 'AbortError') return;
-      // Otherwise fall through to anchor download.
+    if (canShareFiles) {
+      try {
+        // Share files only — do not add title/text (avoids an extra text item).
+        await navigator.share({ files: [file] });
+        return;
+      } catch (err: unknown) {
+        // User dismissed the share sheet — treat as success (no second download).
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+        // Otherwise fall through once to the anchor download.
+      }
     }
   }
 
-  const objectUrl = URL.createObjectURL(blob);
+  const objectUrl = URL.createObjectURL(pdfBlob);
   try {
     const anchor = document.createElement('a');
     anchor.href = objectUrl;
@@ -382,7 +392,7 @@ export const api = {
     downloadPDF: (id: number, invoiceNumber?: string) =>
       downloadBinaryFile(
         `/api/invoices/${id}/pdf`,
-        `invoice_${invoiceNumber || id}.pdf`
+        `${invoiceNumber || `invoice_${id}`}.pdf`
       ),
   },
 
