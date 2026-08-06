@@ -384,9 +384,22 @@ export default function PurchaseOrders() {
               </thead>
               <tbody className="divide-y divide-slate-200 text-sm">
                 {sortedPOs.map((po) => (
-                  <tr key={po.id} className="hover:bg-slate-50 transition-colors align-top">
+                  <tr
+                    key={po.id}
+                    onClick={() => openEditModal(po)}
+                    className="hover:bg-slate-50 transition-colors cursor-pointer align-top"
+                  >
                     <td data-label="PO Number" className="px-6 py-3.5">
-                      <div className="font-mono font-semibold text-slate-800 whitespace-nowrap">{po.po_number}</div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEditModal(po);
+                        }}
+                        className="font-mono font-semibold text-blue-600 hover:text-blue-700 whitespace-nowrap text-left"
+                      >
+                        {po.po_number}
+                      </button>
                       {po.description ? (
                         <div className="text-xs text-slate-400 mt-0.5 line-clamp-2 max-w-xs">{po.description}</div>
                       ) : null}
