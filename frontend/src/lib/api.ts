@@ -259,10 +259,13 @@ async function downloadBinaryFile(path: string, fallbackFilename: string): Promi
   }
 
   const rawBlob = await response.blob();
-  const pdfBlob =
-    rawBlob.type === 'application/pdf'
+  const contentType = (response.headers.get('Content-Type') || rawBlob.type || 'application/octet-stream')
+    .split(';')[0]
+    .trim();
+  const fileBlob =
+    rawBlob.type && rawBlob.type !== 'application/octet-stream'
       ? rawBlob
-      : new Blob([rawBlob], { type: 'application/pdf' });
+      : new Blob([rawBlob], { type: contentType });
   const filename =
     parseFilenameFromContentDisposition(response.headers.get('Content-Disposition')) ||
     fallbackFilename;
@@ -270,7 +273,7 @@ async function downloadBinaryFile(path: string, fallbackFilename: string): Promi
   // Web Share on Android often renames the file (share12345.pdf) and can also
   // leave a temp file beside the real download. Prefer it only on iOS.
   if (needsShareToSaveFile()) {
-    const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+    const file = new File([fileBlob], filename, { type: fileBlob.type || contentType });
     const canShareFiles =
       typeof navigator.share === 'function' &&
       typeof navigator.canShare === 'function' &&
@@ -289,7 +292,7 @@ async function downloadBinaryFile(path: string, fallbackFilename: string): Promi
     }
   }
 
-  const objectUrl = URL.createObjectURL(pdfBlob);
+  const objectUrl = URL.createObjectURL(fileBlob);
   try {
     const anchor = document.createElement('a');
     anchor.href = objectUrl;
@@ -413,5 +416,20 @@ export const api = {
       request<{ message: string; settings: BusinessSettings }>('/api/settings', { method: 'PUT', body: JSON.stringify(data) }),
     changePassword: (data: any) => request('/api/settings/password', { method: 'PUT', body: JSON.stringify(data) }),
     getExportUrl: (entity: 'clients' | 'invoices' | 'purchase-orders') => `/api/settings/export/${entity}`
+  },
+
+  reports: {
+    download: (
+      type: string,
+      format: 'pdf' | 'xlsx',
+      financialYear?: string,
+      clientId?: string | number
+    ) => {
+      const params = new URLSearchParams({ format });
+      if (financialYear) params.append('financialYear', financialYear);
+      if (clientId) params.append('clientId', String(clientId));
+      const ext = format === 'xlsx' ? 'xlsx' : 'pdf';
+      return downloadBinaryFile(`/api/reports/${type}?${params.toString()}`, `${type}.${ext}`);
+    },
   }
 };

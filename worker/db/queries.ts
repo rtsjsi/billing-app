@@ -944,7 +944,7 @@ export interface DashboardStats {
   overdueCount: number;
 }
 
-function getFYDateRange(fy: string): { start: string; end: string } {
+export function getFYDateRange(fy: string): { start: string; end: string } {
   const match = fy.match(/^(\d{4})-\d{2}$/);
   if (!match) {
     throw new Error('Invalid financial year format. Expected YYYY-YY (e.g. 2024-25)');

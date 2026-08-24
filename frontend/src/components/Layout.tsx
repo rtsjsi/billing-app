@@ -9,6 +9,7 @@ import {
   LogOut,
   Zap,
   ArrowLeft,
+  ChartColumn,
 } from 'lucide-react';
 import { api } from '../lib/api';
 import ConfirmModal from './ConfirmModal';
@@ -28,6 +29,7 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/purchase-orders')) return 'Purchase Orders';
   if (pathname.startsWith('/clients/')) return 'Client';
   if (pathname === '/clients') return 'Clients';
+  if (pathname === '/reports') return 'Reports';
   if (pathname === '/settings') return 'Settings';
   return 'BillingApp';
 }
@@ -59,8 +61,8 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
     { name: 'Home', path: '/', icon: LayoutDashboard },
     { name: 'Invoices', path: '/invoices', icon: FileText },
     { name: 'POs', path: '/purchase-orders', icon: FileSpreadsheet },
+    { name: 'Reports', path: '/reports', icon: ChartColumn },
     { name: 'Clients', path: '/clients', icon: Users },
-    { name: 'Settings', path: '/settings', icon: Settings },
   ];
 
   const sidebarNavItems = [
@@ -68,6 +70,7 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
     { name: 'Invoices', path: '/invoices', icon: FileText },
     { name: 'Purchase Orders', path: '/purchase-orders', icon: FileSpreadsheet },
     { name: 'Clients', path: '/clients', icon: Users },
+    { name: 'Reports', path: '/reports', icon: ChartColumn },
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
 
@@ -158,6 +161,17 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
+              <NavLink
+                to="/settings"
+                className={`flex items-center justify-center w-9 h-9 rounded-xl transition-colors ${
+                  location.pathname === '/settings'
+                    ? 'text-brand-700 bg-brand-50'
+                    : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+                aria-label="Settings"
+              >
+                <Settings className="h-4 w-4" />
+              </NavLink>
               <button
                 onClick={() => setLogoutConfirmOpen(true)}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"

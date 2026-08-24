@@ -27,6 +27,7 @@ import poRouter from './routes/purchase-orders';
 import invoicesRouter from './routes/invoices';
 import paymentsRouter from './routes/payments';
 import settingsRouter from './routes/settings';
+import reportsRouter from './routes/reports';
 
 type Bindings = {
   DB: D1Database;
@@ -236,6 +237,7 @@ api.route('/purchase-orders', poRouter);
 api.route('/invoices', invoicesRouter);
 api.route('/payments', paymentsRouter);
 api.route('/settings', settingsRouter);
+api.route('/reports', reportsRouter);
 
 app.route('/api', api);
 

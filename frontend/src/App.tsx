@@ -12,6 +12,7 @@ import ClientDetail from './pages/ClientDetail';
 import PurchaseOrders from './pages/PurchaseOrders';
 import Invoices from './pages/Invoices';
 import InvoicePreview from './pages/InvoicePreview';
+import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import Setup from './pages/Setup';
@@ -152,6 +153,7 @@ export default function App() {
               <Route path="/invoices/new" element={<InvoiceNewRedirect />} />
               <Route path="/invoices/edit/:id" element={<InvoiceEditRedirect />} />
               <Route path="/invoices/preview/:id" element={<InvoicePreview />} />
+              <Route path="/reports" element={<Reports />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
 

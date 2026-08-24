@@ -222,6 +222,11 @@
     border-color: #cbd5e1;
   }
 
+  .btn-secondary:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
   .btn-ghost {
     display: inline-flex;
     align-items: center;
