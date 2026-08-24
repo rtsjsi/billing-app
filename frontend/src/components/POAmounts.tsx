@@ -3,20 +3,23 @@ import { formatCurrency, getPOOutstanding } from '../lib/utils';
 type POAmountsProps = {
   amount: number | null | undefined;
   confirmedAmount?: number | null;
+  unconfirmedAmount?: number | null;
   invoicedAmount?: number | null;
   currency: string;
   className?: string;
 };
 
-/** Compact Total / Confirmed / Outstanding stack for table cells. */
+/** Compact Total / Confirmed / Unconfirmed / Outstanding stack for table cells. */
 export default function POAmounts({
   amount,
   confirmedAmount,
+  unconfirmedAmount,
   invoicedAmount,
   currency,
   className = '',
 }: POAmountsProps) {
   const confirmed = confirmedAmount ?? 0;
+  const unconfirmed = unconfirmedAmount ?? 0;
   const outstanding = getPOOutstanding(confirmedAmount ?? amount, invoicedAmount);
 
   const rows: { label: string; value: string; labelClass: string; valueClass: string }[] = [
@@ -31,6 +34,12 @@ export default function POAmounts({
       value: formatCurrency(confirmed, currency),
       labelClass: 'text-emerald-600/90',
       valueClass: 'text-emerald-700',
+    },
+    {
+      label: 'Unconfirmed',
+      value: formatCurrency(unconfirmed, currency),
+      labelClass: 'text-orange-600/90',
+      valueClass: 'text-orange-700',
     },
     {
       label: 'Outstanding',

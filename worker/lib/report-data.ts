@@ -9,6 +9,7 @@ import {
   type BusinessSettings,
   type PurchaseOrder,
 } from '../db/queries';
+import { uncheckedWorkSql } from './po-work';
 import { formatAmount, paymentMethodLabel, roundMoney } from './report-format';
 import type { ExcelCell, ExcelSheet } from './xlsx';
 import type { PdfColumn, PdfTableReport } from './pdf-report';
@@ -243,7 +244,7 @@ async function listUnconfirmedRows(
        FROM purchase_order_items poi
        JOIN purchase_orders po ON poi.po_id = po.id
        JOIN clients c ON po.client_id = c.id
-       WHERE poi.work_confirmed = 0 AND ${where.sql}
+       WHERE ${uncheckedWorkSql('poi.work_confirmed')} AND ${where.sql}
        ORDER BY po.po_date DESC, po.id DESC, poi.sort_order ASC, poi.id ASC`
     )
     .bind(...where.binds)

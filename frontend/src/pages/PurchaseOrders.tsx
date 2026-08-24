@@ -440,6 +440,7 @@ export default function PurchaseOrders() {
                         <POAmounts
                           amount={po.amount}
                           confirmedAmount={po.confirmed_amount}
+                          unconfirmedAmount={po.unconfirmed_amount}
                           invoicedAmount={po.invoiced_amount}
                           currency={po.currency}
                         />

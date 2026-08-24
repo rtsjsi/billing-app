@@ -71,7 +71,7 @@ export default function Dashboard() {
   const pipeline = [
     {
       label: 'Unconfirmed PO',
-      hint: 'Work not yet confirmed',
+      hint: 'Unchecked line items only',
       value: formatCurrency(unconfirmedPO),
       icon: CircleDashed,
       tone: 'text-orange-800',

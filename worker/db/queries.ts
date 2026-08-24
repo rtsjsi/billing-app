@@ -1,5 +1,6 @@
 import { D1Database } from '@cloudflare/workers-types';
 import { formatInvoiceNumber, getPeriodPattern } from '../lib/invoice-number';
+import { checkedWorkSql, uncheckedWorkSql } from '../lib/po-work';
 
 // ----------------------------------------------------
 // Type Definitions
@@ -319,8 +320,8 @@ export async function listPOs(db: D1Database, userId: number, clientId?: number,
   let query = `
     SELECT po.*, c.name as client_name,
            (SELECT COALESCE(SUM(total), 0) FROM invoices WHERE user_id = po.user_id AND po_id = po.id AND status != 'cancelled') as invoiced_amount,
-           (SELECT COALESCE(SUM(amount), 0) FROM purchase_order_items WHERE po_id = po.id AND work_confirmed = 1) as confirmed_amount,
-           (SELECT COALESCE(SUM(amount), 0) FROM purchase_order_items WHERE po_id = po.id AND work_confirmed = 0) as unconfirmed_amount
+           (SELECT COALESCE(SUM(amount), 0) FROM purchase_order_items WHERE po_id = po.id AND ${checkedWorkSql()}) as confirmed_amount,
+           (SELECT COALESCE(SUM(amount), 0) FROM purchase_order_items WHERE po_id = po.id AND ${uncheckedWorkSql()}) as unconfirmed_amount
     FROM purchase_orders po
     JOIN clients c ON po.client_id = c.id
     WHERE po.user_id = ?
@@ -345,8 +346,8 @@ export async function getPOById(db: D1Database, userId: number, id: number): Pro
   return await db.prepare(`
     SELECT po.*, c.name as client_name,
            (SELECT COALESCE(SUM(total), 0) FROM invoices WHERE user_id = po.user_id AND po_id = po.id AND status != 'cancelled') as invoiced_amount,
-           (SELECT COALESCE(SUM(amount), 0) FROM purchase_order_items WHERE po_id = po.id AND work_confirmed = 1) as confirmed_amount,
-           (SELECT COALESCE(SUM(amount), 0) FROM purchase_order_items WHERE po_id = po.id AND work_confirmed = 0) as unconfirmed_amount
+           (SELECT COALESCE(SUM(amount), 0) FROM purchase_order_items WHERE po_id = po.id AND ${checkedWorkSql()}) as confirmed_amount,
+           (SELECT COALESCE(SUM(amount), 0) FROM purchase_order_items WHERE po_id = po.id AND ${uncheckedWorkSql()}) as unconfirmed_amount
     FROM purchase_orders po
     JOIN clients c ON po.client_id = c.id
     WHERE po.user_id = ? AND po.id = ?
@@ -1034,19 +1035,20 @@ export async function getDashboardStats(
     SELECT COALESCE(SUM(poi.amount), 0) as total_po
     FROM purchase_order_items poi
     JOIN purchase_orders po ON poi.po_id = po.id
-    WHERE poi.work_confirmed = 1 AND ${poWhere}
+    WHERE ${checkedWorkSql('poi.work_confirmed')} AND ${poWhere}
   `;
   const totalPORes = await db
     .prepare(poSql)
     .bind(...poParams)
     .first<{ total_po: number | null }>();
 
-  // 6. Unconfirmed PO Amount — line items not yet confirmed to start
+  // 6. Unconfirmed PO — only line items where the Confirmed checkbox is unchecked.
+  // Never fall back to the PO header amount (that includes checked lines).
   const unconfirmedPoSql = `
     SELECT COALESCE(SUM(poi.amount), 0) as total_unconfirmed
     FROM purchase_order_items poi
     JOIN purchase_orders po ON poi.po_id = po.id
-    WHERE poi.work_confirmed = 0 AND ${poWhere}
+    WHERE ${uncheckedWorkSql('poi.work_confirmed')} AND ${poWhere}
   `;
   const totalUnconfirmedPORes = await db
     .prepare(unconfirmedPoSql)
@@ -1124,7 +1126,7 @@ export async function getRecentActivity(
     .prepare(`
       SELECT po.*, c.name as client_name,
              (SELECT COALESCE(SUM(total), 0) FROM invoices WHERE user_id = po.user_id AND po_id = po.id AND status != 'cancelled') as invoiced_amount,
-             (SELECT COALESCE(SUM(amount), 0) FROM purchase_order_items WHERE po_id = po.id AND work_confirmed = 1) as confirmed_amount
+             (SELECT COALESCE(SUM(amount), 0) FROM purchase_order_items WHERE po_id = po.id AND ${checkedWorkSql()}) as confirmed_amount
       FROM purchase_orders po
       JOIN clients c ON po.client_id = c.id
       ${poWhere}
