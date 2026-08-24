@@ -4,7 +4,6 @@ import {
   AlertCircle,
   ArrowRight,
   CheckCircle2,
-  CircleDashed,
   Clock,
   FileCheck,
   FileText,
@@ -64,29 +63,12 @@ export default function Dashboard() {
   const collected = stats?.totalPaidAmount ?? 0;
   const confirmedPO = stats?.totalPOAmount ?? 0;
   const unconfirmedPO = stats?.totalUnconfirmedPOAmount ?? 0;
+  const totalPO = confirmedPO + unconfirmedPO;
   const invoiced = stats?.totalInvoiceAmount ?? 0;
   const pending = stats?.invoicePendingAmount ?? 0;
   const hasFilters = Boolean(selectedFY || filterClientId);
 
   const pipeline = [
-    {
-      label: 'Unconfirmed PO',
-      hint: 'Unchecked line items only',
-      value: formatCurrency(unconfirmedPO),
-      icon: CircleDashed,
-      tone: 'text-orange-800',
-      iconBg: 'bg-orange-50 text-orange-600',
-      to: '/purchase-orders?unconfirmed=1',
-    },
-    {
-      label: 'Confirmed PO',
-      hint: 'Work confirmed to start',
-      value: formatCurrency(confirmedPO),
-      icon: FileCheck,
-      tone: 'text-slate-700',
-      iconBg: 'bg-slate-100 text-slate-600',
-      to: '/purchase-orders',
-    },
     {
       label: 'Invoiced',
       hint: 'Billed to clients',
@@ -243,7 +225,37 @@ export default function Dashboard() {
       {/* Billing pipeline — secondary */}
       <section>
         <h2 className="section-title mb-3 px-0.5">Billing pipeline</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+          <div className="dash-metric dash-metric-plain">
+            <Link to="/purchase-orders" className="block text-inherit no-underline">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="dash-metric-label">Total PO</p>
+                  <p className="dash-metric-hint">All purchase order line items</p>
+                </div>
+                <span className="dash-metric-icon bg-slate-100 text-slate-600">
+                  <FileCheck className="h-4 w-4" />
+                </span>
+              </div>
+              <p className="dash-metric-value text-slate-800">
+                {formatCurrency(totalPO)}
+              </p>
+            </Link>
+            <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-3">
+              <Link to="/purchase-orders" className="min-w-0 text-inherit no-underline">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600">Confirmed</p>
+                <p className="mt-0.5 text-sm font-semibold text-emerald-700 tabular-nums">
+                  {formatCurrency(confirmedPO)}
+                </p>
+              </Link>
+              <Link to="/purchase-orders?unconfirmed=1" className="min-w-0 text-inherit no-underline">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-orange-600">Unconfirmed</p>
+                <p className="mt-0.5 text-sm font-semibold text-orange-700 tabular-nums">
+                  {formatCurrency(unconfirmedPO)}
+                </p>
+              </Link>
+            </div>
+          </div>
           {pipeline.map((item) => {
             const Icon = item.icon;
             return (
