@@ -4,6 +4,7 @@ import {
   AlertCircle,
   ArrowRight,
   CheckCircle2,
+  CircleDashed,
   Clock,
   FileCheck,
   FileText,
@@ -62,11 +63,21 @@ export default function Dashboard() {
   const outstanding = stats?.totalOutstanding ?? 0;
   const collected = stats?.totalPaidAmount ?? 0;
   const confirmedPO = stats?.totalPOAmount ?? 0;
+  const unconfirmedPO = stats?.totalUnconfirmedPOAmount ?? 0;
   const invoiced = stats?.totalInvoiceAmount ?? 0;
   const pending = stats?.invoicePendingAmount ?? 0;
   const hasFilters = Boolean(selectedFY || filterClientId);
 
   const pipeline = [
+    {
+      label: 'Unconfirmed PO',
+      hint: 'Work not yet confirmed',
+      value: formatCurrency(unconfirmedPO),
+      icon: CircleDashed,
+      tone: 'text-orange-800',
+      iconBg: 'bg-orange-50 text-orange-600',
+      to: '/purchase-orders?unconfirmed=1',
+    },
     {
       label: 'Confirmed PO',
       hint: 'Work confirmed to start',
@@ -232,7 +243,7 @@ export default function Dashboard() {
       {/* Billing pipeline — secondary */}
       <section>
         <h2 className="section-title mb-3 px-0.5">Billing pipeline</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
           {pipeline.map((item) => {
             const Icon = item.icon;
             return (

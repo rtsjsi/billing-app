@@ -48,6 +48,8 @@ export interface PurchaseOrder {
   invoiced_amount?: number;
   /** Sum of line amounts where work_confirmed = 1 */
   confirmed_amount?: number;
+  /** Sum of line amounts where work_confirmed = 0 */
+  unconfirmed_amount?: number;
   items?: PurchaseOrderItem[];
 }
 
@@ -128,6 +130,7 @@ export interface BusinessSettings {
 export interface DashboardData {
   stats: {
     totalPOAmount: number;
+    totalUnconfirmedPOAmount: number;
     totalInvoiceAmount: number;
     invoicePendingAmount: number;
     totalPaidAmount: number;

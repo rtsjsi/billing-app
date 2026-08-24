@@ -20,10 +20,11 @@ import Spinner from '../components/Spinner';
 import POAmounts from '../components/POAmounts';
 
 export default function PurchaseOrders() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const toast = useToast();
   const initialClientId = searchParams.get('client_id');
+  const filterUnconfirmed = searchParams.get('unconfirmed') === '1';
 
   const [pos, setPOs] = useState<PurchaseOrder[]>([]);
   const { selectedFY, setSelectedFY, availableYears, clients } = useFilters();
@@ -31,6 +32,13 @@ export default function PurchaseOrders() {
 
   const [filterClientId, setFilterClientId] = useState(initialClientId || '');
   const [filterStatus, setFilterStatus] = useState('');
+
+  const setFilterUnconfirmed = (on: boolean) => {
+    const next = new URLSearchParams(searchParams);
+    if (on) next.set('unconfirmed', '1');
+    else next.delete('unconfirmed');
+    setSearchParams(next, { replace: true });
+  };
   const [sortKey, setSortKey] = useState('created_at');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [loading, setLoading] = useState(true);
@@ -85,11 +93,16 @@ export default function PurchaseOrders() {
       if (selectedFY) {
         const fyRange = getFYDateRange(selectedFY);
         if (fyRange.start && fyRange.end) {
-          filtered = res.filter(po => {
+          filtered = filtered.filter(po => {
             if (!po.po_date) return false;
             return po.po_date >= fyRange.start! && po.po_date <= fyRange.end!;
           });
         }
+      }
+      if (filterUnconfirmed) {
+        filtered = filtered.filter(
+          (po) => po.status !== 'cancelled' && Number(po.unconfirmed_amount) > 0
+        );
       }
       setPOs(filtered);
     } catch (err: any) {
@@ -101,7 +114,7 @@ export default function PurchaseOrders() {
 
   useEffect(() => {
     fetchPOs();
-  }, [selectedFY, filterStatus, filterClientId]);
+  }, [selectedFY, filterStatus, filterClientId, filterUnconfirmed]);
 
   const sortedPOs = useMemo(() => {
     const list = [...pos];
@@ -310,7 +323,7 @@ export default function PurchaseOrders() {
         New PO
       </button>
 
-      <div className="app-card p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="app-card p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div>
           <label className="block text-xs font-semibold text-slate-500 mb-1.5">Financial Year</label>
           <select
@@ -342,13 +355,27 @@ export default function PurchaseOrders() {
               <option value="closed">Closed</option>
               <option value="cancelled">Cancelled</option>
             </select>
-            {(filterStatus || filterClientId || selectedFY) && (
+          </div>
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 mb-1.5">Work</label>
+          <div className="flex gap-2">
+            <select
+              className="form-input text-sm py-2 min-h-0"
+              value={filterUnconfirmed ? 'unconfirmed' : ''}
+              onChange={(e) => setFilterUnconfirmed(e.target.value === 'unconfirmed')}
+            >
+              <option value="">All lines</option>
+              <option value="unconfirmed">Unconfirmed only</option>
+            </select>
+            {(filterStatus || filterClientId || selectedFY || filterUnconfirmed) && (
               <button
                 type="button"
                 onClick={() => {
                   setFilterStatus('');
                   setFilterClientId('');
                   setSelectedFY('');
+                  setFilterUnconfirmed(false);
                 }}
                 className="shrink-0 px-2 text-xs text-red-600 hover:text-red-700 font-semibold"
                 title="Clear filters"
@@ -367,7 +394,9 @@ export default function PurchaseOrders() {
           </div>
         ) : sortedPOs.length === 0 ? (
           <div className="p-12 text-center text-slate-500 text-sm">
-            No Purchase Orders found. Click "New PO" to record one!
+            {filterUnconfirmed
+              ? 'No purchase orders with unconfirmed work.'
+              : 'No Purchase Orders found. Click "New PO" to record one!'}
           </div>
         ) : (
           <div className="min-h-[200px]">

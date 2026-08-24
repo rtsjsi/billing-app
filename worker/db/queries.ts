@@ -73,6 +73,7 @@ export interface PurchaseOrder {
   updated_at: string;
   invoiced_amount?: number;
   confirmed_amount?: number;
+  unconfirmed_amount?: number;
 }
 
 export interface Invoice {
@@ -318,7 +319,8 @@ export async function listPOs(db: D1Database, userId: number, clientId?: number,
   let query = `
     SELECT po.*, c.name as client_name,
            (SELECT COALESCE(SUM(total), 0) FROM invoices WHERE user_id = po.user_id AND po_id = po.id AND status != 'cancelled') as invoiced_amount,
-           (SELECT COALESCE(SUM(amount), 0) FROM purchase_order_items WHERE po_id = po.id AND work_confirmed = 1) as confirmed_amount
+           (SELECT COALESCE(SUM(amount), 0) FROM purchase_order_items WHERE po_id = po.id AND work_confirmed = 1) as confirmed_amount,
+           (SELECT COALESCE(SUM(amount), 0) FROM purchase_order_items WHERE po_id = po.id AND work_confirmed = 0) as unconfirmed_amount
     FROM purchase_orders po
     JOIN clients c ON po.client_id = c.id
     WHERE po.user_id = ?
@@ -343,7 +345,8 @@ export async function getPOById(db: D1Database, userId: number, id: number): Pro
   return await db.prepare(`
     SELECT po.*, c.name as client_name,
            (SELECT COALESCE(SUM(total), 0) FROM invoices WHERE user_id = po.user_id AND po_id = po.id AND status != 'cancelled') as invoiced_amount,
-           (SELECT COALESCE(SUM(amount), 0) FROM purchase_order_items WHERE po_id = po.id AND work_confirmed = 1) as confirmed_amount
+           (SELECT COALESCE(SUM(amount), 0) FROM purchase_order_items WHERE po_id = po.id AND work_confirmed = 1) as confirmed_amount,
+           (SELECT COALESCE(SUM(amount), 0) FROM purchase_order_items WHERE po_id = po.id AND work_confirmed = 0) as unconfirmed_amount
     FROM purchase_orders po
     JOIN clients c ON po.client_id = c.id
     WHERE po.user_id = ? AND po.id = ?
@@ -933,6 +936,7 @@ export async function updatePOStatusFromInvoices(db: D1Database, userId: number,
 
 export interface DashboardStats {
   totalPOAmount: number;
+  totalUnconfirmedPOAmount: number;
   totalInvoiceAmount: number;
   invoicePendingAmount: number;
   totalPaidAmount: number;
@@ -1037,12 +1041,26 @@ export async function getDashboardStats(
     .bind(...poParams)
     .first<{ total_po: number | null }>();
 
+  // 6. Unconfirmed PO Amount — line items not yet confirmed to start
+  const unconfirmedPoSql = `
+    SELECT COALESCE(SUM(poi.amount), 0) as total_unconfirmed
+    FROM purchase_order_items poi
+    JOIN purchase_orders po ON poi.po_id = po.id
+    WHERE poi.work_confirmed = 0 AND ${poWhere}
+  `;
+  const totalUnconfirmedPORes = await db
+    .prepare(unconfirmedPoSql)
+    .bind(...poParams)
+    .first<{ total_unconfirmed: number | null }>();
+
   const totalPO = totalPORes?.total_po ?? 0;
+  const totalUnconfirmedPO = totalUnconfirmedPORes?.total_unconfirmed ?? 0;
   const totalInvoice = totalInvoiceRes?.total_amount ?? 0;
   const invoicePending = Math.max(0, totalPO - totalInvoice);
 
   return {
     totalPOAmount: totalPO,
+    totalUnconfirmedPOAmount: totalUnconfirmedPO,
     totalInvoiceAmount: totalInvoice,
     invoicePendingAmount: invoicePending,
     totalPaidAmount: totalPaidRes?.total_paid ?? 0,
