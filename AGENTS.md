@@ -12,7 +12,7 @@ Do this automatically at the end of a task â€” do not wait for the user to ask â
 
 ## Runtime
 
-The app is hosted on Cloudflare and is used only there. Do not run it locally (`npm run dev`, `wrangler dev`, or a local D1 database).
+There is one Cloudflare Worker and one D1 database, `freelancer-invoices`. That deployment is production. Do not add a local, preview, or staging copy of the app or database. Do not run `npm run dev` or `wrangler dev`.
 
 ## D1 migrations
 
@@ -20,7 +20,7 @@ Schema changes are numbered SQL files in `migrations/`. Wrangler records applied
 
 Database name: `freelancer-invoices`. Commands need `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in the root `.env` (never commit `.env`).
 
-Production, before a Worker deploy that depends on the new schema:
+Before a Worker deploy that depends on the new schema, apply migrations to that database. `--remote` is Wrangler's flag for this Cloudflare database:
 
 ```bash
 npx wrangler d1 migrations apply freelancer-invoices --remote

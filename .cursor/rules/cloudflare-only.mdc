@@ -1,13 +1,13 @@
 ---
-description: The app runs only on Cloudflare, never as a local server
+description: One Cloudflare app and one D1 database, both production
 alwaysApply: true
 ---
 
-# Cloudflare only
+# One production environment
 
-This app is hosted on Cloudflare and is used only there. Do not run it locally.
+There is a single Cloudflare Worker and a single D1 database, `freelancer-invoices`. That deployment is production. Do not add a local, preview, staging, or other copy of the app or database.
 
 - Do not start `npm run dev`, `wrangler dev`, or any local server.
-- Do not apply D1 migrations with `--local`, and do not use a local D1 database.
-- Schema changes go to production with `npx wrangler d1 migrations apply freelancer-invoices --remote`, then `npm run deploy`.
-- Verify behavior against the deployed Cloudflare app, not `http://127.0.0.1:8787`.
+- Do not apply D1 migrations with `--local`. `--remote` targets this only database.
+- Schema changes: `npx wrangler d1 migrations apply freelancer-invoices --remote`, then `npm run deploy`.
+- Verify behavior on the deployed Cloudflare app.

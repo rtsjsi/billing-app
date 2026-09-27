@@ -13,16 +13,16 @@ A secure, full-stack, single-user invoicing and Purchase Order tracker designed 
 
 ---
 
-This app is hosted on Cloudflare and is used only there. Do not run it with `npm run dev` or a local D1 database.
+There is one Cloudflare Worker and one D1 database, `freelancer-invoices`. That deployment is production. Do not run a local server or add another database.
 
 ---
 
 ## ☁️ Deployment to Cloudflare (Free Tier)
 
-Deploy your application to production:
+Deploy the application:
 
 ### 1. Create a D1 Database
-Create the production D1 database on your Cloudflare account:
+Create the D1 database on your Cloudflare account:
 ```bash
 npx wrangler d1 create freelancer-invoices
 ```
@@ -38,20 +38,20 @@ This command outputs a `database_id`. Paste it into your `wrangler.jsonc` file:
 ```
 
 ### 2. Configure CLI access (API credentials)
-To query and migrate the production D1 database, create a `.env` file in the root directory (based on `.env.example`):
+To query and migrate the D1 database, create a `.env` file in the root directory (based on `.env.example`):
 ```env
 CLOUDFLARE_API_TOKEN=your-user-api-token
 CLOUDFLARE_ACCOUNT_ID=your-account-id
 ```
 *(Wrangler CLI and coding agents will automatically load these variables from `.env` to execute database queries and apply remote migrations).*
 
-### 3. Apply Production Migrations
-Run migrations on the remote production D1 instance:
+### 3. Apply migrations
+Run migrations on the D1 database. `--remote` selects this Cloudflare database:
 ```bash
 npx wrangler d1 migrations apply freelancer-invoices --remote
 ```
 
-### 4. Configure Production Secrets
+### 4. Configure secrets
 Set your unique JWT signing key. Do NOT store it in `wrangler.jsonc`. Generate a strong random key and run:
 ```bash
 npx wrangler secret put JWT_SECRET
