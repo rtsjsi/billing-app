@@ -403,8 +403,10 @@ async function assertInvoicePoItemLinks(
   items: { po_item_id?: number | null }[],
 ): Promise<void> {
   if (!poId) return;
+  if (items.some((item) => item.po_item_id == null)) {
+    throw new Error('Every invoice line must be linked to a purchase order line');
+  }
   const ids = [...new Set(items.map((item) => item.po_item_id).filter((id): id is number => id != null))];
-  if (ids.length === 0) return;
   const placeholders = ids.map(() => '?').join(', ');
   const { results } = await db.prepare(`
     SELECT poi.id
@@ -808,7 +810,7 @@ export async function createInvoice(
       SELECT id, ?, ?, ?, ?, ?, ? FROM invoices WHERE user_id = ? AND invoice_number = ?
     `).bind(
       item.description, item.quantity, item.unit_price, item.amount, item.sort_order ?? index,
-      invoice.po_id ? (item.po_item_id ?? null) : null,
+      item.po_item_id,
       userId, invoiceNumber
     ));
 
@@ -887,7 +889,7 @@ export async function updateInvoice(
         item.unit_price,
         item.amount,
         item.sort_order ?? index,
-        targetPOId ? (item.po_item_id ?? null) : null
+        item.po_item_id
       );
       stmts.push(insertItemStmt);
     });

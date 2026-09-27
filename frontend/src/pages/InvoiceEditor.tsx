@@ -30,6 +30,23 @@ function poLineKey(description: string, unitPrice: number): string {
   return `${description.trim().toLowerCase()}|${price.toFixed(4)}`;
 }
 
+function blankInvoiceLine(): LineItem {
+  return { description: '', quantity: 1, unit_price: 0, amount: 0, po_item_id: null };
+}
+
+function lineFromPoItem(item: PurchaseOrderItem): LineItem {
+  const quantity = pendingQuantity(item) > 0.0001 ? pendingQuantity(item) : (Number(item.quantity) || 1);
+  const unitPrice = Number(item.unit_price) || 0;
+  return {
+    description: item.description,
+    quantity,
+    unit_price: unitPrice,
+    amount: quantity * unitPrice,
+    po_item_id: item.id ?? null,
+    po_quantity: Number(item.quantity) || 0,
+    remaining_quantity: pendingQuantity(item),
+  };
+}
 function pendingQuantity(item: { quantity: number; remaining_quantity?: number | null }): number {
   if (item.remaining_quantity == null || Number.isNaN(Number(item.remaining_quantity))) {
     return Number(item.quantity) || 0;
@@ -88,6 +105,7 @@ export default function InvoiceEditorModal({
   // Form fields
   const [clientId, setClientId] = useState('');
   const [poId, setPoId] = useState('');
+  const [poLines, setPoLines] = useState<PurchaseOrderItem[]>([]);
   const [clientPosLoaded, setClientPosLoaded] = useState(false);
   const [issueDate, setIssueDate] = useState('');
   const [dueDate, setDueDate] = useState('');
@@ -163,7 +181,11 @@ export default function InvoiceEditorModal({
           }));
           if (invoice.po_id) {
             const fullPo = await api.pos.get(invoice.po_id, editingInvoiceId);
-            nextItems = attachPoRemaining(nextItems, fullPo.items ?? []);
+            const loadedLines = fullPo.items ?? [];
+            setPoLines(loadedLines);
+            nextItems = attachPoRemaining(nextItems, loadedLines);
+          } else {
+            setPoLines([]);
           }
           setItems(nextItems);
           setFullyBilledNote('');
@@ -172,6 +194,7 @@ export default function InvoiceEditorModal({
           const todayStr = new Date().toISOString().split('T')[0];
           setClientId(initialClientId || '');
           setPoId('');
+          setPoLines([]);
           setIssueDate(todayStr);
           setDueDate(computeDueDate(todayStr, settingsRes.default_payment_terms_days));
           setCurrency(settingsRes.currency);
@@ -198,6 +221,7 @@ export default function InvoiceEditorModal({
     if (!clientId) {
       setClientPOs([]);
       setPoId('');
+      setPoLines([]);
       setClientPosLoaded(false);
       return;
     }
@@ -222,6 +246,7 @@ export default function InvoiceEditorModal({
     setPoId(selectedPoId);
     if (!selectedPoId) {
       setFullyBilledNote('');
+      setPoLines([]);
       setItems((prev) => prev.map((item) => ({
         ...item,
         po_item_id: null,
@@ -236,58 +261,28 @@ export default function InvoiceEditorModal({
         parseInt(selectedPoId, 10),
         isEdit ? editingInvoiceId ?? undefined : undefined,
       );
-      const poItems = fullPo.items ?? [];
+      const loadedLines = fullPo.items ?? [];
+      setPoLines(loadedLines);
       if (isEdit) {
-        setItems((prev) => attachPoRemaining(prev, poItems));
+        setItems((prev) => attachPoRemaining(prev, loadedLines));
         return;
       }
 
-      if (poItems.length > 0) {
-        const confirmedItems = poItems.filter((item) => Boolean(Number(item.work_confirmed)));
-        const pendingItems = confirmedItems.filter((item) => pendingQuantity(item) > 0.0001);
-        const billedItems = confirmedItems.filter((item) => pendingQuantity(item) <= 0.0001);
+      if (loadedLines.length > 0) {
+        const confirmedItems = loadedLines.filter((item) => Boolean(Number(item.work_confirmed)));
+        const source = confirmedItems.length > 0 ? confirmedItems : loadedLines;
+        const pendingItems = source.filter((item) => pendingQuantity(item) > 0.0001);
+        const billedItems = source.filter((item) => pendingQuantity(item) <= 0.0001);
         setFullyBilledNote(
           billedItems.length > 0
             ? `Already fully billed: ${billedItems.map((item) => item.description).join(', ')}`
             : '',
         );
-        if (pendingItems.length > 0) {
-          setItems(pendingItems.map((item) => {
-            const quantity = pendingQuantity(item);
-            const unitPrice = Number(item.unit_price) || 0;
-            return {
-              description: item.description,
-              quantity,
-              unit_price: unitPrice,
-              amount: quantity * unitPrice,
-              po_item_id: item.id ?? null,
-              po_quantity: Number(item.quantity) || 0,
-              remaining_quantity: quantity,
-            };
-          }));
-        } else if (confirmedItems.length > 0) {
-          setItems([{ description: '', quantity: 1, unit_price: 0, amount: 0 }]);
-        } else {
-          setItems([{
-            description: fullPo.description || `Invoice against ${fullPo.po_number}`,
-            quantity: 1,
-            unit_price: 0,
-            amount: 0
-          }]);
-        }
+        const rows = pendingItems.length > 0 ? pendingItems : [];
+        setItems(rows.length > 0 ? rows.map((item) => lineFromPoItem(item)) : [blankInvoiceLine()]);
       } else {
-        setFullyBilledNote('');
-        const po = clientPOs.find(p => p.id.toString() === selectedPoId);
-        if (po) {
-          const base = po.confirmed_amount ?? po.amount;
-          const remaining = base ? Math.max(0, base - (po.invoiced_amount || 0)) : 0;
-          setItems([{
-            description: po.description || `Invoice against ${po.po_number}`,
-            quantity: 1,
-            unit_price: remaining,
-            amount: remaining
-          }]);
-        }
+        setFullyBilledNote('This purchase order has no lines to bill.');
+        setItems([blankInvoiceLine()]);
       }
     } catch (err) {
       console.error('Failed to load PO details', err);
@@ -316,8 +311,26 @@ export default function InvoiceEditorModal({
     setItems(updated);
   };
 
+  const assignPoLine = (index: number, poItemId: string) => {
+    const line = poLines.find((item) => String(item.id) === poItemId);
+    if (!line) return;
+    setItems((prev) => prev.map((item, itemIndex) => {
+      if (itemIndex !== index) return item;
+      const filled = lineFromPoItem(line);
+      const keepExisting = item.description.trim().length > 0;
+      return {
+        ...filled,
+        id: item.id,
+        description: keepExisting ? item.description : filled.description,
+        quantity: keepExisting ? item.quantity : filled.quantity,
+        unit_price: keepExisting ? item.unit_price : filled.unit_price,
+        amount: keepExisting ? item.quantity * item.unit_price : filled.amount,
+      };
+    }));
+  };
+
   const addLineItem = () => {
-    setItems([...items, { description: '', quantity: 1, unit_price: 0, amount: 0 }]);
+    setItems([...items, blankInvoiceLine()]);
   };
 
   const removeLineItem = (index: number) => {
@@ -336,6 +349,10 @@ export default function InvoiceEditorModal({
     }
     if (!poId) {
       setError('Please select a purchase order.');
+      return;
+    }
+    if (items.some((item) => item.po_item_id == null)) {
+      setError('Link every invoice line to a purchase order line.');
       return;
     }
 
@@ -520,7 +537,8 @@ export default function InvoiceEditorModal({
                   <button
                     type="button"
                     onClick={addLineItem}
-                    className="text-xs flex items-center space-x-1 text-blue-600 hover:text-blue-500"
+                    disabled={poLines.length === 0}
+                    className="text-xs flex items-center space-x-1 text-blue-600 hover:text-blue-500 disabled:opacity-40"
                   >
                     <Plus className="h-3.5 w-3.5" />
                     <span>Add Item</span>
@@ -528,7 +546,8 @@ export default function InvoiceEditorModal({
                 </div>
 
                 <div className="space-y-1.5">
-                  <div className={`hidden sm:grid ${poId ? 'grid-cols-[minmax(0,1fr)_4.5rem_7rem_6.5rem_7rem_2rem]' : 'grid-cols-[minmax(0,1fr)_4.5rem_6.5rem_7rem_2rem]'} gap-2 px-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400`}>
+                  <div className={`hidden sm:grid ${poId ? 'grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)_4.5rem_7rem_6.5rem_7rem_2rem]' : 'grid-cols-[minmax(0,1fr)_4.5rem_6.5rem_7rem_2rem]'} gap-2 px-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400`}>
+                    {poId ? <span>PO line</span> : null}
                     <span>Description</span>
                     <span className="text-right">Qty</span>
                     {poId ? <span className="text-right" title="Quantity on the PO that is not yet billed">Remaining</span> : null}
@@ -541,8 +560,21 @@ export default function InvoiceEditorModal({
                     return (
                     <div
                       key={index}
-                      className={`grid grid-cols-1 ${poId ? 'sm:grid-cols-[minmax(0,1fr)_4.5rem_7rem_6.5rem_7rem_2rem]' : 'sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem_7rem_2rem]'} gap-2 items-center bg-slate-50 px-2 py-1.5 rounded-lg border border-slate-200`}
+                      className={`grid grid-cols-1 ${poId ? 'sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)_4.5rem_7rem_6.5rem_7rem_2rem]' : 'sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem_7rem_2rem]'} gap-2 items-center bg-slate-50 px-2 py-1.5 rounded-lg border border-slate-200`}
                     >
+                      {poId ? (
+                        <select
+                          required
+                          className="w-full form-input"
+                          value={item.po_item_id ?? ''}
+                          onChange={(e) => assignPoLine(index, e.target.value)}
+                        >
+                          <option value="" disabled>Select PO line...</option>
+                          {poLines.map((line) => (
+                            <option key={line.id} value={line.id}>{line.description}</option>
+                          ))}
+                        </select>
+                      ) : null}
                       <input
                         type="text"
                         required

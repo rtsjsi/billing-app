@@ -24,7 +24,10 @@ const itemSchema = z.object({
   unit_price: z.number().min(0, 'Unit price cannot be negative'),
   amount: z.number().min(0, 'Amount cannot be negative'),
   sort_order: z.number().int().default(0),
-  po_item_id: z.number().int().positive().nullable().optional()
+  po_item_id: z.number({
+    required_error: 'Every invoice line must be linked to a purchase order line',
+    invalid_type_error: 'Every invoice line must be linked to a purchase order line',
+  }).int().positive('Every invoice line must be linked to a purchase order line'),
 });
 
 const invoiceSchema = z.object({
