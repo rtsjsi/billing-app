@@ -8,6 +8,7 @@ import {
   updatePO, 
   deletePO,
   getPOInvoiceCount,
+  getNextPoNumber,
 } from '../db/queries';
 
 const app = new Hono<{ Bindings: { DB: D1Database }, Variables: { jwtPayload: { userId: number, username: string } } }>();
@@ -50,6 +51,16 @@ app.get('/', async (c) => {
     return c.json(pos);
   } catch (error: any) {
     return c.json({ error: error.message || 'Failed to list Purchase Orders' }, 500);
+  }
+});
+
+app.get('/next-number', async (c) => {
+  try {
+    const userId = c.get('jwtPayload').userId;
+    const poNumber = await getNextPoNumber(c.env.DB, userId);
+    return c.json({ po_number: poNumber });
+  } catch (error: any) {
+    return c.json({ error: error.message || 'Failed to suggest a PO number' }, 500);
   }
 });
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { 
   FileCheck, 
@@ -51,6 +51,8 @@ export default function PurchaseOrders() {
   const [editingPO, setEditingPO] = useState<PurchaseOrder | null>(null);
   const [formClientId, setFormClientId] = useState('');
   const [formPoNumber, setFormPoNumber] = useState('');
+  const poNumberDirty = useRef(false);
+  const poCreateSession = useRef(0);
   const [formPoDate, setFormPoDate] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formAmount, setFormAmount] = useState('');
@@ -165,6 +167,9 @@ export default function PurchaseOrders() {
   }, [modalOpen]);
 
   const openCreateModal = (clientId?: string) => {
+    const session = poCreateSession.current + 1;
+    poCreateSession.current = session;
+    poNumberDirty.current = false;
     setEditingPO(null);
     setFormClientId(clientId || clients[0]?.id.toString() || '');
     setFormPoNumber('');
@@ -177,6 +182,10 @@ export default function PurchaseOrders() {
     setModalLoading(false);
     setError('');
     setModalOpen(true);
+    api.pos.nextNumber().then((res) => {
+      if (poCreateSession.current !== session || poNumberDirty.current) return;
+      setFormPoNumber(res.po_number);
+    }).catch(() => {});
   };
 
   useEffect(() => {
@@ -188,6 +197,7 @@ export default function PurchaseOrders() {
   const openEditModal = async (po: PurchaseOrder) => {
     // Snapshot fields up front in case the list re-renders while loading
     const poId = po.id;
+    poCreateSession.current += 1;
     setEditingPO(po);
     setFormClientId(String(po.client_id));
     setFormPoNumber(po.po_number);
@@ -544,8 +554,14 @@ export default function PurchaseOrders() {
                       placeholder="e.g. PO-2026-0492"
                       className="w-full form-input font-mono"
                       value={formPoNumber}
-                      onChange={(e) => setFormPoNumber(e.target.value)}
+                      onChange={(e) => {
+                        poNumberDirty.current = true;
+                        setFormPoNumber(e.target.value);
+                      }}
                     />
+                    {!editingPO ? (
+                      <p className="text-[10px] text-slate-400 mt-1">Suggested from your number sequence. You can change it.</p>
+                    ) : null}
                   </div>
 
                   <div className="lg:col-span-2">

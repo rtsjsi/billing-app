@@ -33,6 +33,7 @@ const settingsSchema = z.object({
   invoice_prefix: z.string().default('INV-'),
   invoice_next_number: z.number().int().min(1).default(1),
   invoice_number_reset: z.enum(['never', 'calendar_year', 'financial_year']).default('financial_year'),
+  po_prefix: z.string().default('PO-'),
   default_payment_terms_days: z.number().int().min(0).default(15),
   default_notes: z.string().nullable().optional(),
   default_terms: z.string().nullable().optional()

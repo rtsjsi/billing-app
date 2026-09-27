@@ -36,6 +36,7 @@ export interface BusinessSettings {
   invoice_prefix: string;
   invoice_next_number: number;
   invoice_number_reset: 'never' | 'calendar_year' | 'financial_year';
+  po_prefix: string;
   default_payment_terms_days: number;
   default_notes: string | null;
   default_terms: string | null;
@@ -207,6 +208,7 @@ export async function getSettings(db: D1Database, userId: number): Promise<Busin
     invoice_prefix: (raw.invoice_prefix && String(raw.invoice_prefix).trim()) ? String(raw.invoice_prefix) : 'INV-',
     invoice_next_number: raw.invoice_next_number ?? 1,
     invoice_number_reset: raw.invoice_number_reset ?? 'financial_year',
+    po_prefix: (raw.po_prefix && String(raw.po_prefix).trim()) ? String(raw.po_prefix) : 'PO-',
     default_payment_terms_days: raw.default_payment_terms_days ?? 15,
     // These are intentionally nullable in the DB schema.
     default_notes: raw.default_notes ?? null,
@@ -420,6 +422,7 @@ export async function createPO(db: D1Database, userId: number, po: Omit<Purchase
   const now = new Date().toISOString();
   const client = await getClientById(db, userId, po.client_id);
   if (!client) throw new Error('Client not found');
+  await assertPoNumberAvailable(db, userId, po.po_number);
   const stmts = [];
   
   const insertPOStmt = db.prepare(`
@@ -473,6 +476,7 @@ export async function updatePO(db: D1Database, userId: number, id: number, po: P
   if (po.client_id !== undefined && !(await getClientById(db, userId, po.client_id))) {
     throw new Error('Client not found');
   }
+  if (po.po_number) await assertPoNumberAvailable(db, userId, po.po_number, id);
   const allowedKeys = new Set([
     'client_id',
     'po_number',
@@ -733,6 +737,35 @@ export async function getNextInvoiceNumber(db: D1Database, userId: number, setti
   
   const invoiceNumber = formatInvoiceNumber(settings.invoice_prefix, nextNumber, settings.invoice_number_reset, now);
   return { invoiceNumber, nextNumValue: nextNumber };
+}
+
+export async function getNextPoNumber(db: D1Database, userId: number): Promise<string> {
+  const settings = await getSettings(db, userId);
+  const now = new Date();
+  const pattern = getPeriodPattern(settings.po_prefix, settings.invoice_number_reset, now);
+  const prefixWithoutPercent = pattern.replace('%', '');
+  const res = await db.prepare(`
+    SELECT CAST(SUBSTR(po_number, ?) AS INTEGER) as max_num
+    FROM purchase_orders
+    WHERE user_id = ? AND po_number LIKE ?
+    ORDER BY max_num DESC
+    LIMIT 1
+  `).bind(prefixWithoutPercent.length + 1, userId, pattern).first<{ max_num: number | null }>();
+
+  const nextNumber = res?.max_num != null ? res.max_num + 1 : 1;
+  return formatInvoiceNumber(settings.po_prefix, nextNumber, settings.invoice_number_reset, now);
+}
+
+async function assertPoNumberAvailable(
+  db: D1Database,
+  userId: number,
+  poNumber: string,
+  excludeId?: number,
+): Promise<void> {
+  const row = excludeId == null
+    ? await db.prepare('SELECT id FROM purchase_orders WHERE user_id = ? AND po_number = ?').bind(userId, poNumber).first<{ id: number }>()
+    : await db.prepare('SELECT id FROM purchase_orders WHERE user_id = ? AND po_number = ? AND id != ?').bind(userId, poNumber, excludeId).first<{ id: number }>();
+  if (row) throw new Error('PO number is already in use');
 }
 
 export async function createInvoice(

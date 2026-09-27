@@ -126,6 +126,7 @@ export interface BusinessSettings {
   invoice_prefix: string;
   invoice_next_number: number;
   invoice_number_reset: 'never' | 'calendar_year' | 'financial_year';
+  po_prefix: string;
   default_payment_terms_days: number;
   default_notes: string | null;
   default_terms: string | null;
@@ -359,6 +360,7 @@ export const api = {
       if (status) query += `status=${status}&`;
       return request<PurchaseOrder[]>(`/api/purchase-orders?${query}`);
     },
+    nextNumber: () => request<{ po_number: string }>('/api/purchase-orders/next-number'),
     get: (id: number, excludeInvoiceId?: number | null) => {
       const params = new URLSearchParams();
       if (excludeInvoiceId) params.set('exclude_invoice_id', String(excludeInvoiceId));

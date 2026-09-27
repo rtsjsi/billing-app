@@ -40,6 +40,7 @@ export default function Settings() {
   const [invoicePrefix, setInvoicePrefix] = useState('INV-');
   const [invoiceNextNum, setInvoiceNextNum] = useState(1);
   const [invoiceReset, setInvoiceReset] = useState<'never' | 'calendar_year' | 'financial_year'>('financial_year');
+  const [poPrefix, setPoPrefix] = useState('PO-');
   const [defaultTermsDays, setDefaultTermsDays] = useState(15);
   const [defaultNotes, setDefaultNotes] = useState('');
   const [defaultTerms, setDefaultTerms] = useState('');
@@ -84,6 +85,7 @@ export default function Settings() {
       setInvoicePrefix(res.invoice_prefix);
       setInvoiceNextNum(res.invoice_next_number);
       setInvoiceReset(res.invoice_number_reset);
+      setPoPrefix(res.po_prefix || 'PO-');
       setDefaultTermsDays(res.default_payment_terms_days);
       setDefaultNotes(res.default_notes || '');
       setDefaultTerms(res.default_terms || '');
@@ -130,6 +132,7 @@ export default function Settings() {
         invoice_prefix: invoicePrefix,
         invoice_next_number: invoiceNextNum,
         invoice_number_reset: invoiceReset,
+        po_prefix: poPrefix,
         default_payment_terms_days: defaultTermsDays,
         default_notes: defaultNotes || null,
         default_terms: defaultTerms || null
@@ -411,7 +414,7 @@ export default function Settings() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs text-slate-400 font-semibold mb-1.5 uppercase tracking-wider">Invoice Prefix</label>
                   <input 
@@ -419,6 +422,15 @@ export default function Settings() {
                     className="w-full form-input text-sm font-mono" 
                     value={invoicePrefix}
                     onChange={(e) => setInvoicePrefix(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-400 font-semibold mb-1.5 uppercase tracking-wider">PO Prefix</label>
+                  <input
+                    type="text"
+                    className="w-full form-input text-sm font-mono"
+                    value={poPrefix}
+                    onChange={(e) => setPoPrefix(e.target.value)}
                   />
                 </div>
                 <div>
@@ -432,6 +444,7 @@ export default function Settings() {
                     <option value="calendar_year">Reset Daily (Calendar Year)</option>
                     <option value="financial_year">Reset April (India Financial Year)</option>
                   </select>
+                  <p className="text-[10px] text-slate-400 mt-1">Used for both invoice and purchase order numbers.</p>
                 </div>
               </div>
 

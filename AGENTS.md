@@ -12,7 +12,7 @@ Invoicing and purchase-order tracker. One Cloudflare Worker (`billing-app`) and 
 
 ## Behavior
 
-- Invoice numbers reset from settings: `financial_year` (April–March, the default), `calendar_year`, or `never`. On a period boundary the worker sets the index back to 1 when the new period has no ledger documents.
+- Invoice and purchase order numbers use the same reset: `financial_year` (April–March, the default), `calendar_year`, or `never`. On a period boundary the next number in that period starts at 1. A new purchase order form shows the next PO number, and that field can be changed before saving.
 - Invoice status is `overdue` at read time when `due_date` has passed and `amount_paid < total`.
 - Every invoice requires a purchase order. New invoices cannot be saved without one, and an existing link cannot be cleared. Invoices saved earlier without a purchase order stay as they are until the next edit, which must choose one.
 - Invoice lines may link to a purchase-order line through `po_item_id`. Remaining PO quantity uses that link.
