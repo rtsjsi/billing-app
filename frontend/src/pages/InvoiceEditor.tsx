@@ -392,14 +392,6 @@ export default function InvoiceEditorModal({
 
     try {
       if (isEdit && editingInvoiceId) {
-        if (saveStatus === 'sent') {
-          const checkRes = await api.invoices.get(editingInvoiceId);
-          if (checkRes.invoice.amount_paid >= total) {
-            payload.status = 'paid';
-          } else if (checkRes.invoice.amount_paid > 0) {
-            payload.status = 'partially_paid';
-          }
-        }
         await api.invoices.update(editingInvoiceId, payload);
         onSaved?.();
         onClose();

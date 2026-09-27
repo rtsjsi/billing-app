@@ -899,6 +899,11 @@ export async function updateInvoice(
     await db.batch(stmts);
   }
 
+  // Payment status is derived from recorded payments. Draft and cancelled stay as chosen.
+  if (invoice.status && invoice.status !== 'draft' && invoice.status !== 'cancelled') {
+    await recalculateInvoicePayment(db, userId, id);
+  }
+
   // Handle PO updates
   if (oldInvoice.po_id) {
     await updatePOStatusFromInvoices(db, userId, oldInvoice.po_id);

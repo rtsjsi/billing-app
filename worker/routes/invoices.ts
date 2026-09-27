@@ -51,6 +51,10 @@ const invoiceSchema = z.object({
   items: z.array(itemSchema).min(1, 'At least one line item is required')
 });
 
+const invoiceUpdateSchema = invoiceSchema.extend({
+  status: z.enum(['draft', 'sent', 'partially_paid', 'paid', 'cancelled']).default('draft'),
+});
+
 // List invoices with pagination and filters
 app.get('/', async (c) => {
   try {
@@ -352,7 +356,7 @@ app.put('/:id', async (c) => {
     if (isNaN(id)) return c.json({ error: 'Invalid invoice ID' }, 400);
 
     const body = await c.req.json();
-    const parsed = invoiceSchema.safeParse(body);
+    const parsed = invoiceUpdateSchema.safeParse(body);
     if (!parsed.success) {
       return c.json({ error: parsed.error.issues[0]?.message || 'Validation failed', details: parsed.error.format() }, 400);
     }
