@@ -74,6 +74,7 @@ export default function PurchaseOrders() {
       const quantity = Number(item.quantity) || 0;
       const unit_price = Number(item.unit_price) || 0;
       return {
+        id: item.id,
         description: item.description || '',
         quantity,
         unit_price,
@@ -259,6 +260,7 @@ export default function PurchaseOrders() {
       attachment_key: null,
       notes: null,
       items: formItems.map((item, index) => ({
+        id: item.id,
         description: item.description.trim(),
         quantity: Number(item.quantity) || 0,
         unit_price: Number(item.unit_price) || 0,

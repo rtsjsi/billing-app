@@ -4,6 +4,7 @@ export interface CalculableInvoiceItem {
   unit_price: number;
   amount?: number;
   sort_order?: number;
+  po_item_id?: number | null;
 }
 
 export interface CalculatedInvoiceItem extends Omit<CalculableInvoiceItem, 'sort_order'> {

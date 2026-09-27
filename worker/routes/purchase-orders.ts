@@ -13,6 +13,7 @@ import {
 const app = new Hono<{ Bindings: { DB: D1Database }, Variables: { jwtPayload: { userId: number, username: string } } }>();
 
 const poItemSchema = z.object({
+  id: z.coerce.number().int().positive().optional(),
   description: z.string().min(1, 'Description is required'),
   quantity: z.coerce.number().min(0.01, 'Quantity must be > 0'),
   unit_price: z.coerce.number().min(0, 'Unit price cannot be negative'),
@@ -62,7 +63,14 @@ app.get('/:id', async (c) => {
     const po = await getPOById(c.env.DB, userId, id);
     if (!po) return c.json({ error: 'Purchase Order not found' }, 404);
 
-    const items = await getPOItems(c.env.DB, userId, id);
+    const excludeRaw = c.req.query('exclude_invoice_id');
+    const excludeInvoiceId = excludeRaw ? parseInt(excludeRaw, 10) : undefined;
+    const items = await getPOItems(
+      c.env.DB,
+      userId,
+      id,
+      excludeInvoiceId != null && !Number.isNaN(excludeInvoiceId) ? excludeInvoiceId : undefined,
+    );
 
     return c.json({ ...po, items });
   } catch (error: any) {

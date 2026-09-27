@@ -23,7 +23,8 @@ const itemSchema = z.object({
   quantity: z.number().positive('Quantity must be greater than zero'),
   unit_price: z.number().min(0, 'Unit price cannot be negative'),
   amount: z.number().min(0, 'Amount cannot be negative'),
-  sort_order: z.number().int().default(0)
+  sort_order: z.number().int().default(0),
+  po_item_id: z.number().int().positive().nullable().optional()
 });
 
 const invoiceSchema = z.object({
@@ -435,7 +436,8 @@ app.post('/:id/duplicate', async (c) => {
       quantity: item.quantity,
       unit_price: item.unit_price,
       amount: item.amount,
-      sort_order: item.sort_order
+      sort_order: item.sort_order,
+      po_item_id: item.po_item_id ?? null
     }));
 
     const newInvoiceId = await createInvoice(c.env.DB, userId, clonedInvoice, clonedItems);

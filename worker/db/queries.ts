@@ -1,5 +1,6 @@
 import { D1Database } from '@cloudflare/workers-types';
 import { formatInvoiceNumber, getPeriodPattern } from '../lib/invoice-number';
+import { allocateBilledQuantities } from '../lib/po-remaining';
 import { checkedWorkSql, uncheckedWorkSql } from '../lib/po-work';
 
 // ----------------------------------------------------
@@ -114,6 +115,7 @@ export interface InvoiceItem {
   unit_price: number;
   amount: number;
   sort_order: number;
+  po_item_id?: number | null;
 }
 
 export interface Payment {
@@ -354,12 +356,64 @@ export async function getPOById(db: D1Database, userId: number, id: number): Pro
   `).bind(userId, id).first<PurchaseOrder>();
 }
 
-export async function getPOItems(db: D1Database, userId: number, poId: number): Promise<any[]> {
+export async function getPOItems(
+  db: D1Database,
+  userId: number,
+  poId: number,
+  excludeInvoiceId?: number,
+): Promise<any[]> {
   const { results } = await db
     .prepare('SELECT poi.* FROM purchase_order_items poi JOIN purchase_orders po ON poi.po_id = po.id WHERE po.user_id = ? AND po.id = ? ORDER BY poi.sort_order ASC, poi.id ASC')
     .bind(userId, poId)
-    .all();
-  return results || [];
+    .all<any>();
+  const items = results || [];
+  if (items.length === 0) return [];
+
+  const excludeId = excludeInvoiceId && excludeInvoiceId > 0 ? excludeInvoiceId : 0;
+  const { results: billedRows } = await db.prepare(`
+    SELECT ii.po_item_id, ii.description, ii.unit_price, ii.quantity
+    FROM invoice_items ii
+    JOIN invoices i ON i.id = ii.invoice_id
+    WHERE i.user_id = ? AND i.po_id = ? AND i.status != 'cancelled'
+      AND (? = 0 OR i.id != ?)
+  `).bind(userId, poId, excludeId, excludeId).all<{
+    po_item_id: number | null;
+    description: string;
+    unit_price: number;
+    quantity: number;
+  }>();
+
+  const billing = allocateBilledQuantities(items, billedRows || []);
+  return items.map((item) => {
+    const line = billing.get(item.id);
+    return {
+      ...item,
+      invoiced_quantity: line?.invoicedQuantity ?? 0,
+        remaining_quantity: line?.remainingQuantity ?? (Number(item.quantity) || 0),
+    };
+  });
+}
+
+async function assertInvoicePoItemLinks(
+  db: D1Database,
+  userId: number,
+  poId: number | null | undefined,
+  items: { po_item_id?: number | null }[],
+): Promise<void> {
+  if (!poId) return;
+  const ids = [...new Set(items.map((item) => item.po_item_id).filter((id): id is number => id != null))];
+  if (ids.length === 0) return;
+  const placeholders = ids.map(() => '?').join(', ');
+  const { results } = await db.prepare(`
+    SELECT poi.id
+    FROM purchase_order_items poi
+    JOIN purchase_orders po ON po.id = poi.po_id
+    WHERE po.user_id = ? AND po.id = ? AND poi.id IN (${placeholders})
+  `).bind(userId, poId, ...ids).all<{ id: number }>();
+  const valid = new Set((results || []).map((row) => row.id));
+  if (ids.some((id) => !valid.has(id))) {
+    throw new Error('Invoice line is not linked to this purchase order');
+  }
 }
 
 export async function createPO(db: D1Database, userId: number, po: Omit<PurchaseOrder, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: any[]): Promise<number> {
@@ -441,21 +495,43 @@ export async function updatePO(db: D1Database, userId: number, id: number, po: P
   }
 
   if (items) {
-    stmts.push(db.prepare('DELETE FROM purchase_order_items WHERE po_id = ?').bind(id));
+    const { results: existingRows } = await db
+      .prepare('SELECT id FROM purchase_order_items WHERE po_id = ?')
+      .bind(id)
+      .all<{ id: number }>();
+    const existingIds = new Set((existingRows || []).map((row) => row.id));
+    const keptIds = new Set<number>();
+
     items.forEach((item, index) => {
-      stmts.push(db.prepare(`
-        INSERT INTO purchase_order_items (po_id, description, quantity, unit_price, amount, sort_order, work_confirmed)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `).bind(
-        id,
+      const itemId = Number(item.id);
+      const values = [
         item.description,
         item.quantity,
         item.unit_price,
         item.amount,
         item.sort_order ?? index,
-        item.work_confirmed ? 1 : 0
-      ));
+        item.work_confirmed ? 1 : 0,
+      ];
+      if (Number.isInteger(itemId) && existingIds.has(itemId)) {
+        keptIds.add(itemId);
+        stmts.push(db.prepare(`
+          UPDATE purchase_order_items
+          SET description = ?, quantity = ?, unit_price = ?, amount = ?, sort_order = ?, work_confirmed = ?
+          WHERE po_id = ? AND id = ?
+        `).bind(...values, id, itemId));
+      } else {
+        stmts.push(db.prepare(`
+          INSERT INTO purchase_order_items (po_id, description, quantity, unit_price, amount, sort_order, work_confirmed)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).bind(id, ...values));
+      }
     });
+
+    for (const existingId of existingIds) {
+      if (!keptIds.has(existingId)) {
+        stmts.push(db.prepare('DELETE FROM purchase_order_items WHERE po_id = ? AND id = ?').bind(id, existingId));
+      }
+    }
   }
 
   if (stmts.length > 0) {
@@ -674,6 +750,7 @@ export async function createInvoice(
     if (po.client_id !== invoice.client_id) {
       throw new Error('Purchase Order does not belong to the selected client');
     }
+    await assertInvoicePoItemLinks(db, userId, invoice.po_id, items);
   }
   const settings = await getSettings(db, userId);
   let invoiceId = 0;
@@ -695,10 +772,11 @@ export async function createInvoice(
     );
 
     const itemStmts = items.map((item, index) => db.prepare(`
-      INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, amount, sort_order)
-      SELECT id, ?, ?, ?, ?, ? FROM invoices WHERE user_id = ? AND invoice_number = ?
+      INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, amount, sort_order, po_item_id)
+      SELECT id, ?, ?, ?, ?, ?, ? FROM invoices WHERE user_id = ? AND invoice_number = ?
     `).bind(
       item.description, item.quantity, item.unit_price, item.amount, item.sort_order ?? index,
+      invoice.po_id ? (item.po_item_id ?? null) : null,
       userId, invoiceNumber
     ));
 
@@ -742,6 +820,7 @@ export async function updateInvoice(
     if (po.client_id !== targetClientId) {
       throw new Error('Purchase Order does not belong to the selected client');
     }
+    if (items) await assertInvoicePoItemLinks(db, userId, targetPOId, items);
   }
 
   const stmts = [];
@@ -768,15 +847,16 @@ export async function updateInvoice(
 
     items.forEach((item, index) => {
       const insertItemStmt = db.prepare(`
-        INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, amount, sort_order)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, amount, sort_order, po_item_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `).bind(
         id,
         item.description,
         item.quantity,
         item.unit_price,
         item.amount,
-        item.sort_order ?? index
+        item.sort_order ?? index,
+        targetPOId ? (item.po_item_id ?? null) : null
       );
       stmts.push(insertItemStmt);
     });

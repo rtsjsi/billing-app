@@ -29,6 +29,10 @@ export interface PurchaseOrderItem {
   sort_order: number;
   /** When true, line counts toward dashboard / outstanding calcs. */
   work_confirmed?: boolean | number;
+  /** Quantity already on non-cancelled invoices for this PO line. */
+  invoiced_quantity?: number;
+  /** PO quantity still available to bill. */
+  remaining_quantity?: number;
 }
 
 export interface PurchaseOrder {
@@ -61,6 +65,7 @@ export interface InvoiceItem {
   unit_price: number;
   amount: number;
   sort_order: number;
+  po_item_id?: number | null;
 }
 
 export interface Invoice {
@@ -354,7 +359,12 @@ export const api = {
       if (status) query += `status=${status}&`;
       return request<PurchaseOrder[]>(`/api/purchase-orders?${query}`);
     },
-    get: (id: number) => request<PurchaseOrder>(`/api/purchase-orders/${id}`),
+    get: (id: number, excludeInvoiceId?: number | null) => {
+      const params = new URLSearchParams();
+      if (excludeInvoiceId) params.set('exclude_invoice_id', String(excludeInvoiceId));
+      const query = params.toString();
+      return request<PurchaseOrder>(`/api/purchase-orders/${id}${query ? `?${query}` : ''}`);
+    },
     create: (data: Omit<PurchaseOrder, 'id' | 'created_at' | 'updated_at'>) => 
       request<{ message: string; po: PurchaseOrder }>('/api/purchase-orders', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: number, data: Partial<PurchaseOrder>) => 
