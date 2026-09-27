@@ -13,29 +13,7 @@ A secure, full-stack, single-user invoicing and Purchase Order tracker designed 
 
 ---
 
-## 🚀 Local Development Setup
-
-To run the application locally on your computer:
-
-### 1. Install Dependencies
-```bash
-npm install
-```
-
-### 2. Set Up D1 Local Database
-Initialize D1 database locally and apply migrations:
-```bash
-npx wrangler d1 migrations apply freelancer-invoices --local
-```
-
-### 3. Run the Development Server
-```bash
-npm run dev
-```
-This runs Wrangler's dev server at `http://127.0.0.1:8787` which hosts Hono and proxy-serves the React Vite frontend dynamically.
-
-### 4. Setup Your Profile
-Open `http://127.0.0.1:8787` in your browser. The application will detect it is a first-time load and guide you through creating your admin login and setting up default business details.
+This app is hosted on Cloudflare and is used only there. Do not run it with `npm run dev` or a local D1 database.
 
 ---
 
@@ -59,8 +37,8 @@ This command outputs a `database_id`. Paste it into your `wrangler.jsonc` file:
 ]
 ```
 
-### 2. Configure Local CLI DB Access (API Credentials)
-To allow the IDE or automated agents to query and migrate the production D1 database, create a `.env` file in the root directory (based on `.env.example`):
+### 2. Configure CLI access (API credentials)
+To query and migrate the production D1 database, create a `.env` file in the root directory (based on `.env.example`):
 ```env
 CLOUDFLARE_API_TOKEN=your-user-api-token
 CLOUDFLARE_ACCOUNT_ID=your-account-id
