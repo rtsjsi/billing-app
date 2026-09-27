@@ -11,4 +11,4 @@ When you finish making code or config changes in this project:
 2. Push to `origin` on the current branch immediately.
 3. Do not wait for the user to ask to push, unless they explicitly say not to.
 
-If the change should go live and Cloudflare credentials are available, apply D1 migrations and deploy after the push.
+If the change should go live and Cloudflare credentials are available, apply D1 migrations with `npx wrangler d1 migrations apply freelancer-invoices --remote`, then deploy, after the push.
