@@ -744,14 +744,13 @@ export async function createInvoice(
   const now = new Date().toISOString();
   const client = await getClientById(db, userId, invoice.client_id);
   if (!client) throw new Error('Client not found');
-  if (invoice.po_id) {
-    const po = await getPOById(db, userId, invoice.po_id);
-    if (!po) throw new Error('Purchase Order not found');
-    if (po.client_id !== invoice.client_id) {
-      throw new Error('Purchase Order does not belong to the selected client');
-    }
-    await assertInvoicePoItemLinks(db, userId, invoice.po_id, items);
+  if (!invoice.po_id) throw new Error('Purchase Order is required');
+  const po = await getPOById(db, userId, invoice.po_id);
+  if (!po) throw new Error('Purchase Order not found');
+  if (po.client_id !== invoice.client_id) {
+    throw new Error('Purchase Order does not belong to the selected client');
   }
+  await assertInvoicePoItemLinks(db, userId, invoice.po_id, items);
   const settings = await getSettings(db, userId);
   let invoiceId = 0;
   let lastError: unknown;
@@ -814,14 +813,13 @@ export async function updateInvoice(
   const targetClientId = invoice.client_id ?? oldInvoice.client_id;
   if (!(await getClientById(db, userId, targetClientId))) throw new Error('Client not found');
   const targetPOId = invoice.po_id === undefined ? oldInvoice.po_id : invoice.po_id;
-  if (targetPOId) {
-    const po = await getPOById(db, userId, targetPOId);
-    if (!po) throw new Error('Purchase Order not found');
-    if (po.client_id !== targetClientId) {
-      throw new Error('Purchase Order does not belong to the selected client');
-    }
-    if (items) await assertInvoicePoItemLinks(db, userId, targetPOId, items);
+  if (!targetPOId) throw new Error('Purchase Order is required');
+  const po = await getPOById(db, userId, targetPOId);
+  if (!po) throw new Error('Purchase Order not found');
+  if (po.client_id !== targetClientId) {
+    throw new Error('Purchase Order does not belong to the selected client');
   }
+  if (items) await assertInvoicePoItemLinks(db, userId, targetPOId, items);
 
   const stmts = [];
 

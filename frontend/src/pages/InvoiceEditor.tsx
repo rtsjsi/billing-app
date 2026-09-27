@@ -88,6 +88,7 @@ export default function InvoiceEditorModal({
   // Form fields
   const [clientId, setClientId] = useState('');
   const [poId, setPoId] = useState('');
+  const [clientPosLoaded, setClientPosLoaded] = useState(false);
   const [issueDate, setIssueDate] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [currency, setCurrency] = useState('INR');
@@ -197,16 +198,20 @@ export default function InvoiceEditorModal({
     if (!clientId) {
       setClientPOs([]);
       setPoId('');
+      setClientPosLoaded(false);
       return;
     }
 
     const fetchPOs = async () => {
+      setClientPosLoaded(false);
       try {
         const posRes = await api.pos.list(parseInt(clientId, 10));
         const activePOs = posRes.filter(po => po.status === 'open' || po.id.toString() === poId);
         setClientPOs(activePOs);
       } catch (err) {
         console.error('Failed to load client Purchase Orders', err);
+      } finally {
+        setClientPosLoaded(true);
       }
     };
 
@@ -329,6 +334,10 @@ export default function InvoiceEditorModal({
       setError('Please select a client.');
       return;
     }
+    if (!poId) {
+      setError('Please select a purchase order.');
+      return;
+    }
 
     const hasEmptyItem = items.some(item => !item.description.trim() || item.quantity <= 0);
     if (hasEmptyItem) {
@@ -449,18 +458,22 @@ export default function InvoiceEditorModal({
                 </div>
 
                 <div className="lg:col-span-3">
-                  <label className="block text-[10px] text-slate-400 font-medium uppercase tracking-wider">Link PO</label>
+                  <label className="block text-[10px] text-slate-400 font-medium uppercase tracking-wider">Purchase Order *</label>
                   <select
+                    required
                     className="w-full form-input"
                     value={poId}
                     onChange={(e) => handlePoChange(e.target.value)}
                     disabled={!clientId}
                   >
-                    <option value="">No PO Linked</option>
+                    <option value="" disabled>Select purchase order...</option>
                     {clientPOs.map(po => (
                       <option key={po.id} value={po.id}>{po.po_number}{po.description ? ` - ${po.description}` : ''} ({po.status})</option>
                     ))}
                   </select>
+                  {clientId && clientPosLoaded && clientPOs.length === 0 ? (
+                    <p className="text-[10px] text-amber-700 mt-1">This client has no purchase order to bill against.</p>
+                  ) : null}
                 </div>
 
                 <div className="lg:col-span-1">

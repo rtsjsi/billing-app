@@ -29,7 +29,10 @@ const itemSchema = z.object({
 
 const invoiceSchema = z.object({
   client_id: z.number().int('Invalid client ID'),
-  po_id: z.number().int().nullable().optional(),
+  po_id: z.number({
+    required_error: 'Purchase Order is required',
+    invalid_type_error: 'Purchase Order is required',
+  }).int().positive('Purchase Order is required'),
   issue_date: z.string().min(1, 'Issue date is required'),
   due_date: z.string().nullable().optional(),
   status: z.enum(['draft', 'sent', 'cancelled']).default('draft'),
@@ -319,7 +322,7 @@ app.post('/', async (c) => {
     const body = await c.req.json();
     const parsed = invoiceSchema.safeParse(body);
     if (!parsed.success) {
-      return c.json({ error: 'Validation failed', details: parsed.error.format() }, 400);
+      return c.json({ error: parsed.error.issues[0]?.message || 'Validation failed', details: parsed.error.format() }, 400);
     }
 
     const { items, ...invoiceData } = parsed.data;
@@ -348,7 +351,7 @@ app.put('/:id', async (c) => {
     const body = await c.req.json();
     const parsed = invoiceSchema.safeParse(body);
     if (!parsed.success) {
-      return c.json({ error: 'Validation failed', details: parsed.error.format() }, 400);
+      return c.json({ error: parsed.error.issues[0]?.message || 'Validation failed', details: parsed.error.format() }, 400);
     }
 
     const { items, ...invoiceData } = parsed.data;
@@ -412,6 +415,9 @@ app.post('/:id/duplicate', async (c) => {
     if (!invoice) return c.json({ error: 'Invoice to duplicate not found' }, 404);
 
     const items = await getInvoiceItems(c.env.DB, userId, id);
+    if (!invoice.po_id) {
+      return c.json({ error: 'Purchase Order is required' }, 400);
+    }
 
     // Strip identifier details and set status to draft
     const clonedInvoice = {
