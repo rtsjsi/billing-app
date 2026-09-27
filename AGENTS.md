@@ -6,7 +6,7 @@ Invoicing and purchase-order tracker. One Cloudflare Worker (`billing-app`) and 
 
 - `frontend/` — React SPA (Vite, TypeScript, Tailwind CSS v4). Wrangler serves `frontend/dist` as `ASSETS` with SPA fallback.
 - `worker/` — Hono API. Routes under `/api`: dashboard, clients, purchase-orders, invoices, payments, settings, reports.
-- `migrations/` — numbered SQL files. Leave `migrations_dir` unset.
+- `migrations/` — numbered SQL files, applied in filename order.
 - `wrangler.jsonc` — Worker config and the D1 binding `DB`, including `database_id`.
 - Passwords use PBKDF2. Sessions are an HttpOnly JWT cookie. `JWT_SECRET` is a Wrangler secret (`npx wrangler secret put JWT_SECRET`), not a var in `wrangler.jsonc`.
 
@@ -34,13 +34,17 @@ Wrangler reads `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` from the root 
 
 `npm run deploy` builds the frontend and runs `wrangler deploy`. It does not apply migrations.
 
-Pending SQL files are recorded in `d1_migrations`. Apply them before a deploy that needs the new schema. `--remote` selects this Cloudflare database. Set `CI=true` so Wrangler skips the confirmation prompt.
+Apply schema changes with the D1 HTTP API before a deploy that needs them. The database id is in `wrangler.jsonc`. Send `Authorization: Bearer <CLOUDFLARE_API_TOKEN>`. One-statement calls, including listing what is already applied, go to `POST /accounts/{account_id}/d1/database/{database_id}/query` with body `{ "sql": "..." }`.
 
-```bash
-npx wrangler d1 migrations apply freelancer-invoices --remote
-npm run deploy
-```
+Do not use `wrangler d1 migrations apply`. That command sends the whole `.sql` file to `/query`, which returns `incomplete input` when the file has more than one statement or a trigger.
 
-Do not pass `--local`.
+List applied names with `SELECT name FROM d1_migrations ORDER BY id`. For each pending file in `migrations/`, in filename order:
+
+1. Build an import body from that file plus one line: `INSERT INTO d1_migrations (name) VALUES ('<filename>');` Use the filename only, such as `0008_invoice_item_po_link.sql`. Leave the file in `migrations/` unchanged.
+2. MD5 the import body. `POST .../import` with `{ "action": "init", "etag": "<md5>" }`.
+3. If the response includes `upload_url`, `PUT` the body there and confirm the returned `ETag` matches that MD5. Then `POST .../import` with `{ "action": "ingest", "etag": "<md5>", "filename": "<filename from init>" }`.
+4. While `status` is not `complete`, `POST .../import` with `{ "action": "poll", "current_bookmark": "<at_bookmark>" }`. A failed import leaves the database as it was.
+
+Then `npm run deploy`.
 
 CI (`.github/workflows/ci.yml`) runs `npm ci`, typecheck, test, and build. It does not migrate or deploy.
