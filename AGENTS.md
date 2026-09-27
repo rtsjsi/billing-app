@@ -11,7 +11,7 @@ A secure, full-stack, single-user invoicing and Purchase Order tracker on Cloudf
 
 ## Runtime
 
-There is one Cloudflare Worker and one D1 database, `freelancer-invoices`. That deployment is production. Do not add a local, preview, or staging copy of the app or database. Do not run `npm run dev` or `wrangler dev`.
+There is one Cloudflare Worker and one D1 database, `freelancer-invoices`. That deployment is production. Do not add a local, preview, or staging copy of the app or database. Do not start `npm run dev`, `wrangler dev`, or any local server. Verify behavior on the deployed Cloudflare app.
 
 ## Git: always commit and push
 
@@ -21,7 +21,7 @@ After completing any code or config changes in this repo:
 2. Create a concise commit that explains **why** the change was made.
 3. Push to `origin` on the current branch (`git push -u origin HEAD`).
 
-Do this automatically at the end of a task — do not wait for the user to ask “push to git” unless they explicitly say **not** to push.
+Do this automatically at the end of a task — do not wait for the user to ask “push to git” unless they explicitly say **not** to push. After the push, if the change should go live and Cloudflare credentials are available, apply D1 migrations and deploy. If deploy or auth fails, the push still stands; tell the user what remains.
 
 ## Deploy
 
@@ -62,9 +62,7 @@ Before a Worker deploy that depends on the new schema, apply migrations. `--remo
 npx wrangler d1 migrations apply freelancer-invoices --remote
 ```
 
-Then `npm run deploy`. Set `CI=true` in a non-interactive shell so the confirmation prompt is skipped. Do not use `--local`.
-
-If Cloudflare auth is available, apply pending migrations and deploy when the change needs to be live. If deploy/auth fails, still push git and tell the user what remains.
+Then `npm run deploy`. Set `CI=true` in a non-interactive shell so the confirmation prompt is skipped. Do not use `--local`. Leave `migrations_dir` unset while files stay as top-level `migrations/*.sql`.
 
 ### JWT secret
 
