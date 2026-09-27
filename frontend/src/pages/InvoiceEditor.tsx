@@ -47,6 +47,22 @@ function lineFromPoItem(item: PurchaseOrderItem): LineItem {
     remaining_quantity: pendingQuantity(item),
   };
 }
+function isConfirmedPoLine(item: PurchaseOrderItem): boolean {
+  return Boolean(Number(item.work_confirmed));
+}
+
+function confirmedPoLines(lines: PurchaseOrderItem[]): PurchaseOrderItem[] {
+  return lines.filter(isConfirmedPoLine);
+}
+
+function dropUnconfirmedLinks(lines: LineItem[], confirmed: PurchaseOrderItem[]): LineItem[] {
+  const ids = new Set(confirmed.map((item) => item.id).filter((id): id is number => id != null));
+  return attachPoRemaining(lines, confirmed).map((line) => {
+    if (line.po_item_id != null && ids.has(line.po_item_id)) return line;
+    return { ...line, po_item_id: null, po_quantity: null, remaining_quantity: null };
+  });
+}
+
 function pendingQuantity(item: { quantity: number; remaining_quantity?: number | null }): number {
   if (item.remaining_quantity == null || Number.isNaN(Number(item.remaining_quantity))) {
     return Number(item.quantity) || 0;
@@ -181,9 +197,9 @@ export default function InvoiceEditorModal({
           }));
           if (invoice.po_id) {
             const fullPo = await api.pos.get(invoice.po_id, editingInvoiceId);
-            const loadedLines = fullPo.items ?? [];
+            const loadedLines = confirmedPoLines(fullPo.items ?? []);
             setPoLines(loadedLines);
-            nextItems = attachPoRemaining(nextItems, loadedLines);
+            nextItems = dropUnconfirmedLinks(nextItems, loadedLines);
           } else {
             setPoLines([]);
           }
@@ -230,7 +246,11 @@ export default function InvoiceEditorModal({
       setClientPosLoaded(false);
       try {
         const posRes = await api.pos.list(parseInt(clientId, 10));
-        const activePOs = posRes.filter(po => po.status === 'open' || po.id.toString() === poId);
+        const activePOs = posRes.filter((po) => {
+          const hasConfirmedWork = Number(po.confirmed_amount) > 0;
+          const selectable = po.status === 'open' || po.id.toString() === poId;
+          return hasConfirmedWork && selectable;
+        });
         setClientPOs(activePOs);
       } catch (err) {
         console.error('Failed to load client Purchase Orders', err);
@@ -261,18 +281,17 @@ export default function InvoiceEditorModal({
         parseInt(selectedPoId, 10),
         isEdit ? editingInvoiceId ?? undefined : undefined,
       );
-      const loadedLines = fullPo.items ?? [];
+      const loadedLines = confirmedPoLines(fullPo.items ?? []);
       setPoLines(loadedLines);
       if (isEdit) {
-        setItems((prev) => attachPoRemaining(prev, loadedLines));
+        setItems((prev) => dropUnconfirmedLinks(prev, loadedLines));
+        setFullyBilledNote(loadedLines.length === 0 ? 'This purchase order has no confirmed lines to bill.' : '');
         return;
       }
 
       if (loadedLines.length > 0) {
-        const confirmedItems = loadedLines.filter((item) => Boolean(Number(item.work_confirmed)));
-        const source = confirmedItems.length > 0 ? confirmedItems : loadedLines;
-        const pendingItems = source.filter((item) => pendingQuantity(item) > 0.0001);
-        const billedItems = source.filter((item) => pendingQuantity(item) <= 0.0001);
+        const pendingItems = loadedLines.filter((item) => pendingQuantity(item) > 0.0001);
+        const billedItems = loadedLines.filter((item) => pendingQuantity(item) <= 0.0001);
         setFullyBilledNote(
           billedItems.length > 0
             ? `Already fully billed: ${billedItems.map((item) => item.description).join(', ')}`
@@ -281,7 +300,7 @@ export default function InvoiceEditorModal({
         const rows = pendingItems.length > 0 ? pendingItems : [];
         setItems(rows.length > 0 ? rows.map((item) => lineFromPoItem(item)) : [blankInvoiceLine()]);
       } else {
-        setFullyBilledNote('This purchase order has no lines to bill.');
+        setFullyBilledNote('This purchase order has no confirmed lines to bill.');
         setItems([blankInvoiceLine()]);
       }
     } catch (err) {
@@ -481,7 +500,7 @@ export default function InvoiceEditorModal({
                     ))}
                   </select>
                   {clientId && clientPosLoaded && clientPOs.length === 0 ? (
-                    <p className="text-[10px] text-amber-700 mt-1">This client has no purchase order to bill against.</p>
+                    <p className="text-[10px] text-amber-700 mt-1">This client has no confirmed purchase order to bill against.</p>
                   ) : null}
                 </div>
 

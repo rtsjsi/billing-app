@@ -1,7 +1,7 @@
 import { D1Database } from '@cloudflare/workers-types';
 import { formatInvoiceNumber, getPeriodPattern } from '../lib/invoice-number';
 import { allocateBilledQuantities } from '../lib/po-remaining';
-import { checkedWorkSql, uncheckedWorkSql } from '../lib/po-work';
+import { checkedWorkSql, isWorkChecked, uncheckedWorkSql } from '../lib/po-work';
 
 // ----------------------------------------------------
 // Type Definitions
@@ -409,14 +409,18 @@ async function assertInvoicePoItemLinks(
   const ids = [...new Set(items.map((item) => item.po_item_id).filter((id): id is number => id != null))];
   const placeholders = ids.map(() => '?').join(', ');
   const { results } = await db.prepare(`
-    SELECT poi.id
+    SELECT poi.id, poi.work_confirmed
     FROM purchase_order_items poi
     JOIN purchase_orders po ON po.id = poi.po_id
     WHERE po.user_id = ? AND po.id = ? AND poi.id IN (${placeholders})
-  `).bind(userId, poId, ...ids).all<{ id: number }>();
-  const valid = new Set((results || []).map((row) => row.id));
+  `).bind(userId, poId, ...ids).all<{ id: number; work_confirmed: number | null }>();
+  const rows = results || [];
+  const valid = new Set(rows.map((row) => row.id));
   if (ids.some((id) => !valid.has(id))) {
     throw new Error('Invoice line is not linked to this purchase order');
+  }
+  if (rows.some((row) => !isWorkChecked(row.work_confirmed))) {
+    throw new Error('Only confirmed purchase order lines can be invoiced');
   }
 }
 
