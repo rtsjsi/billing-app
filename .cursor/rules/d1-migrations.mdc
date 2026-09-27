@@ -5,7 +5,7 @@ alwaysApply: true
 
 # D1 migrations
 
-Schema changes are numbered SQL files in `migrations/` (for example `0008_invoice_item_po_link.sql`). Wrangler records applied files in the `d1_migrations` table, so applying again only runs pending files.
+Schema changes are numbered SQL files in `migrations/` (for example `0008_invoice_item_po_link.sql`). Wrangler records applied files in the `d1_migrations` table, so applying again only runs pending files. `npm run deploy` and `wrangler deploy` do not apply migrations.
 
 Database name: `freelancer-invoices`. Binding: `DB`. Remote commands need `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in the root `.env`. Never commit `.env`.
 
@@ -15,10 +15,10 @@ Local:
 npx wrangler d1 migrations apply freelancer-invoices --local
 ```
 
-Production:
+Production, before deploying Worker code that depends on the new schema:
 
 ```bash
 npx wrangler d1 migrations apply freelancer-invoices --remote
 ```
 
-Set `CI=true` in a non-interactive shell so Wrangler skips the confirmation prompt. Leave `migrations_dir` unset while files stay as top-level `migrations/*.sql`.
+Then run `npm run deploy`. For a non-interactive shell, set `CI=true` so Wrangler skips the confirmation prompt. Leave `migrations_dir` unset while files stay as top-level `migrations/*.sql`.

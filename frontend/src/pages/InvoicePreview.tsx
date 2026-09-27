@@ -1,0 +1,450 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { 
+  ArrowLeft, 
+  Printer, 
+  Download, 
+  Mail, 
+  DollarSign, 
+  Copy, 
+  FileEdit, 
+  CreditCard,
+  Building,
+  Check,
+  AlertCircle,
+  Calendar,
+  Sparkles,
+  Trash2
+} from 'lucide-react';
+import { api, Invoice, InvoiceItem, Payment, BusinessSettings } from '../lib/api';
+import { formatCurrency, formatDate } from '../lib/utils';
+import ConfirmModal from '../components/ConfirmModal';
+import RecordPaymentModal from '../components/RecordPaymentModal';
+import { useToast } from '../components/Toast';
+
+export default function InvoicePreview() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const toast = useToast();
+  const invoiceId = id ? parseInt(id, 10) : NaN;
+
+  const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [items, setItems] = useState<InvoiceItem[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [settings, setSettings] = useState<BusinessSettings | null>(null);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  
+  // Payment Modal
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [deletePaymentId, setDeletePaymentId] = useState<number | null>(null);
+
+  const invoiceRef = useRef<HTMLDivElement>(null);
+
+  const fetchData = async () => {
+    try {
+      const settingsRes = await api.settings.get();
+      setSettings(settingsRes);
+
+      const invRes = await api.invoices.get(invoiceId);
+      setInvoice(invRes.invoice);
+      setItems(invRes.items);
+      setPayments(invRes.payments);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load invoice details.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isNaN(invoiceId)) {
+      setError('Invalid Invoice ID');
+      setLoading(false);
+      return;
+    }
+    fetchData();
+  }, [invoiceId]);
+
+  const handleDownloadPDF = async () => {
+    if (isNaN(invoiceId) || downloadingPdf) return;
+    setDownloadingPdf(true);
+    try {
+      await api.invoices.downloadPDF(invoiceId, invoice?.invoice_number);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to download invoice PDF.');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
+  const handleUpdateStatus = async (status: string) => {
+    try {
+      await api.invoices.updateStatus(invoiceId, status);
+      toast.success('Invoice status updated');
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update status.');
+    }
+  };
+
+  const handleDeletePayment = (paymentId: number) => {
+    setDeletePaymentId(paymentId);
+  };
+
+  const performDeletePayment = async () => {
+    if (!deletePaymentId) return;
+    try {
+      await api.payments.delete(deletePaymentId);
+      setDeletePaymentId(null);
+      toast.success('Payment deleted');
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete payment.');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (error || !invoice || !settings) {
+    return (
+      <div className="space-y-4">
+        <button onClick={() => navigate('/invoices')} className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          <span>Back to Invoices Ledger</span>
+        </button>
+        <div className="p-6 bg-red-100 border border-red-500/20 rounded-xl text-red-600 text-sm">
+          {error || 'Invoice not found.'}
+        </div>
+      </div>
+    );
+  }
+
+  const isOutstanding = invoice.status !== 'paid' && invoice.status !== 'cancelled';
+
+  return (
+    <div className="space-y-5">
+      {/* Header & actions (hidden on print) */}
+      <div className="no-print space-y-5">
+        <div className="space-y-1">
+          <Link
+            to="/invoices"
+            className="hidden md:inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back to Invoices Ledger</span>
+          </Link>
+          <div className="hidden md:block pt-1">
+            <h1 className="page-title">{invoice.invoice_number}</h1>
+            <p className="page-subtitle">
+              {invoice.client_name}
+              {invoice.due_date ? ` · Due ${formatDate(invoice.due_date)}` : ''}
+            </p>
+          </div>
+        </div>
+
+        <div className="glass-card rounded-2xl border-slate-200 p-4 flex flex-col sm:flex-row sm:flex-wrap gap-4 sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className="text-slate-400 text-sm">Status:</span>
+            <span className={`badge badge-${invoice.status}`}>{invoice.status}</span>
+            {invoice.status === 'partially_paid' && (
+              <span className="text-xs text-slate-400">
+                Paid: {formatCurrency(invoice.amount_paid, invoice.currency)} / Total: {formatCurrency(invoice.total, invoice.currency)}
+              </span>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {invoice.status === 'draft' && (
+              <button
+                onClick={() => handleUpdateStatus('sent')}
+                className="btn-secondary min-h-0 py-2 px-3 text-xs"
+              >
+                <Check className="h-3.5 w-3.5" />
+                <span>Mark Sent</span>
+              </button>
+            )}
+            {isOutstanding && (
+              <button
+                onClick={() => setPaymentModalOpen(true)}
+                className="btn-primary min-h-0 py-2 px-3 text-xs"
+              >
+                <DollarSign className="h-3.5 w-3.5" />
+                <span>Record Payment</span>
+              </button>
+            )}
+            <Link
+              to={`/invoices?edit=${invoice.id}`}
+              className="btn-secondary min-h-0 py-2 px-3 text-xs"
+            >
+              <FileEdit className="h-3.5 w-3.5" />
+              <span>Edit</span>
+            </Link>
+            {invoice.status !== 'cancelled' && (
+              <button
+                onClick={() => handleUpdateStatus('cancelled')}
+                className="inline-flex items-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 transition-colors cursor-pointer"
+              >
+                <span>Cancel Invoice</span>
+              </button>
+            )}
+            <button
+              onClick={() => { void handleDownloadPDF(); }}
+              disabled={downloadingPdf}
+              className="btn-secondary min-h-0 py-2 px-3 text-xs disabled:opacity-60"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span>{downloadingPdf ? 'Generating...' : 'Download PDF'}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* RENDER INVOICE (This block is styled clean white during prints) */}
+      <div className="flex justify-center">
+        <div 
+          ref={invoiceRef}
+          id="invoice-preview-container"
+          className="print-container bg-white text-slate-900 border border-slate-200 shadow-xl rounded-2xl w-full max-w-[800px] p-8 md:p-12 font-sans overflow-hidden text-sm"
+        >
+          {/* Header Branding */}
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-6 border-b border-slate-200 pb-8">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Sparkles className="h-6 w-6 text-sky-600 fill-sky-600/10 no-print" />
+                <h2 className="font-display font-extrabold text-2xl tracking-tight text-slate-950 uppercase">{settings.business_name}</h2>
+              </div>
+              {settings.owner_name && <p className="text-slate-600 font-medium text-xs">Proprietor: {settings.owner_name}</p>}
+              <p className="text-slate-500 text-xs whitespace-pre-line leading-relaxed max-w-sm">{settings.address}</p>
+            </div>
+
+            <div className="space-y-1.5 text-right sm:text-right w-full sm:w-auto">
+              <h1 className="font-display font-black text-3xl tracking-tight text-slate-900">INVOICE</h1>
+              <p className="font-mono text-sm font-bold text-sky-700">{invoice.invoice_number}</p>
+              
+              <div className="pt-2 text-xs space-y-0.5 text-slate-500">
+                <div><span className="font-semibold text-slate-700">Date of Issue:</span> {formatDate(invoice.issue_date)}</div>
+                {invoice.due_date && (
+                  <div><span className="font-semibold text-slate-700">Payment Due:</span> {formatDate(invoice.due_date)}</div>
+                )}
+                {invoice.po_number && (
+                  <div className="font-mono"><span className="font-semibold text-slate-700">PO Ref:</span> {invoice.po_number}</div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Billing profiles split */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 py-8 border-b border-slate-100">
+            <div>
+              <h3 className="text-slate-400 font-bold uppercase tracking-wider text-[10px] mb-2.5">Invoiced To</h3>
+              <p className="font-bold text-slate-900 text-base">{invoice.client_name}</p>
+              {invoice.client_company && <p className="text-slate-700 font-medium mt-0.5">{invoice.client_company}</p>}
+              
+              {/* Client billing details */}
+              {invoice.client_billing_address && (
+                <p className="text-slate-500 text-xs mt-2 whitespace-pre-line leading-relaxed">
+                  {invoice.client_billing_address}
+                </p>
+              )}
+              {invoice.client_gstin && (
+                <p className="text-slate-600 text-xs mt-1.5">
+                  <span className="font-semibold text-slate-700">GSTIN:</span>{' '}
+                  <span className="font-mono">{invoice.client_gstin}</span>
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-slate-400 font-bold uppercase tracking-wider text-[10px] mb-2">Business Tax Registrations</h3>
+                <div className="space-y-1 text-xs text-slate-600">
+                  {settings.gstin && (
+                    <div><span className="font-semibold text-slate-700">GSTIN:</span> <span className="font-mono">{settings.gstin}</span></div>
+                  )}
+                  {settings.pan && (
+                    <div><span className="font-semibold text-slate-700">PAN:</span> <span className="font-mono">{settings.pan}</span></div>
+                  )}
+                  {!settings.gstin && !settings.pan && <div className="text-slate-400">Not registered for GST/Tax ID</div>}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Line items table */}
+          <table className="w-full text-left border-collapse my-8">
+            <thead>
+              <tr className="border-b-2 border-slate-200 text-slate-500 font-bold uppercase text-[10px] tracking-wider">
+                <th className="py-2.5 w-3/5">Job Description</th>
+                <th className="py-2.5 px-4 text-right w-1/12">Qty</th>
+                <th className="py-2.5 px-4 text-right w-1/6">Unit Rate</th>
+                <th className="py-2.5 pl-4 text-right w-1/6">Amount ({invoice.currency})</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-xs text-slate-750">
+              {items.map((item) => (
+                <tr key={item.id} className="align-middle">
+                  <td className="py-3.5 pr-4 font-medium text-slate-900 whitespace-pre-line leading-relaxed">{item.description}</td>
+                  <td className="py-3.5 px-4 text-right font-mono">{item.quantity}</td>
+                  <td className="py-3.5 px-4 text-right font-mono">{item.unit_price.toFixed(2)}</td>
+                  <td className="py-3.5 pl-4 text-right font-mono font-semibold text-slate-900">{item.amount.toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* Totals Calculation splits */}
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-8 mt-8 pt-4 border-t border-slate-100 print-page-break">
+            {/* Payment coordinates */}
+            <div className="space-y-4 max-w-sm">
+              <div>
+                <h3 className="text-slate-400 font-bold uppercase tracking-wider text-[10px] mb-2">Remittance Instructions</h3>
+                <div className="space-y-1 text-xs text-slate-600 leading-relaxed">
+                  {settings.bank_name && (
+                    <>
+                      <div>Bank Name: <span className="font-semibold text-slate-800">{settings.bank_name}</span></div>
+                      <div>A/C Holder: <span className="font-semibold text-slate-800">{settings.bank_account_name}</span></div>
+                      <div>A/C Number: <span className="font-semibold text-slate-800 font-mono">{settings.bank_account_number}</span></div>
+                      <div>IFSC Code: <span className="font-semibold text-slate-800 font-mono">{settings.bank_ifsc}</span></div>
+                    </>
+                  )}
+                  {settings.upi_id && (
+                    <div className="mt-2 bg-slate-50 border border-slate-100 px-3 py-2 rounded">
+                      UPI ID: <span className="font-mono font-semibold text-sky-700">{settings.upi_id}</span>
+                    </div>
+                  )}
+                  {!settings.bank_name && !settings.upi_id && (
+                    <div className="text-slate-400 text-xs italic">No banking details configured in settings profile.</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Calculations right alignment */}
+            <div className="w-full sm:w-64 space-y-3.5">
+              <div className="flex justify-between items-center text-xs text-slate-650">
+                <span>Subtotal:</span>
+                <span className="font-mono">{invoice.subtotal.toFixed(2)}</span>
+              </div>
+              
+              {invoice.tax_rate > 0 && (
+                <div className="flex justify-between items-center text-xs text-slate-650">
+                  <span>{invoice.tax_label || 'GST'} ({invoice.tax_rate}%):</span>
+                  <span className="font-mono">+{invoice.tax_amount.toFixed(2)}</span>
+                </div>
+              )}
+
+              {invoice.discount_amount > 0 && (
+                <div className="flex justify-between items-center text-xs text-slate-650">
+                  <span>Discount:</span>
+                  <span className="font-mono text-emerald-600">-{invoice.discount_amount.toFixed(2)}</span>
+                </div>
+              )}
+
+              <div className="border-t border-slate-200 pt-3 flex justify-between items-center text-slate-900">
+                <span className="font-bold">Total Due:</span>
+                <span className="font-mono font-extrabold text-lg text-slate-950">
+                  {invoice.currency} {invoice.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              
+              {invoice.amount_paid > 0 && (
+                <div className="flex justify-between items-center text-xs text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-100">
+                  <span>Amount Paid:</span>
+                  <span className="font-mono font-semibold">-{invoice.amount_paid.toFixed(2)}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Business Terms footnotes */}
+          {(invoice.notes || invoice.terms) && (
+            <div className="mt-12 pt-8 border-t border-slate-100 grid grid-cols-1 gap-6 text-xs text-slate-500 leading-relaxed print-page-break">
+              {invoice.terms && (
+                <div>
+                  <h4 className="font-semibold text-slate-700 uppercase tracking-wider text-[9px] mb-1">Terms & Conditions</h4>
+                  <p>{invoice.terms}</p>
+                </div>
+              )}
+              {invoice.notes && (
+                <div>
+                  <h4 className="font-semibold text-slate-700 uppercase tracking-wider text-[9px] mb-1">Additional Notes</h4>
+                  <p>{invoice.notes}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Payments History log (Hidden on print) */}
+      {payments.length > 0 && (
+        <div className="no-print glass-card rounded-2xl border-slate-200 p-6 space-y-4">
+          <h2 className="font-display font-semibold text-lg text-slate-900 flex items-center space-x-2">
+            <CreditCard className="h-5 w-5 text-blue-600" />
+            <span>Payments History Log ({payments.length})</span>
+          </h2>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-50">
+                  <th className="px-6 py-2.5">Date</th>
+                  <th className="px-6 py-2.5">Method</th>
+                  <th className="px-6 py-2.5">Reference ID</th>
+                  <th className="px-6 py-2.5">Notes</th>
+                  <th className="px-6 py-2.5 text-right">Amount</th>
+                  <th className="px-6 py-2.5 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-xs">
+                {payments.map((p) => (
+                  <tr key={p.id} className="hover:bg-slate-50/10">
+                    <td className="px-6 py-3 text-slate-700">{formatDate(p.payment_date)}</td>
+                    <td className="px-6 py-3 text-slate-400 font-medium capitalize">{p.method?.replace('_', ' ')}</td>
+                    <td className="px-6 py-3 font-mono text-slate-700">{p.reference || '-'}</td>
+                    <td className="px-6 py-3 text-slate-400">{p.notes || '-'}</td>
+                    <td className="px-6 py-3 text-right font-medium text-emerald-600 font-mono">{formatCurrency(p.amount, invoice.currency)}</td>
+                    <td className="px-6 py-3 text-right">
+                      <button 
+                        onClick={() => handleDeletePayment(p.id)}
+                        className="text-red-600 hover:text-red-600 p-1 rounded cursor-pointer"
+                        title="Delete Payment Entry"
+                      >
+                        <Trash2 className="h-4 w-4 inline" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      <RecordPaymentModal
+        isOpen={paymentModalOpen}
+        invoice={invoice}
+        onClose={() => setPaymentModalOpen(false)}
+        onSuccess={fetchData}
+      />
+
+      <ConfirmModal
+        isOpen={deletePaymentId !== null}
+        title="Delete Payment"
+        message="Are you sure you want to remove this payment entry?"
+        confirmText="Delete"
+        onConfirm={performDeletePayment}
+        onCancel={() => setDeletePaymentId(null)}
+      />
+    </div>
+  );
+}

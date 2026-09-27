@@ -1,11 +1,20 @@
 {
+  "$schema": "node_modules/wrangler/config-schema.json",
   "name": "billing-app",
+  "main": "worker/index.ts",
   "compatibility_date": "2024-04-03",
+  "assets": {
+    "directory": "./frontend/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "freelancer-invoices",
       "database_id": "a799c70e-072f-4396-b89b-1b2b9fdb3ca6"
     }
-  ]
+  ],
+
+  "vars": {}
 }
