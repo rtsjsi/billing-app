@@ -1,79 +1,46 @@
 # Freelancer Invoicing & PO Tracker
 
-A secure, full-stack, single-user invoicing and Purchase Order tracker on Cloudflare's free tier.
+Invoicing and purchase-order tracker. One Cloudflare Worker (`billing-app`) and one D1 database (`freelancer-invoices`). That deployment is production. Do not add another app or database, and do not start `npm run dev`, `wrangler dev`, or any local server. Check the deployed app.
 
-## Architecture
+## Layout
 
-- **Backend**: [Hono](https://hono.dev) on a Cloudflare Worker.
-- **Frontend**: React SPA built with Vite, TypeScript, and Tailwind CSS v4.
-- **Database**: Cloudflare D1 (SQLite), database name `freelancer-invoices`, binding `DB`.
-- **Security**: PBKDF2 password hashing and HttpOnly cookie JWT sessions.
+- `frontend/` — React SPA (Vite, TypeScript, Tailwind CSS v4). Wrangler serves `frontend/dist` as `ASSETS` with SPA fallback.
+- `worker/` — Hono API. Routes under `/api`: dashboard, clients, purchase-orders, invoices, payments, settings, reports.
+- `migrations/` — numbered SQL files. Leave `migrations_dir` unset.
+- `wrangler.jsonc` — Worker config and the D1 binding `DB`, including `database_id`.
+- Passwords use PBKDF2. Sessions are an HttpOnly JWT cookie. `JWT_SECRET` is a Wrangler secret (`npx wrangler secret put JWT_SECRET`), not a var in `wrangler.jsonc`.
 
-## Runtime
+## Behavior
 
-There is one Cloudflare Worker and one D1 database, `freelancer-invoices`. That deployment is production. Do not add a local, preview, or staging copy of the app or database. Do not start `npm run dev`, `wrangler dev`, or any local server. Verify behavior on the deployed Cloudflare app.
+- Invoice numbers reset from settings: `financial_year` (April–March, the default), `calendar_year`, or `never`. On a period boundary the worker sets the index back to 1 when the new period has no ledger documents.
+- Invoice status is `overdue` at read time when `due_date` has passed and `amount_paid < total`.
+- Invoice lines may link to a purchase-order line through `po_item_id`. Remaining PO quantity uses that link.
+- Clients have a `tds_percent`.
+- Settings exports clients, invoices, and purchase orders as CSV. Reports also download PDF and Excel.
 
-## Git: always commit and push
+## Git
 
-After completing any code or config changes in this repo:
+After code or config changes:
 
-1. Stage the relevant files (never stage secrets like `.env`).
-2. Create a concise commit that explains **why** the change was made.
+1. Stage the relevant files. Never stage `.env` or other secrets.
+2. Commit with a message that explains why.
 3. Push to `origin` on the current branch (`git push -u origin HEAD`).
 
-Do this automatically at the end of a task — do not wait for the user to ask “push to git” unless they explicitly say **not** to push. After the push, if the change should go live and Cloudflare credentials are available, apply D1 migrations and deploy. If deploy or auth fails, the push still stands; tell the user what remains.
+Do this at the end of a task unless the user says not to push. Then, if the change should go live and Cloudflare credentials are available, apply migrations when the schema changed and deploy. If deploy or auth fails, the push still stands; say what remains.
 
-## Deploy
+## Cloudflare
+
+Wrangler reads `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` from the root `.env` (see `.env.example`). Never commit `.env`.
 
 `npm run deploy` builds the frontend and runs `wrangler deploy`. It does not apply migrations.
 
-### D1 database
-
-The database id lives in `wrangler.jsonc`:
-
-```json
-"d1_databases": [
-  {
-    "binding": "DB",
-    "database_name": "freelancer-invoices",
-    "database_id": "<database-id>"
-  }
-]
-```
-
-To create that database on a new account: `npx wrangler d1 create freelancer-invoices`, then paste the printed `database_id` into `wrangler.jsonc`.
-
-### CLI credentials
-
-Wrangler loads Cloudflare credentials from a root `.env` (see `.env.example`). Never commit `.env`.
-
-```env
-CLOUDFLARE_API_TOKEN=your-user-api-token
-CLOUDFLARE_ACCOUNT_ID=your-account-id
-```
-
-### Migrations
-
-Schema changes are numbered SQL files in `migrations/`. Wrangler records applied files in `d1_migrations`, so applying again only runs pending files.
-
-Before a Worker deploy that depends on the new schema, apply migrations. `--remote` is Wrangler's flag for this Cloudflare database:
+Pending SQL files are recorded in `d1_migrations`. Apply them before a deploy that needs the new schema. `--remote` selects this Cloudflare database. Set `CI=true` so Wrangler skips the confirmation prompt.
 
 ```bash
 npx wrangler d1 migrations apply freelancer-invoices --remote
+npm run deploy
 ```
 
-Then `npm run deploy`. Set `CI=true` in a non-interactive shell so the confirmation prompt is skipped. Do not use `--local`. Leave `migrations_dir` unset while files stay as top-level `migrations/*.sql`.
+Do not pass `--local`.
 
-### JWT secret
-
-Set the JWT signing key with `npx wrangler secret put JWT_SECRET`. Do not store it in `wrangler.jsonc`.
-
-## Optional hardening: Cloudflare Access
-
-Password hashing and HttpOnly JWT cookies already protect the app. Cloudflare Access (Zero Trust → Access, free for up to 50 users) can sit in front of the Worker and require email or Google sign-in before the login page. That needs no application code changes.
-
-## Business logic
-
-1. **Invoice number reset**: Under settings, resets are `financial_year` (April to March), `calendar_year`, or `never`. On a period boundary the worker checks whether ledger documents exist for the current period and resets the index to `1`.
-2. **Status**: Invoice status becomes `overdue` at read time when `due_date` has passed and `amount_paid < total`.
-3. **Backups**: Settings exports clients, invoices, and purchase orders as CSV.
+CI (`.github/workflows/ci.yml`) runs `npm ci`, typecheck, test, and build. It does not migrate or deploy.
