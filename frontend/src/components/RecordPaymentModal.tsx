@@ -133,12 +133,12 @@ export default function RecordPaymentModal({ isOpen, invoice, onClose, onSuccess
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div
-        className="w-full max-w-md bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden"
+        className="w-full max-w-md bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="record-payment-title"
       >
-        <div className="flex justify-between items-center px-6 py-4 border-b border-slate-200">
+        <div className="flex justify-between items-center px-6 py-4 border-b border-slate-200 shrink-0">
           <h2 id="record-payment-title" className="font-display font-semibold text-lg text-slate-900 flex items-center space-x-2">
             <DollarSign className="h-5 w-5 text-emerald-600" />
             <span>Record Invoice Payment</span>
@@ -148,8 +148,8 @@ export default function RecordPaymentModal({ isOpen, invoice, onClose, onSuccess
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col min-h-0 flex-1">
+          <div className="p-6 space-y-4 overflow-y-auto min-h-0 flex-1">
             <div className="p-3 bg-emerald-100 border border-emerald-500/20 text-emerald-600 rounded-lg text-xs flex items-center space-x-2">
               <Check className="h-4 w-4 shrink-0" />
               <span>
@@ -301,7 +301,7 @@ export default function RecordPaymentModal({ isOpen, invoice, onClose, onSuccess
             </div>
           </div>
 
-          <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end space-x-3">
+          <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end space-x-3 shrink-0">
             <button
               type="button"
               onClick={onClose}
